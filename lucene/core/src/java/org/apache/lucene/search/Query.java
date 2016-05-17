@@ -74,15 +74,27 @@ public abstract class Query {
     return this;
   }
 
+  /**
+   * Override and implement query instance equivalence properly in a subclass. 
+   * This is required so that {@link QueryCache} works properly.
+   */
   @Override
-  public int hashCode() {
-    return getClass().hashCode();
-  }
+  public abstract int hashCode();
 
+  /**
+   * Override and implement query instance equivalence properly in a subclass. 
+   * This is required so that {@link QueryCache} works properly.
+   * 
+   * @see #sameClassAs(Object)
+   */
   @Override
-  public boolean equals(Object obj) {
-    if (obj == null)
-      return false;
-    return getClass() == obj.getClass();
-  }
+  public abstract boolean equals(Object obj);
+
+  /**
+   * Utility method to check whether <code>other</code> is not null and is exactly 
+   * of the same class as this object's class.  
+   */
+  protected final boolean sameClassAs(Object other) {
+    return other != null && getClass() == other.getClass();
+  }  
 }
