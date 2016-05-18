@@ -59,7 +59,7 @@ public class DocValuesNumbersQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (!super.equals(obj)) {
+    if (! sameClassAs(obj)) {
       return false;
     }
     // super.equals ensures we are the same class:
@@ -72,7 +72,7 @@ public class DocValuesNumbersQuery extends Query {
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(field, numbers);
+    return 31 * getClass().hashCode() + Objects.hash(field, numbers);
   }
 
   public String getField() {

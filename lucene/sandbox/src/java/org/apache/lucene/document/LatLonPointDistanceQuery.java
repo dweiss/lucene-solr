@@ -263,7 +263,7 @@ final class LatLonPointDistanceQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     result = prime * result + field.hashCode();
     long temp;
     temp = Double.doubleToLongBits(latitude);
@@ -277,9 +277,9 @@ final class LatLonPointDistanceQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (! sameClassAs(obj)) {
+      return false;
+    }
     LatLonPointDistanceQuery other = (LatLonPointDistanceQuery) obj;
     if (field.equals(other.field) == false) return false;
     if (Double.doubleToLongBits(latitude) != Double.doubleToLongBits(other.latitude)) return false;

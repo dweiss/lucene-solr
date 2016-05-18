@@ -233,7 +233,7 @@ public class TermAutomatonQuery extends Query {
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof TermAutomatonQuery)) {
+    if (! sameClassAs(o)) {
       return false;
     }
     TermAutomatonQuery other = (TermAutomatonQuery) o;
@@ -247,8 +247,8 @@ public class TermAutomatonQuery extends Query {
 
     // NOTE: not quite correct, because if terms were added in different
     // order in each query but the language is the same, we return false:
-    return super.equals(o)
-      && this.termToID.equals(other.termToID) &&
+    return
+      termToID.equals(other.termToID) &&
       Operations.sameLanguage(det, other.det);
   }
 
@@ -258,7 +258,7 @@ public class TermAutomatonQuery extends Query {
     if (det == null) {
       throw new IllegalStateException("please call finish first");
     }
-    return super.hashCode() ^ termToID.hashCode() + det.toDot().hashCode();
+    return getClass().hashCode() ^ termToID.hashCode() + det.toDot().hashCode();
   }
 
   /** Returns the dot (graphviz) representation of this automaton.

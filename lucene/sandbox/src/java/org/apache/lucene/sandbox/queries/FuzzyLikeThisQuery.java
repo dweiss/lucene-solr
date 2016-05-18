@@ -78,7 +78,7 @@ public class FuzzyLikeThisQuery extends Query
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = super.hashCode();
+      int result = getClass().hashCode();
       result = prime * result + ((analyzer == null) ? 0 : analyzer.hashCode());
       result = prime * result
           + ((fieldVals == null) ? 0 : fieldVals.hashCode());
@@ -89,13 +89,7 @@ public class FuzzyLikeThisQuery extends Query
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-      if (!super.equals(obj)) {
+      if (! sameClassAs(obj)) {
         return false;
       }
       FuzzyLikeThisQuery other = (FuzzyLikeThisQuery) obj;

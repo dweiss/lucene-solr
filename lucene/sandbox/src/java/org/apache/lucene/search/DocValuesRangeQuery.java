@@ -79,7 +79,7 @@ public final class DocValuesRangeQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
+    if (! sameClassAs(obj)) {
       return false;
     }
     final DocValuesRangeQuery that = (DocValuesRangeQuery) obj;
@@ -87,13 +87,12 @@ public final class DocValuesRangeQuery extends Query {
         && Objects.equals(lowerVal, that.lowerVal)
         && Objects.equals(upperVal, that.upperVal)
         && includeLower == that.includeLower
-        && includeUpper == that.includeUpper
-        && super.equals(obj);
+        && includeUpper == that.includeUpper;
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(field, lowerVal, upperVal, includeLower, includeUpper);
+    return 31 * getClass().hashCode() + Objects.hash(field, lowerVal, upperVal, includeLower, includeUpper);
   }
 
   public String getField() {

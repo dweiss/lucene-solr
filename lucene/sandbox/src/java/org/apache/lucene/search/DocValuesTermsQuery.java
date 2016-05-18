@@ -120,7 +120,7 @@ public class DocValuesTermsQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
+    if (! sameClassAs(obj)) {
       return false;
     }
     DocValuesTermsQuery that = (DocValuesTermsQuery) obj;
@@ -132,7 +132,7 @@ public class DocValuesTermsQuery extends Query {
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(field, Arrays.asList(terms));
+    return 31 * getClass().hashCode() + Objects.hash(field, Arrays.asList(terms));
   }
 
   @Override

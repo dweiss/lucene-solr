@@ -169,7 +169,7 @@ final class LatLonPointInPolygonQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     result = prime * result + field.hashCode();
     result = prime * result + Arrays.hashCode(polygons);
     return result;
@@ -177,9 +177,9 @@ final class LatLonPointInPolygonQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (! sameClassAs(obj)) {
+      return false;
+    }
     LatLonPointInPolygonQuery other = (LatLonPointInPolygonQuery) obj;
     if (!field.equals(other.field)) return false;
     if (!Arrays.equals(polygons, other.polygons)) return false;
