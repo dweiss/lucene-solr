@@ -157,8 +157,9 @@ public class SerializedDVStrategy extends SpatialStrategy {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (super.equals(o) == false) return false;
+      if (! sameClassAs(o)) {
+        return false;
+      }
 
       PredicateValueSourceQuery that = (PredicateValueSourceQuery) o;
 
@@ -169,7 +170,7 @@ public class SerializedDVStrategy extends SpatialStrategy {
 
     @Override
     public int hashCode() {
-      return super.hashCode() + 31 * predicateValueSource.hashCode();
+      return getClass().hashCode() + 31 * predicateValueSource.hashCode();
     }
 
     @Override
