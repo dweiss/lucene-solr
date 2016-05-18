@@ -161,7 +161,7 @@ class DrillSidewaysQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     result = prime * result + ((baseQuery == null) ? 0 : baseQuery.hashCode());
     result = prime * result
         + ((drillDownCollector == null) ? 0 : drillDownCollector.hashCode());
@@ -172,9 +172,9 @@ class DrillSidewaysQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (! sameClassAs(obj)) {
+      return false;
+    }
     DrillSidewaysQuery other = (DrillSidewaysQuery) obj;
     if (baseQuery == null) {
       if (other.baseQuery != null) return false;

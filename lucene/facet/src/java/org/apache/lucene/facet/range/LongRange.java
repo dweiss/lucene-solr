@@ -97,7 +97,7 @@ public final class LongRange extends Range {
 
     @Override
     public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
+      if (! sameClassAs(obj)) {
         return false;
       }
       ValueSourceQuery other = (ValueSourceQuery) obj;
@@ -108,7 +108,7 @@ public final class LongRange extends Range {
 
     @Override
     public int hashCode() {
-      return 31 * Objects.hash(range, fastMatchQuery, valueSource) + super.hashCode();
+      return 31 * Objects.hash(range, fastMatchQuery, valueSource) + getClass().hashCode();
     }
 
     @Override

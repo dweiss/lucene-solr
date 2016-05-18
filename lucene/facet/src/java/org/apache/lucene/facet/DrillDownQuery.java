@@ -122,12 +122,12 @@ public final class DrillDownQuery extends Query {
   
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(baseQuery, dimQueries);
+    return 31 * getClass().hashCode() + Objects.hash(baseQuery, dimQueries);
   }
   
   @Override
   public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
+    if (! sameClassAs(obj)) {
       return false;
     }
     DrillDownQuery other = (DrillDownQuery) obj;
