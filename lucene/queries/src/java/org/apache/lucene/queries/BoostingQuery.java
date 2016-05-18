@@ -134,11 +134,6 @@ public class BoostingQuery extends Query {
       };
     }
 
-    @Override
-    public int hashCode() {
-      return 31 * super.hashCode() + Objects.hash(match, context, boost);
-    }
-
     public Query getMatch() {
       return match;
     }
@@ -152,8 +147,13 @@ public class BoostingQuery extends Query {
     }
 
     @Override
+    public int hashCode() {
+      return 31 * getClass().hashCode() + Objects.hash(match, context, boost);
+    }
+
+    @Override
     public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
+    if (! sameClassAs(obj)) {
         return false;
       }
       BoostingQuery that = (BoostingQuery) obj;

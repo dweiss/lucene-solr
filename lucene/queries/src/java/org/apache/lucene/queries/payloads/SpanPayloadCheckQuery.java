@@ -174,7 +174,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   @Override
   public boolean equals(Object o) {
-    if (! super.equals(o)) {
+    if (! sameClassAs(o)) {
       return false;
     }
     SpanPayloadCheckQuery other = (SpanPayloadCheckQuery)o;
@@ -183,7 +183,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = getClass().hashCode();
     h = (h * 63) ^ payloadToMatch.hashCode();
     return h;
   }

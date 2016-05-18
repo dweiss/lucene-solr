@@ -96,9 +96,9 @@ public class FunctionRangeQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof FunctionRangeQuery)) return false;
-    if (!super.equals(o)) return false;
+    if (! sameClassAs(o)) {
+      return false;
+    }
     FunctionRangeQuery that = (FunctionRangeQuery) o;
     return Objects.equals(includeLower, that.includeLower) &&
         Objects.equals(includeUpper, that.includeUpper) &&
@@ -109,7 +109,7 @@ public class FunctionRangeQuery extends Query {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), valueSource, lowerVal, upperVal, includeLower, includeUpper);
+    return Objects.hash(getClass().hashCode(), valueSource, lowerVal, upperVal, includeLower, includeUpper);
   }
 
   @Override

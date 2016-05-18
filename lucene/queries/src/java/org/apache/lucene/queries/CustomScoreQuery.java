@@ -138,10 +138,9 @@ public class CustomScoreQuery extends Query implements Cloneable {
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (!super.equals(o))
+    if (! sameClassAs(o)) {
       return false;
+    }
     CustomScoreQuery other = (CustomScoreQuery)o;
     if (!this.subQuery.equals(other.subQuery) ||
         this.strict != other.strict ||

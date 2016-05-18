@@ -19,6 +19,7 @@ package org.apache.lucene.queries.payloads;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -60,8 +61,8 @@ public class PayloadScoreQuery extends SpanQuery {
    * @param includeSpanScore include both span score and payload score in the scoring algorithm
    */
   public PayloadScoreQuery(SpanQuery wrappedQuery, PayloadFunction function, boolean includeSpanScore) {
-    this.wrappedQuery = wrappedQuery;
-    this.function = function;
+    this.wrappedQuery = Objects.requireNonNull(wrappedQuery);
+    this.function = Objects.requireNonNull(function);
     this.includeSpanScore = includeSpanScore;
   }
 
@@ -94,20 +95,18 @@ public class PayloadScoreQuery extends SpanQuery {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof PayloadScoreQuery)) return false;
-    if (!super.equals(o)) return false;
-
+    if (! sameClassAs(o)) {
+      return false;
+    }
     PayloadScoreQuery that = (PayloadScoreQuery) o;
 
-    if (wrappedQuery != null ? !wrappedQuery.equals(that.wrappedQuery) : that.wrappedQuery != null) return false;
-    return !(function != null ? !function.equals(that.function) : that.function != null);
-
+    return wrappedQuery.equals(that.wrappedQuery)
+        && function.equals(that.function);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     result = 31 * result + (wrappedQuery != null ? wrappedQuery.hashCode() : 0);
     result = 31 * result + (function != null ? function.hashCode() : 0);
     return result;

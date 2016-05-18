@@ -411,7 +411,7 @@ public class CommonTermsQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     result = prime * result + (disableCoord ? 1231 : 1237);
     result = prime * result + Float.floatToIntBits(highFreqBoost);
     result = prime * result
@@ -428,9 +428,9 @@ public class CommonTermsQuery extends Query {
   
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (! sameClassAs(obj)) {
+      return false;
+    }
     CommonTermsQuery other = (CommonTermsQuery) obj;
     if (disableCoord != other.disableCoord) return false;
     if (Float.floatToIntBits(highFreqBoost) != Float
@@ -443,9 +443,7 @@ public class CommonTermsQuery extends Query {
         .floatToIntBits(other.maxTermFrequency)) return false;
     if (lowFreqMinNrShouldMatch != other.lowFreqMinNrShouldMatch) return false;
     if (highFreqMinNrShouldMatch != other.highFreqMinNrShouldMatch) return false;
-    if (terms == null) {
-      if (other.terms != null) return false;
-    } else if (!terms.equals(other.terms)) return false;
+    if (!terms.equals(other.terms)) return false;
     return true;
   }
 
