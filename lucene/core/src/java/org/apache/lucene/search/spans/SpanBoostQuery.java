@@ -64,7 +64,7 @@ public final class SpanBoostQuery extends SpanQuery {
 
   @Override
   public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
+    if (! sameClassAs(obj)) {
       return false;
     }
     SpanBoostQuery that = (SpanBoostQuery) obj;
@@ -74,7 +74,7 @@ public final class SpanBoostQuery extends SpanQuery {
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = getClass().hashCode();
     h = 31 * h + query.hashCode();
     h = 31 * h + Float.floatToIntBits(boost);
     return h;

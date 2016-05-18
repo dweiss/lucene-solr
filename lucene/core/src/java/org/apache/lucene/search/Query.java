@@ -92,7 +92,10 @@ public abstract class Query {
 
   /**
    * Utility method to check whether <code>other</code> is not null and is exactly 
-   * of the same class as this object's class.  
+   * of the same class as this object's class.
+   * <br> When this method is used in an implementation of {@link #equals(Object)},
+   * consider using <code>getClass().hashCode()</code> in the implementation
+   * of {@link #hashCode}.
    */
   protected final boolean sameClassAs(Object other) {
     return other != null && getClass() == other.getClass();

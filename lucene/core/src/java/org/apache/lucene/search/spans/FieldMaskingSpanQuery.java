@@ -118,7 +118,7 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
   
   @Override
   public boolean equals(Object o) {
-    if (! super.equals(o)) {
+    if (! sameClassAs(o)) {
       return false;
     }
     FieldMaskingSpanQuery other = (FieldMaskingSpanQuery) o;
@@ -129,7 +129,7 @@ public final class FieldMaskingSpanQuery extends SpanQuery {
   
   @Override
   public int hashCode() {
-    return super.hashCode()
+    return getClass().hashCode()
           ^ getMaskedQuery().hashCode()
           ^ getField().hashCode();
   }

@@ -253,10 +253,9 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     return super.rewrite(reader);
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (! super.equals(o)) {
+    if (! sameClassAs(o)) {
       return false;
     }
     final SpanNearQuery spanNearQuery = (SpanNearQuery) o;
@@ -268,7 +267,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     result ^= clauses.hashCode();
     result += slop;
     int fac = 1 + (inOrder ? 8 : 4);
@@ -321,6 +320,25 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
       }
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (! sameClassAs(o)) {
+        return false;
+      }
+      final SpanGapQuery spanGapQuery = (SpanGapQuery) o;
+
+      return (width == spanGapQuery.width)
+          && field.equals(spanGapQuery.field);
+    }
+
+    @Override
+    public int hashCode() {
+      int result = 7 * getClass().hashCode();
+      result -= 7 * width;
+      return result * 15 - field.hashCode();
+    }
+
   }
 
   static class GapSpans extends Spans {

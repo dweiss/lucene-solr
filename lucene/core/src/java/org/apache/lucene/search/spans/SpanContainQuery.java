@@ -130,7 +130,7 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
 
   @Override
   public boolean equals(Object o) {
-    if (! super.equals(o)) {
+    if (! sameClassAs(o)) {
       return false;
     }
     SpanContainQuery other = (SpanContainQuery)o;
@@ -139,7 +139,7 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
 
   @Override
   public int hashCode() {
-    int h = Integer.rotateLeft(super.hashCode(), 1);
+    int h = Integer.rotateLeft(getClass().hashCode(), 1);
     h ^= big.hashCode();
     h = Integer.rotateLeft(h, 1);
     h ^= little.hashCode();

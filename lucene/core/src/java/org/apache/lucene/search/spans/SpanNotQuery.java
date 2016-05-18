@@ -201,7 +201,7 @@ public final class SpanNotQuery extends SpanQuery {
     /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (!super.equals(o))
+    if (! sameClassAs(o))
       return false;
 
     SpanNotQuery other = (SpanNotQuery)o;
@@ -213,7 +213,7 @@ public final class SpanNotQuery extends SpanQuery {
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = getClass().hashCode();
     h = Integer.rotateLeft(h, 1);
     h ^= include.hashCode();
     h = Integer.rotateLeft(h, 1);
