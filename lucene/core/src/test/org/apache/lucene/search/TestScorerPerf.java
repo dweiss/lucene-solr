@@ -166,7 +166,7 @@ public class TestScorerPerf extends LuceneTestCase {
     
     @Override
     public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
+      if (! sameClassAs(obj)) {
         return false;
       }
       return docs == ((BitSetQuery) obj).docs;
@@ -174,7 +174,7 @@ public class TestScorerPerf extends LuceneTestCase {
 
     @Override
     public int hashCode() {
-      return 31 * super.hashCode() + System.identityHashCode(docs);
+      return 31 * getClass().hashCode() + System.identityHashCode(docs);
     }
   }
 

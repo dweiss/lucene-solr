@@ -225,7 +225,7 @@ public final class BlendedTermQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
+    if (! sameClassAs(obj)) {
       return false;
     }
     BlendedTermQuery that = (BlendedTermQuery) obj;
@@ -237,7 +237,7 @@ public final class BlendedTermQuery extends Query {
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = getClass().hashCode();
     h = 31 * h + Arrays.hashCode(terms);
     h = 31 * h + Arrays.hashCode(contexts);
     h = 31 * h + Arrays.hashCode(boosts);

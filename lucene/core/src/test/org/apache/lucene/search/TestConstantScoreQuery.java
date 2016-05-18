@@ -149,7 +149,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
 
     @Override
     public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
+      if (! sameClassAs(obj)) {
         return false;
       }
       QueryWrapper that = (QueryWrapper) obj;
@@ -158,7 +158,7 @@ public class TestConstantScoreQuery extends LuceneTestCase {
 
     @Override
     public int hashCode() {
-      return 31 * super.hashCode() + in.hashCode();
+      return 31 * getClass().hashCode() + in.hashCode();
     }
   }
 

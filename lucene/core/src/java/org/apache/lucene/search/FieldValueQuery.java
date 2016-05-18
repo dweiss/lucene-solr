@@ -44,7 +44,7 @@ public final class FieldValueQuery extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
+    if (! sameClassAs(obj)) {
       return false;
     }
     final FieldValueQuery that = (FieldValueQuery) obj;
@@ -53,7 +53,7 @@ public final class FieldValueQuery extends Query {
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + field.hashCode();
+    return 31 * getClass().hashCode() + field.hashCode();
   }
 
   @Override

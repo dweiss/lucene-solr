@@ -163,19 +163,16 @@ public final class ConstantScoreQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!super.equals(o))
+    if (! sameClassAs(o)) {
       return false;
-    if (o instanceof ConstantScoreQuery) {
-      final ConstantScoreQuery other = (ConstantScoreQuery) o;
-      return this.query.equals(other.query);
     }
-    return false;
+    final ConstantScoreQuery other = (ConstantScoreQuery) o;
+    return query.equals(other.query);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + query.hashCode();
+    return 31 * getClass().hashCode() + query.hashCode();
   }
 
 }

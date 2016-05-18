@@ -504,13 +504,12 @@ public class TestQueryRescorer extends LuceneTestCase {
 
     @Override
     public boolean equals(Object o) {
-      if ((o instanceof FixedScoreQuery) == false) {
+      if (! sameClassAs(o)) {
         return false;
       }
       FixedScoreQuery other = (FixedScoreQuery) o;
-      return super.equals(o) &&
-        reverse == other.reverse &&
-        Arrays.equals(idToNum, other.idToNum);
+      return reverse == other.reverse
+          && Arrays.equals(idToNum, other.idToNum);
     }
 
     @Override
@@ -521,7 +520,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     @Override
     public int hashCode() {
       int PRIME = 31;
-      int hash = super.hashCode();
+      int hash = getClass().hashCode();
       if (reverse) {
         hash = PRIME * hash + 3623;
       }

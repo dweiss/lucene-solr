@@ -305,7 +305,7 @@ public abstract class PointInSetQuery extends Query {
 
   @Override
   public final int hashCode() {
-    int hash = super.hashCode();
+    int hash = getClass().hashCode();
     hash = 31 * hash + field.hashCode();
     hash = 31 * hash + sortedPackedPointsHashCode;
     hash = 31 * hash + numDims;
@@ -315,16 +315,15 @@ public abstract class PointInSetQuery extends Query {
 
   @Override
   public final boolean equals(Object other) {
-    if (super.equals(other)) {
-      final PointInSetQuery q = (PointInSetQuery) other;
-      return q.field.equals(field) &&
-        q.numDims == numDims &&
-        q.bytesPerDim == bytesPerDim &&
-        q.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
-        q.sortedPackedPoints.equals(sortedPackedPoints);
+    if (! sameClassAs(other)) {
+      return false;
     }
-
-    return false;
+    final PointInSetQuery q = (PointInSetQuery) other;
+    return q.field.equals(field) &&
+      q.numDims == numDims &&
+      q.bytesPerDim == bytesPerDim &&
+      q.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
+      q.sortedPackedPoints.equals(sortedPackedPoints);
   }
 
   @Override

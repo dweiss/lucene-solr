@@ -384,7 +384,7 @@ public class MultiPhraseQuery extends Query {
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (super.equals(o) == false) {
+    if (! sameClassAs(o)) {
       return false;
     }
     MultiPhraseQuery other = (MultiPhraseQuery)o;
@@ -396,7 +396,7 @@ public class MultiPhraseQuery extends Query {
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    return super.hashCode()
+    return getClass().hashCode()
       ^ slop
       ^ termArraysHashCode() // terms equal implies field equal
       ^ Arrays.hashCode(positions);

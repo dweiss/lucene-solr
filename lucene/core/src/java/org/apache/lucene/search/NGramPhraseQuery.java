@@ -79,7 +79,7 @@ public class NGramPhraseQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (super.equals(o) == false) {
+    if (! sameClassAs(o)) {
       return false;
     }
     NGramPhraseQuery other = (NGramPhraseQuery) o;
@@ -88,7 +88,7 @@ public class NGramPhraseQuery extends Query {
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = getClass().hashCode();
     h = 31 * h + phraseQuery.hashCode();
     h = 31 * h + n;
     return h;

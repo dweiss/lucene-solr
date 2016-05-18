@@ -950,7 +950,16 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     @Override
     public int hashCode() {
-      return super.hashCode() ^ i[0];
+      return getClass().hashCode() ^ i[0];
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (! sameClassAs(obj)) {
+        return false;
+      }
+      final BadQuery that = (BadQuery) obj;
+      return i[0] == that.i[0];
     }
 
   }

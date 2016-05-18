@@ -248,7 +248,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
   public boolean equals(Object o) {
     if (! (o instanceof DisjunctionMaxQuery) ) return false;
     DisjunctionMaxQuery other = (DisjunctionMaxQuery)o;
-    return super.equals(o)
+    return sameClassAs(o)
             && this.tieBreakerMultiplier == other.tieBreakerMultiplier
             && Arrays.equals(disjuncts, other.disjuncts);
   }
@@ -258,7 +258,7 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
    */
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = getClass().hashCode();
     h = 31 * h + Float.floatToIntBits(tieBreakerMultiplier);
     h = 31 * h + Arrays.hashCode(disjuncts);
     return h;

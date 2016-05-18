@@ -562,7 +562,7 @@ public class PhraseQuery extends Query {
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (super.equals(o) == false) {
+    if (! sameClassAs(o)) {
       return false;
     }
     PhraseQuery that = (PhraseQuery) o;
@@ -574,7 +574,7 @@ public class PhraseQuery extends Query {
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = getClass().hashCode();
     h = 31 * h + slop;
     h = 31 * h + Arrays.hashCode(terms);
     h = 31 * h + Arrays.hashCode(positions);
