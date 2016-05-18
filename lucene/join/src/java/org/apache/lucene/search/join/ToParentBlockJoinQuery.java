@@ -475,21 +475,19 @@ public class ToParentBlockJoinQuery extends Query {
 
   @Override
   public boolean equals(Object _other) {
-    if (_other instanceof ToParentBlockJoinQuery) {
-      final ToParentBlockJoinQuery other = (ToParentBlockJoinQuery) _other;
-      return origChildQuery.equals(other.origChildQuery) &&
-        parentsFilter.equals(other.parentsFilter) &&
-        scoreMode == other.scoreMode && 
-        super.equals(other);
-    } else {
+    if (! sameClassAs(_other)) {
       return false;
     }
+    final ToParentBlockJoinQuery other = (ToParentBlockJoinQuery) _other;
+    return origChildQuery.equals(other.origChildQuery) &&
+      parentsFilter.equals(other.parentsFilter) &&
+      scoreMode == other.scoreMode;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
-    int hash = super.hashCode();
+    int hash = getClass().hashCode();
     hash = prime * hash + origChildQuery.hashCode();
     hash = prime * hash + scoreMode.hashCode();
     hash = prime * hash + parentsFilter.hashCode();

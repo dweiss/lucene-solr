@@ -66,9 +66,9 @@ final class GlobalOrdinalsQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+    if (! sameClassAs(o)) {
+      return false;
+    }
 
     GlobalOrdinalsQuery that = (GlobalOrdinalsQuery) o;
 
@@ -82,7 +82,7 @@ final class GlobalOrdinalsQuery extends Query {
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     result = 31 * result + joinField.hashCode();
     result = 31 * result + toQuery.hashCode();
     result = 31 * result + fromQuery.hashCode();
