@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.queryparser.surround.query;
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
@@ -29,9 +30,9 @@ abstract class RewriteQuery<SQ extends SrndQuery> extends Query {
       SQ srndQuery,
       String fieldName,
       BasicQueryFactory qf) {
-    this.srndQuery = srndQuery;
-    this.fieldName = fieldName;
-    this.qf = qf;
+    this.srndQuery = Objects.requireNonNull(srndQuery);
+    this.fieldName = Objects.requireNonNull(fieldName);
+    this.qf = Objects.requireNonNull(qf);
   }
 
   @Override
@@ -49,7 +50,7 @@ abstract class RewriteQuery<SQ extends SrndQuery> extends Query {
 
   @Override
   public int hashCode() {
-    return super.hashCode()
+    return getClass().hashCode()
     ^ fieldName.hashCode()
     ^ qf.hashCode()
     ^ srndQuery.hashCode();
@@ -57,13 +58,11 @@ abstract class RewriteQuery<SQ extends SrndQuery> extends Query {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == null)
+    if (! sameClassAs(obj)) {
       return false;
-    if (! getClass().equals(obj.getClass()))
-      return false;
+    }
     @SuppressWarnings("unchecked") RewriteQuery<SQ> other = (RewriteQuery<SQ>)obj;
-    return super.equals(obj)
-      && fieldName.equals(other.fieldName)
+    return fieldName.equals(other.fieldName)
       && qf.equals(other.qf)
       && srndQuery.equals(other.srndQuery);
   }
