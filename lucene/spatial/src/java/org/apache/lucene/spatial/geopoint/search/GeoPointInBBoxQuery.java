@@ -133,9 +133,9 @@ public class GeoPointInBBoxQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof GeoPointInBBoxQuery)) return false;
-    if (!super.equals(o)) return false;
+    if (! sameClassAs(o)) {
+      return false;
+    }
 
     GeoPointInBBoxQuery that = (GeoPointInBBoxQuery) o;
 
@@ -150,7 +150,7 @@ public class GeoPointInBBoxQuery extends Query {
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     long temp;
     result = 31 * result + field.hashCode();
     temp = Double.doubleToLongBits(minLat);

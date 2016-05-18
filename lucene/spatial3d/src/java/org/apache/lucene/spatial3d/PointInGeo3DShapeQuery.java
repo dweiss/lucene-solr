@@ -43,14 +43,14 @@ final class PointInGeo3DShapeQuery extends Query {
   final String field;
   final GeoShape shape;
   final XYZBounds shapeBounds;
-  
+
   /** The lats/lons must be clockwise or counter-clockwise. */
   public PointInGeo3DShapeQuery(String field, GeoShape shape) {
     this.field = field;
     this.shape = shape;
     this.shapeBounds = new XYZBounds();
     shape.getBounds(shapeBounds);
-    
+
     if (shape instanceof BasePlanetObject) {
       BasePlanetObject planetObject = (BasePlanetObject) shape;
       if (planetObject.getPlanetModel().equals(PlanetModel.WGS84) == false) {
@@ -117,9 +117,9 @@ final class PointInGeo3DShapeQuery extends Query {
   @Override
   @SuppressWarnings({"unchecked","rawtypes"})
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
+    if (! sameClassAs(o)) {
+      return false;
+    }
 
     PointInGeo3DShapeQuery that = (PointInGeo3DShapeQuery) o;
     if (field.equals(that.field) == false) {
@@ -131,7 +131,7 @@ final class PointInGeo3DShapeQuery extends Query {
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = getClass().hashCode();
     result = 31 * result + field.hashCode();
     result = 31 * result + shape.hashCode();
     return result;

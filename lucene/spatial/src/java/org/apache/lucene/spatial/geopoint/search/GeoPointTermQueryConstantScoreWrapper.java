@@ -65,7 +65,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
 
   @Override
   public final boolean equals(final Object o) {
-    if (super.equals(o) == false) {
+    if (! sameClassAs(o)) {
       return false;
     }
     final GeoPointTermQueryConstantScoreWrapper<?> that = (GeoPointTermQueryConstantScoreWrapper<?>) o;
@@ -74,7 +74,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
 
   @Override
   public final int hashCode() {
-    return 31 * super.hashCode() + query.hashCode();
+    return 31 * getClass().hashCode() + query.hashCode();
   }
 
   @Override
