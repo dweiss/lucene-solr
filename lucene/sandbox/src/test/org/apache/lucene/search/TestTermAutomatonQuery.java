@@ -660,7 +660,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
     @Override
     public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
+      if (! sameClassAs(obj)) {
         return false;
       }
       RandomQuery other = (RandomQuery) obj;
@@ -669,7 +669,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
     @Override
     public int hashCode() {
-      return Objects.hash(super.hashCode(), seed, density);
+      return Objects.hash(getClass().hashCode(), seed, density);
     }
   }
 

@@ -117,7 +117,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     //  case: drill-down on a single field; in this
     // case the drill-sideways + drill-down counts ==
-    // drill-down of just the query: 
+    // drill-down of just the query:
     DrillDownQuery ddq = new DrillDownQuery(config);
     ddq.add("Author", "Lisa");
     DrillSidewaysResult r = ds.search(null, ddq, 10);
@@ -361,7 +361,7 @@ public class TestDrillSideways extends FacetTestCase {
     String contentToken;
 
     public Doc() {}
-    
+
     // -1 if the doc is missing this dim, else the index
     // -into the values for this dim:
     int[] dims;
@@ -437,7 +437,7 @@ public class TestDrillSideways extends FacetTestCase {
         if (s.length() > 0) {
           values.add(s);
         }
-      } 
+      }
       dimValues[dim] = values.toArray(new String[values.size()]);
       valueCount *= 2;
     }
@@ -560,7 +560,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     final SortedSetDocValuesReaderState sortedSetDVState;
     IndexSearcher s = newSearcher(r);
-    
+
     if (doUseDV) {
       sortedSetDVState = new DefaultSortedSetDocValuesReaderState(s.getIndexReader());
     } else {
@@ -669,7 +669,7 @@ public class TestDrillSideways extends FacetTestCase {
                   public int length() {
                     return context.reader().maxDoc();
                   }
-                  
+
                 };
               }
             };
@@ -678,6 +678,16 @@ public class TestDrillSideways extends FacetTestCase {
           @Override
           public String toString(String field) {
             return "drillSidewaysTestFilter";
+          }
+
+          @Override
+          public boolean equals(Object o) {
+            return sameClassAs(o);
+          }
+
+          @Override
+          public int hashCode() {
+            return getClass().hashCode();
           }
 
         };
@@ -823,7 +833,7 @@ public class TestDrillSideways extends FacetTestCase {
     int[] uniqueCounts;
     public TestFacetResult() {}
   }
-  
+
   private int[] getTopNOrds(final int[] counts, final String[] values, int topN) {
     final int[] ids = new int[counts.length];
     for(int i=0;i<ids.length;i++) {
@@ -1050,7 +1060,7 @@ public class TestDrillSideways extends FacetTestCase {
             if (expected.counts[dim][i] != 0) {
               System.out.println("        " + idx + ": " + new BytesRef(value) + ": " + expected.counts[dim][i]);
               idx++;
-            } 
+            }
           }
         }
 
@@ -1084,7 +1094,7 @@ public class TestDrillSideways extends FacetTestCase {
     DrillSideways ds = new DrillSideways(searcher, config, taxoReader);
     DrillDownQuery ddq = new DrillDownQuery(config);
     ddq.add("Author", "Lisa");
-    
+
     DrillSidewaysResult r = ds.search(ddq, 10); // this used to fail on IllegalArgEx
     assertEquals(0, r.hits.totalHits);
 

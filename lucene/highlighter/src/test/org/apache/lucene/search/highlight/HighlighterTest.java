@@ -242,12 +242,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       @Override
       public int hashCode() {
-        return 31 * super.hashCode();
+        return getClass().hashCode();
       }
 
       @Override
       public boolean equals(Object obj) {
-        return super.equals(obj);
+        return sameClassAs(obj);
       }
     };
 

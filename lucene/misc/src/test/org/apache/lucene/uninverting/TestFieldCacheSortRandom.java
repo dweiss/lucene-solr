@@ -297,7 +297,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
 
     @Override
     public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
+      if (! sameClassAs(obj)) {
         return false;
       }
       RandomQuery other = (RandomQuery) obj;
@@ -308,7 +308,7 @@ public class TestFieldCacheSortRandom extends LuceneTestCase {
     public int hashCode() {
       int h = Objects.hash(seed, density);
       h = 31 * h + System.identityHashCode(docValues);
-      h = 31 * h + super.hashCode();
+      h = 31 * h + getClass().hashCode();
       return h;
     }
   }

@@ -178,19 +178,16 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = super.hashCode();
+      int result = getClass().hashCode();
       result = prime * result + ((term == null) ? 0 : term.hashCode());
       return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (!super.equals(obj))
+      if (! sameClassAs(obj)) {
         return false;
-      if (getClass() != obj.getClass())
-        return false;
+      }
       CustomQuery other = (CustomQuery) obj;
       if (term == null) {
         if (other.term != null)
