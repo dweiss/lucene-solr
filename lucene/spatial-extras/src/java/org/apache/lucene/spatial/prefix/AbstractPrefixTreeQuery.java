@@ -68,7 +68,8 @@ public abstract class AbstractPrefixTreeQuery extends Query {
 
   @Override
   public int hashCode() {
-    int result = queryShape.hashCode();
+    int result = classHash();
+    result = 31 * result + queryShape.hashCode();
     result = 31 * result + fieldName.hashCode();
     result = 31 * result + detailLevel;
     return result;
