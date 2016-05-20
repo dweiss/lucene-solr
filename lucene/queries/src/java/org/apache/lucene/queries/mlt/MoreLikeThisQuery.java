@@ -153,35 +153,31 @@ public class MoreLikeThisQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = getClass().hashCode();
-    result = prime * result + analyzer.hashCode();
-    result = prime * result + fieldName.hashCode();
-    result = prime * result + likeText.hashCode();
+    int result = classHash();
+    result = prime * result + Objects.hash(analyzer, fieldName, likeText, stopWords);
     result = prime * result + maxQueryTerms;
     result = prime * result + minDocFreq;
     result = prime * result + minTermFrequency;
     result = prime * result + Arrays.hashCode(moreLikeFields);
     result = prime * result + Float.floatToIntBits(percentTermsToMatch);
-    result = prime * result + stopWords.hashCode();
     return result;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (! sameClassAs(obj)) {
-      return false;
-    }
-    MoreLikeThisQuery other = (MoreLikeThisQuery) obj;
-    if (!analyzer.equals(other.analyzer)) return false;
-    if (!fieldName.equals(other.fieldName)) return false;
-    if (!likeText.equals(other.likeText)) return false;
-    if (maxQueryTerms != other.maxQueryTerms) return false;
-    if (minDocFreq != other.minDocFreq) return false;
-    if (minTermFrequency != other.minTermFrequency) return false;
-    if (!Arrays.equals(moreLikeFields, other.moreLikeFields)) return false;
-    if (Float.floatToIntBits(percentTermsToMatch) != Float
-        .floatToIntBits(other.percentTermsToMatch)) return false;
-    if (!stopWords.equals(other.stopWords)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(MoreLikeThisQuery other) {
+    return maxQueryTerms == other.maxQueryTerms &&
+           minDocFreq == other.minDocFreq &&
+           minTermFrequency == other.minTermFrequency &&
+           percentTermsToMatch == other.percentTermsToMatch &&
+           analyzer.equals(other.analyzer) &&
+           fieldName.equals(other.fieldName) &&
+           likeText.equals(other.likeText) &&
+           Arrays.equals(moreLikeFields, other.moreLikeFields) &&
+           Objects.equals(stopWords, other.stopWords);
   }
 }
