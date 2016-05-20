@@ -505,20 +505,22 @@ class JoinQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (!super.equals(o)) return false;
-    JoinQuery other = (JoinQuery)o;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(JoinQuery other) {
     return this.fromField.equals(other.fromField)
-           && this.toField.equals(other.toField)
-           && this.q.equals(other.q)
-           && (this.fromIndex == other.fromIndex || this.fromIndex != null && this.fromIndex.equals(other.fromIndex))
-           && this.fromCoreOpenTime == other.fromCoreOpenTime
-        ;
+        && this.toField.equals(other.toField)
+        && this.q.equals(other.q)
+        && (this.fromIndex == other.fromIndex || this.fromIndex != null && this.fromIndex.equals(other.fromIndex))
+        && this.fromCoreOpenTime == other.fromCoreOpenTime;
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = h * 31 + q.hashCode();
     h = h * 31 + (int)fromCoreOpenTime;
     h = h * 31 + fromField.hashCode();
