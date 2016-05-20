@@ -20,8 +20,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.request.SolrRequestInfo;
 
-import com.google.common.base.Objects;
-
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.*;
 import org.apache.solr.request.SolrQueryRequest;
@@ -29,6 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 
 public class ExportQParserPlugin extends QParserPlugin {
 
@@ -96,7 +95,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     public int hashCode() {
       return classHash() + 
           31 * id.hashCode() +
-          31 * mainQuery.hashCode();
+          31 * Objects.hash(mainQuery);
     }
 
     public boolean equals(Object other) {
@@ -105,8 +104,8 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
     
     private boolean equalsTo(ExportQuery other) {
-      return Objects.equal(id, other.id) &&
-             Objects.equal(mainQuery, other.mainQuery);
+      return Objects.equals(id, other.id) &&
+             Objects.equals(mainQuery, other.mainQuery);
     }
 
     public String toString(String s) {

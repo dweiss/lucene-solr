@@ -94,7 +94,7 @@ public class QueryWrapperFilter extends Filter {
   }
 
   private boolean equalsTo(QueryWrapperFilter other) {
-    return other.equals(query);
+    return query.equals(other.query);
   }
 
   @Override
