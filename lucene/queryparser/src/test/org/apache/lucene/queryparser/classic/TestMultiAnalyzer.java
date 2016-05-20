@@ -18,6 +18,7 @@ package org.apache.lucene.queryparser.classic;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -254,11 +255,10 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
      * the toString of the query it wraps.
      */
     private final static class DumbQueryWrapper extends Query {
+        Query q;
 
-        private Query q;
         public DumbQueryWrapper(Query q) {
-            super();
-            this.q = q;
+            this.q = Objects.requireNonNull(q);
         }
         @Override
         public String toString(String f) {
@@ -266,13 +266,14 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
         }
 
         @Override
-        public boolean equals(Object o) {
-            throw new AssertionError("not implemented");
+        public boolean equals(Object other) {
+            return sameClassAs(other) &&
+                   Objects.equals(q, getClass().cast(other).q);
         }
 
         @Override
         public int hashCode() {
-            throw new AssertionError("not implemented");
+            return classHash() & q.hashCode();
         }
     }
 
