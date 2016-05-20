@@ -510,12 +510,12 @@ public class TestJoinUtil extends LuceneTestCase {
 
       @Override
       public boolean equals(Object o) {
-        throw new AssertionError("not implemented");
+        return o == this;
       }
 
       @Override
       public int hashCode() {
-        throw new AssertionError("not implemented");
+        return System.identityHashCode(this);
       }
 
     };
