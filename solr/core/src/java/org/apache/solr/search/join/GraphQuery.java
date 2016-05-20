@@ -19,6 +19,7 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -450,7 +451,7 @@ public class GraphQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = classHash();
     result = prime * result + ((fromField == null) ? 0 : fromField.hashCode());
     result = prime * result + maxDepth;
     result = prime * result + (onlyLeafNodes ? 1231 : 1237);
@@ -463,43 +464,20 @@ public class GraphQuery extends Query {
   }
   
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    GraphQuery other = (GraphQuery) obj;
-    if (fromField == null) {
-      if (other.fromField != null)
-        return false;
-    } else if (!fromField.equals(other.fromField))
-      return false;
-    if (maxDepth != other.maxDepth)
-      return false;
-    if (onlyLeafNodes != other.onlyLeafNodes)
-      return false;
-    if (q == null) {
-      if (other.q != null)
-        return false;
-    } else if (!q.equals(other.q))
-      return false;
-    if (returnRoot != other.returnRoot)
-      return false;
-    if (toField == null) {
-      if (other.toField != null)
-        return false;
-    } else if (!toField.equals(other.toField))
-      return false;
-    if (traversalFilter == null) {
-      if (other.traversalFilter != null)
-        return false;
-    } else if (!traversalFilter.equals(other.traversalFilter))
-      return false;
-    if (useAutn != other.useAutn)
-      return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(GraphQuery other) {
+    return Objects.equals(fromField, other.fromField) &&
+           maxDepth == other.maxDepth &&
+           onlyLeafNodes == other.onlyLeafNodes &&
+           returnRoot == other.returnRoot &&
+           useAutn == other.useAutn &&
+           Objects.equals(q, other.q) &&
+           Objects.equals(toField, other.toField) &&
+           Objects.equals(traversalFilter, other.traversalFilter);
   }
   
 }
