@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
@@ -44,7 +45,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.carrot2.shaded.guava.common.base.Objects;
 
 public class TestQueryWrapperFilter extends LuceneTestCase {
 
@@ -69,7 +69,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     @Override
     public boolean equals(Object other) {
       return sameClassAs(other) &&
-             Objects.equal(in, getClass().cast(other).in);
+             Objects.equals(in, getClass().cast(other).in);
     }
 
     @Override
