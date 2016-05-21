@@ -148,18 +148,19 @@ public class BoostingQuery extends Query {
 
     @Override
     public int hashCode() {
-      return 31 * getClass().hashCode() + Objects.hash(match, context, boost);
+      return 31 * classHash() + Objects.hash(match, context, boost);
     }
 
     @Override
-    public boolean equals(Object obj) {
-    if (! sameClassAs(obj)) {
-        return false;
-      }
-      BoostingQuery that = (BoostingQuery) obj;
-      return match.equals(that.match)
-          && context.equals(that.context)
-          && Float.floatToIntBits(boost) == Float.floatToIntBits(that.boost);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(BoostingQuery other) {
+      return match.equals(other.match)
+          && context.equals(other.context)
+          && Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost);
     }
 
     @Override

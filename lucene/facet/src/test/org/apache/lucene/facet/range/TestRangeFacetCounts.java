@@ -658,17 +658,14 @@ public class TestRangeFacetCounts extends FacetTestCase {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (! sameClassAs(obj)) {
-        return false;
-      }
-      UsedQuery that = (UsedQuery) obj;
-      return in.equals(that.in);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             in.equals(((UsedQuery) other).in);
     }
 
     @Override
     public int hashCode() {
-      return 31 * getClass().hashCode() + in.hashCode();
+      return classHash() + in.hashCode();
     }
 
     @Override
