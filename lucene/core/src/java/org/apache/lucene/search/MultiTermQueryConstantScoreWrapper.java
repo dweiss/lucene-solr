@@ -91,17 +91,14 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   }
 
   @Override
-  public final boolean equals(final Object o) {
-    if (! sameClassAs(o)) {
-      return false;
-    }
-    final MultiTermQueryConstantScoreWrapper<?> that = (MultiTermQueryConstantScoreWrapper<?>) o;
-    return this.query.equals(that.query);
+  public final boolean equals(final Object other) {
+    return sameClassAs(other) &&
+           query.equals(((MultiTermQueryConstantScoreWrapper<?>) other).query);
   }
 
   @Override
   public final int hashCode() {
-    return 31 * getClass().hashCode() + query.hashCode();
+    return 31 * classHash() + query.hashCode();
   }
 
   /** Returns the encapsulated query */

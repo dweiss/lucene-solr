@@ -383,20 +383,22 @@ public class MultiPhraseQuery extends Query {
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (! sameClassAs(o)) {
-      return false;
-    }
-    MultiPhraseQuery other = (MultiPhraseQuery)o;
-    return this.slop == other.slop
-      && termArraysEquals(this.termArrays, other.termArrays) // terms equal implies field equal
-      && Arrays.equals(this.positions, other.positions);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(MultiPhraseQuery other) {
+    return this.slop == other.slop && 
+           termArraysEquals(this.termArrays, other.termArrays) && /* terms equal implies field equal */ 
+           Arrays.equals(this.positions, other.positions);
+
   }
 
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    return getClass().hashCode()
+    return classHash()
       ^ slop
       ^ termArraysHashCode() // terms equal implies field equal
       ^ Arrays.hashCode(positions);

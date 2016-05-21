@@ -257,12 +257,14 @@ public class TestSortRandom extends LuceneTestCase {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (! sameClassAs(obj)) {
-        return false;
-      }
-      RandomQuery other = (RandomQuery) obj;
-      return seed == other.seed && docValues == other.docValues;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+    
+    private boolean equalsTo(RandomQuery other) {
+      return seed == other.seed && 
+             docValues == other.docValues;
     }
 
     @Override

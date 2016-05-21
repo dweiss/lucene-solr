@@ -125,12 +125,12 @@ public class TestBooleanScorer extends LuceneTestCase {
 
     @Override
     public boolean equals(Object obj) {
-      return sameClassAs(obj);
+      return this == obj;
     }
 
     @Override
     public int hashCode() {
-      return getClass().hashCode();
+      return System.identityHashCode(this);
     }
   }
 

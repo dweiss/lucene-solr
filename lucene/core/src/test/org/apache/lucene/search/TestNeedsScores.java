@@ -145,20 +145,21 @@ public class TestNeedsScores extends LuceneTestCase {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = getClass().hashCode();
+      int result = classHash();
       result = prime * result + in.hashCode();
       result = prime * result + (value ? 1231 : 1237);
       return result;
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (! sameClassAs(obj)) {
-        return false;
-      }
-      AssertNeedsScores other = (AssertNeedsScores) obj;
-      return in.equals(other.in)
-          && value == other.value;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+    
+    private boolean equalsTo(AssertNeedsScores other) {
+      return in.equals(other.in) && 
+             value == other.value;
     }
 
     @Override

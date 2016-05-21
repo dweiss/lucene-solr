@@ -332,20 +332,20 @@ public abstract class MultiTermQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = getClass().hashCode();
+    int result = classHash();
     result = prime * result + rewriteMethod.hashCode();
     result = prime * result + field.hashCode();
     return result;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (! sameClassAs(obj)) {
-      return false;
-    }
-    MultiTermQuery other = (MultiTermQuery) obj;
-    return rewriteMethod.equals(other.rewriteMethod)
-        && field.equals(other.field);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
   }
- 
+
+  private boolean equalsTo(MultiTermQuery other) {
+    return rewriteMethod.equals(other.rewriteMethod) && 
+           field.equals(other.field);
+  }
 }
