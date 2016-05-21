@@ -407,7 +407,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = getClass().hashCode();
+      int result = classHash();
       result = prime * result + field.hashCode();
       result = prime * result + phrasedQueryStringContents.hashCode();
       result = prime * result + slopFactor;
@@ -416,19 +416,16 @@ public class ComplexPhraseQueryParser extends QueryParser {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (! sameClassAs(obj)) {
-        return false;
-      }
-      ComplexPhraseQuery other = (ComplexPhraseQuery) obj;
-      if (!field.equals(other.field))
-        return false;
-      if (!phrasedQueryStringContents
-          .equals(other.phrasedQueryStringContents))
-        return false;
-      if (slopFactor != other.slopFactor)
-        return false;
-      return inOrder == other.inOrder;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(ComplexPhraseQuery other) {
+      return field.equals(other.field) &&
+             phrasedQueryStringContents.equals(other.phrasedQueryStringContents) &&
+             slopFactor == other.slopFactor &&
+             inOrder == other.inOrder;
     }
   }
 }

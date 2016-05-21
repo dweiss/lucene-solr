@@ -50,22 +50,22 @@ abstract class RewriteQuery<SQ extends SrndQuery> extends Query {
 
   @Override
   public int hashCode() {
-    return getClass().hashCode()
-    ^ fieldName.hashCode()
-    ^ qf.hashCode()
-    ^ srndQuery.hashCode();
+    return classHash()
+      ^ fieldName.hashCode()
+      ^ qf.hashCode()
+      ^ srndQuery.hashCode();
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (! sameClassAs(obj)) {
-      return false;
-    }
-    @SuppressWarnings("unchecked") RewriteQuery<SQ> other = (RewriteQuery<SQ>)obj;
-    return fieldName.equals(other.fieldName)
-      && qf.equals(other.qf)
-      && srndQuery.equals(other.srndQuery);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
   }
 
+  private boolean equalsTo(RewriteQuery<?> other) {
+    return fieldName.equals(other.fieldName) && 
+           qf.equals(other.qf) && 
+           srndQuery.equals(other.srndQuery);
+  }
 }
 

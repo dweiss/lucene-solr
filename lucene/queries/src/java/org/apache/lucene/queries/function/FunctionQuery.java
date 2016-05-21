@@ -163,16 +163,13 @@ public class FunctionQuery extends Query {
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (! sameClassAs(o)) {
-      return false;
-    }
-    FunctionQuery other = (FunctionQuery)o;
-    return func.equals(other.func);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           func.equals(((FunctionQuery) other).func);
   }
 
   @Override
   public int hashCode() {
-    return getClass().hashCode() ^ func.hashCode();
+    return classHash() ^ func.hashCode();
   }
 }

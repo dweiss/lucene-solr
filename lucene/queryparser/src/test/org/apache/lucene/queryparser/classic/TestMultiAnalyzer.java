@@ -255,7 +255,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
      * the toString of the query it wraps.
      */
     private final static class DumbQueryWrapper extends Query {
-        Query q;
+        private Query q;
 
         public DumbQueryWrapper(Query q) {
             this.q = Objects.requireNonNull(q);
@@ -268,7 +268,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
         @Override
         public boolean equals(Object other) {
             return sameClassAs(other) &&
-                   Objects.equals(q, getClass().cast(other).q);
+                   Objects.equals(q, ((DumbQueryWrapper) other).q);
         }
 
         @Override

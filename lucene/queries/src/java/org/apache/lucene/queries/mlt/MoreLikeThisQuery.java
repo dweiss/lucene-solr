@@ -173,7 +173,7 @@ public class MoreLikeThisQuery extends Query {
     return maxQueryTerms == other.maxQueryTerms &&
            minDocFreq == other.minDocFreq &&
            minTermFrequency == other.minTermFrequency &&
-           percentTermsToMatch == other.percentTermsToMatch &&
+           Float.floatToIntBits(percentTermsToMatch) == Float.floatToIntBits(other.percentTermsToMatch) &&
            analyzer.equals(other.analyzer) &&
            fieldName.equals(other.fieldName) &&
            likeText.equals(other.likeText) &&

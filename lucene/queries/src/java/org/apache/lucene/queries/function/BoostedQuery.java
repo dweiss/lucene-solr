@@ -160,18 +160,19 @@ public final class BoostedQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! sameClassAs(o)) {
-      return false;
-    }
-    BoostedQuery other = (BoostedQuery)o;
-    return this.q.equals(other.q)
-           && this.boostVal.equals(other.boostVal);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(BoostedQuery other) {
+    return q.equals(other.q) &&
+           boostVal.equals(other.boostVal);
   }
 
   @Override
   public int hashCode() {
-    int h = getClass().hashCode();
+    int h = classHash();
     h = 31 * h + q.hashCode();
     h = 31 * h + boostVal.hashCode();
     return h;
