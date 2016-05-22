@@ -70,12 +70,12 @@ public class QueryUtils {
 
       @Override
       public boolean equals(Object o) {
-        return sameClassAs(o);
+        return o == this;
       }
 
       @Override
       public int hashCode() {
-        return getClass().hashCode();
+        return System.identityHashCode(this);
       }
 
     };

@@ -344,19 +344,20 @@ public class ToChildBlockJoinQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object _other) {
-    if (! sameClassAs(_other)) {
-      return false;
-    }
-    final ToChildBlockJoinQuery other = (ToChildBlockJoinQuery) _other;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(ToChildBlockJoinQuery other) {
     return origParentQuery.equals(other.origParentQuery) &&
-      parentsFilter.equals(other.parentsFilter);
+           parentsFilter.equals(other.parentsFilter);
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
-    int hash = getClass().hashCode();
+    int hash = classHash();
     hash = prime * hash + origParentQuery.hashCode();
     hash = prime * hash + parentsFilter.hashCode();
     return hash;

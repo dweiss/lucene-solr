@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -514,17 +515,18 @@ class JoinQuery extends Query {
     return this.fromField.equals(other.fromField)
         && this.toField.equals(other.toField)
         && this.q.equals(other.q)
-        && (this.fromIndex == other.fromIndex || this.fromIndex != null && this.fromIndex.equals(other.fromIndex))
+        && Objects.equals(fromIndex, other.fromIndex)
         && this.fromCoreOpenTime == other.fromCoreOpenTime;
   }
 
   @Override
   public int hashCode() {
     int h = classHash();
-    h = h * 31 + q.hashCode();
-    h = h * 31 + (int)fromCoreOpenTime;
     h = h * 31 + fromField.hashCode();
     h = h * 31 + toField.hashCode();
+    h = h * 31 + q.hashCode();
+    h = h * 31 + Objects.hashCode(fromIndex);
+    h = h * 31 + (int) fromCoreOpenTime;
     return h;
   }
 

@@ -452,17 +452,17 @@ public class GraphQuery extends Query {
   public int hashCode() {
     final int prime = 31;
     int result = classHash();
-    result = prime * result + ((fromField == null) ? 0 : fromField.hashCode());
+    result = prime * result + Objects.hashCode(fromField);
     result = prime * result + maxDepth;
     result = prime * result + (onlyLeafNodes ? 1231 : 1237);
-    result = prime * result + ((q == null) ? 0 : q.hashCode());
+    result = prime * result + Objects.hashCode(q);
     result = prime * result + (returnRoot ? 1231 : 1237);
-    result = prime * result + ((toField == null) ? 0 : toField.hashCode());
-    result = prime * result + ((traversalFilter == null) ? 0 : traversalFilter.hashCode());
+    result = prime * result + Objects.hashCode(toField);
+    result = prime * result + Objects.hashCode(traversalFilter);
     result = prime * result + (useAutn ? 1231 : 1237);
     return result;
   }
-  
+
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other) &&

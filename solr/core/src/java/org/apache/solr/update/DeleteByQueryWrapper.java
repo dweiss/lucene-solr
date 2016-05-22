@@ -100,8 +100,8 @@ final class DeleteByQueryWrapper extends Query {
   public int hashCode() {
     final int prime = 31;
     int result = classHash();
-    result = prime * result + ((in == null) ? 0 : in.hashCode());
-    result = prime * result + ((schema == null) ? 0 : schema.hashCode());
+    result = prime * result + Objects.hashCode(in);
+    result = prime * result + Objects.hashCode(schema);
     return result;
   }
 

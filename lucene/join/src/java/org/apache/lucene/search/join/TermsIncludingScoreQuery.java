@@ -86,25 +86,20 @@ class TermsIncludingScoreQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (! sameClassAs(obj)) {
-      return false;
-    }
-
-    TermsIncludingScoreQuery other = (TermsIncludingScoreQuery) obj;
-    if (!field.equals(other.field)) {
-      return false;
-    }
-    if (!unwrittenOriginalQuery.equals(other.unwrittenOriginalQuery)) {
-      return false;
-    }
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(TermsIncludingScoreQuery other) {
+    return field.equals(other.field) &&
+           unwrittenOriginalQuery.equals(other.unwrittenOriginalQuery);
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = getClass().hashCode();
+    int result = classHash();
     result += prime * field.hashCode();
     result += prime * unwrittenOriginalQuery.hashCode();
     return result;

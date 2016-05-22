@@ -115,23 +115,19 @@ final class PointInGeo3DShapeQuery extends Query {
   }
 
   @Override
-  @SuppressWarnings({"unchecked","rawtypes"})
-  public boolean equals(Object o) {
-    if (! sameClassAs(o)) {
-      return false;
-    }
-
-    PointInGeo3DShapeQuery that = (PointInGeo3DShapeQuery) o;
-    if (field.equals(that.field) == false) {
-      return false;
-    }
-
-    return shape.equals(that.shape);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(PointInGeo3DShapeQuery other) {
+    return field.equals(other.field) &&
+           shape.equals(other.shape);
   }
 
   @Override
   public int hashCode() {
-    int result = getClass().hashCode();
+    int result = classHash();
     result = 31 * result + field.hashCode();
     result = 31 * result + shape.hashCode();
     return result;

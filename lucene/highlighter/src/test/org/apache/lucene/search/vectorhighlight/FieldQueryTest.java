@@ -928,14 +928,13 @@ public class FieldQueryTest extends AbstractTestCase {
       }
       @Override
       public boolean equals(Object o) {
-        throw new AssertionError("equals should not be used");
+        throw new AssertionError();
       }
 
       @Override
       public int hashCode() {
-        throw new AssertionError("hashCode should not be used");
+        throw new AssertionError();
       }
-
     };
     make1d1fIndex( "a" );
     assertNotNull(reader);
