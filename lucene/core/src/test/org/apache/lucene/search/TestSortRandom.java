@@ -271,7 +271,7 @@ public class TestSortRandom extends LuceneTestCase {
     public int hashCode() {
       int h = Objects.hash(seed, density);
       h = 31 * h + System.identityHashCode(docValues);
-      h = 31 * h + getClass().hashCode();
+      h = 31 * h + classHash();
       return h;
     }
   }

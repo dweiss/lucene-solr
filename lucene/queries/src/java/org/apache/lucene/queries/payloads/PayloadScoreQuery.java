@@ -94,21 +94,21 @@ public class PayloadScoreQuery extends SpanQuery {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! sameClassAs(o)) {
-      return false;
-    }
-    PayloadScoreQuery that = (PayloadScoreQuery) o;
-
-    return wrappedQuery.equals(that.wrappedQuery)
-        && function.equals(that.function);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(PayloadScoreQuery other) {
+    return wrappedQuery.equals(other.wrappedQuery) && 
+           function.equals(other.function);
   }
 
   @Override
   public int hashCode() {
-    int result = getClass().hashCode();
-    result = 31 * result + (wrappedQuery != null ? wrappedQuery.hashCode() : 0);
-    result = 31 * result + (function != null ? function.hashCode() : 0);
+    int result = classHash();
+    result = 31 * result + Objects.hashCode(wrappedQuery);
+    result = 31 * result + Objects.hashCode(function);
     return result;
   }
 

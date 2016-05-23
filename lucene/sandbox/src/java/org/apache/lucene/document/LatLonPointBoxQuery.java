@@ -215,7 +215,7 @@ abstract class LatLonPointBoxQuery extends Query {
 
   @Override
   public final int hashCode() {
-    int hash = getClass().hashCode();
+    int hash = classHash();
     hash = 31 * hash + field.hashCode();
     hash = 31 * hash + Arrays.hashCode(lowerPoint);
     hash = 31 * hash + Arrays.hashCode(upperPoint);

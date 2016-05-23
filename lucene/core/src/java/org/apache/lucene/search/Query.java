@@ -109,7 +109,7 @@ public abstract class Query {
     return other != null && getClass() == other.getClass();
   }
 
-  private final int CLASS_NAME_HASH = getClass().hashCode();
+  private final int CLASS_NAME_HASH = getClass().getName().hashCode();
 
   /**
    * Provides a constant integer for a given class, derived from the name of the class.

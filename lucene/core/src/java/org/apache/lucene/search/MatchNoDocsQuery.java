@@ -43,6 +43,6 @@ public class MatchNoDocsQuery extends Query {
 
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    return classHash();
   }
 }

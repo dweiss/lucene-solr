@@ -254,20 +254,20 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! sameClassAs(o)) {
-      return false;
-    }
-    final SpanNearQuery spanNearQuery = (SpanNearQuery) o;
-
-    return (inOrder == spanNearQuery.inOrder)
-        && (slop == spanNearQuery.slop)
-        && clauses.equals(spanNearQuery.clauses);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(SpanNearQuery other) {
+    return inOrder == other.inOrder && 
+           slop == other.slop &&
+           clauses.equals(other.clauses);
   }
 
   @Override
   public int hashCode() {
-    int result = getClass().hashCode();
+    int result = classHash();
     result ^= clauses.hashCode();
     result += slop;
     int fac = 1 + (inOrder ? 8 : 4);
@@ -322,19 +322,19 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (! sameClassAs(o)) {
-        return false;
-      }
-      final SpanGapQuery spanGapQuery = (SpanGapQuery) o;
-
-      return (width == spanGapQuery.width)
-          && field.equals(spanGapQuery.field);
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+    
+    private boolean equalsTo(SpanGapQuery other) {
+      return width == other.width &&
+             field.equals(other.field);
     }
 
     @Override
     public int hashCode() {
-      int result = 7 * getClass().hashCode();
+      int result = classHash();
       result -= 7 * width;
       return result * 15 - field.hashCode();
     }

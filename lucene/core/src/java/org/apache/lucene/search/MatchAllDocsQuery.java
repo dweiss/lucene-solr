@@ -79,6 +79,6 @@ public final class MatchAllDocsQuery extends Query {
 
   @Override
   public int hashCode() {
-    return getClass().hashCode();
+    return classHash();
   }
 }
