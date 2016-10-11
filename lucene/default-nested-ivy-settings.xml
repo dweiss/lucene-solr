@@ -29,7 +29,10 @@
   <include url="${ivy.default.settings.dir}/ivysettings-local.xml"/>
   <include url="${ivy.default.settings.dir}/ivysettings-main-chain.xml"/>
 
-  <caches lockStrategy="${ivy.lock-strategy}" resolutionCacheDir="${ivy.resolution-cache.dir}" />
+  <caches lockStrategy="${ivy.lock-strategy}" resolutionCacheDir="${ivy.resolution-cache.dir}">
+    <cache name="main" basedir="${ivy.settings.dir}/ivycache" />
+    <cache name="nocache" useOrigin="true" />
+  </caches>
 
   <resolvers>
     <ibiblio name="sonatype-releases" root="https://oss.sonatype.org/content/repositories/releases" m2compatible="true" />
@@ -39,16 +42,14 @@
     <!-- you might need to tweak this from china so it works -->
     <ibiblio name="working-chinese-mirror" root="http://uk.maven.org/maven2" m2compatible="true" />
 
-    <filesystem name="local-maven-2" m2compatible="true" local="true">
-      <artifact
-          pattern="${local-maven2-dir}/[organisation]/[module]/[revision]/[module]-[revision].[ext]" />
-      <ivy
-          pattern="${local-maven2-dir}/[organisation]/[module]/[revision]/[module]-[revision].pom" />
+    <filesystem name="local-maven-2" m2compatible="true" local="true" cache="nocache">
+      <artifact pattern="${local-maven2-dir}/[organisation]/[module]/[revision]/[module]-[revision].[ext]" />
+      <ivy      pattern="${local-maven2-dir}/[organisation]/[module]/[revision]/[module]-[revision].pom" />
     </filesystem>
 
     <chain name="default" returnFirst="true" checkmodified="true" changingPattern=".*SNAPSHOT">
       <resolver ref="local"/>
-      <!-- <resolver ref="local-maven-2" /> -->
+      <resolver ref="local-maven-2" />
       <resolver ref="main"/>
       <resolver ref="maven.restlet.org" />
       <resolver ref="sonatype-releases" />
