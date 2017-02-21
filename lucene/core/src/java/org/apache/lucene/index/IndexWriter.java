@@ -65,7 +65,6 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
@@ -276,7 +275,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   private final Directory directoryOrig;       // original user directory
   private final Directory directory;           // wrapped with additional checks
-  private final Directory mergeDirectory;      // wrapped with throttling: used for merging
+  //private final Directory mergeDirectory;      // wrapped with throttling: used for merging
   private final Analyzer analyzer;    // how to analyze text
 
   private final AtomicLong changeCount = new AtomicLong(); // increments every time a change is completed
@@ -351,8 +350,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  much like how hotels place an "authorization hold" on your credit
    *  card to make sure they can later charge you when you check out. */
   final AtomicLong pendingNumDocs = new AtomicLong();
-
-  final CloseableThreadLocal<MergeRateLimiter> rateLimiters = new CloseableThreadLocal<>();
 
   DirectoryReader getReader() throws IOException {
     return getReader(true, false);
@@ -807,10 +804,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     try {
       directoryOrig = d;
       directory = new LockValidatingDirectoryWrapper(d, writeLock);
-
-      // Directory we use for merging, so we can abort running merges, and so
-      // merge schedulers can optionally rate-limit per-merge IO:
-      mergeDirectory = addMergeRateLimiters(directory);
 
       analyzer = config.getAnalyzer();
       mergeScheduler = config.getMergeScheduler();
@@ -2212,8 +2205,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     try {
       abortMerges();
 
-      rateLimiters.close();
-
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "rollback: done finish merges");
       }
@@ -2822,8 +2813,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       SegmentMerger merger = new SegmentMerger(Arrays.asList(readers), info, infoStream, trackingDir,
                                                globalFieldNumberMap, 
                                                context);
-      
-      rateLimiters.set(new MergeRateLimiter(null));
 
       if (!merger.shouldMerge()) {
         return docWriter.deleteQueue.getNextSequenceNumber();
@@ -2854,6 +2843,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Now create the compound file if needed
       if (useCompoundFile) {
         Collection<String> filesToDelete = infoPerCommit.files();
+        Directory mergeDirectory = wrapForMerge(directory, new MergeRateLimiter(null));
         TrackingDirectoryWrapper trackingCFSDir = new TrackingDirectoryWrapper(mergeDirectory);
         // TODO: unlike merge, on exception we arent sniping any trash cfs files here?
         // createCompoundFile tries to cleanup, but it might not always be able to...
@@ -3895,7 +3885,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     boolean success = false;
 
-    rateLimiters.set(merge.rateLimiter);
+    //rateLimiters.set(merge.rateLimiter);
 
     final long t0 = System.currentTimeMillis();
 
@@ -4229,9 +4219,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  but without holding synchronized lock on IndexWriter
    *  instance */
   private int mergeMiddle(MergePolicy.OneMerge merge, MergePolicy mergePolicy) throws IOException {
-
     merge.rateLimiter.checkAbort();
 
+    Directory mergeDirectory = wrapForMerge(directory, merge.rateLimiter);
     List<SegmentCommitInfo> sourceSegments = merge.segments;
     
     IOContext context = new IOContext(merge.getStoreMergeInfo());
@@ -5055,7 +5045,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   /** Wraps the incoming {@link Directory} so that we assign a per-thread
    *  {@link MergeRateLimiter} to all created {@link IndexOutput}s. */
-  private Directory addMergeRateLimiters(Directory in) {
+  private Directory wrapForMerge(Directory in, MergeRateLimiter rateLimiter) {
+    assert rateLimiter != null;
     return new FilterDirectory(in) {
       @Override
       public IndexOutput createOutput(String name, IOContext context) throws IOException {
@@ -5068,9 +5059,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         // so all writes should have MERGE context, else there is a bug 
         // somewhere that is failing to pass down the right IOContext:
         assert context.context == IOContext.Context.MERGE: "got context=" + context.context;
-
-        MergeRateLimiter rateLimiter = rateLimiters.get();
-        assert rateLimiter != null;
 
         return new RateLimitedIndexOutput(rateLimiter, in.createOutput(name, context));
       }

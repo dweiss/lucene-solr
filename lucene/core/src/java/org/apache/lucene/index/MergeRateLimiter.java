@@ -48,6 +48,7 @@ public class MergeRateLimiter extends RateLimiter {
   private static enum PauseResult {NO, STOPPED, PAUSED};
 
   /** Sole constructor. */
+  // TODO: move aborting to OneMerge; then merge attr is no longer required.
   public MergeRateLimiter(MergePolicy.OneMerge merge) {
     this.merge = merge;
 
