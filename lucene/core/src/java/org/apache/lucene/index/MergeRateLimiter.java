@@ -42,16 +42,12 @@ public class MergeRateLimiter extends RateLimiter {
   private boolean abort;
   long totalPausedNS;
   long totalStoppedNS;
-  final MergePolicy.OneMerge merge;
 
   /** Returned by {@link #maybePause}. */
   private static enum PauseResult {NO, STOPPED, PAUSED};
 
   /** Sole constructor. */
-  // TODO: move aborting to OneMerge; then merge attr is no longer required.
-  public MergeRateLimiter(MergePolicy.OneMerge merge) {
-    this.merge = merge;
-
+  public MergeRateLimiter() {
     // Initially no IO limit; use setter here so minPauseCheckBytes is set:
     setMBPerSec(Double.POSITIVE_INFINITY);
   }
@@ -176,7 +172,7 @@ public class MergeRateLimiter extends RateLimiter {
   /** Throws {@link MergePolicy.MergeAbortedException} if this merge was aborted. */
   public synchronized void checkAbort() throws MergePolicy.MergeAbortedException {
     if (abort) {
-      throw new MergePolicy.MergeAbortedException("merge is aborted: " + merge.segString());
+      throw new MergePolicy.MergeAbortedException("merge is aborted.");
     }
   }
 

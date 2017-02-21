@@ -2843,7 +2843,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Now create the compound file if needed
       if (useCompoundFile) {
         Collection<String> filesToDelete = infoPerCommit.files();
-        Directory mergeDirectory = wrapForMerge(directory, new MergeRateLimiter(null));
+        Directory mergeDirectory = wrapForMerge(directory, new MergeRateLimiter());
         TrackingDirectoryWrapper trackingCFSDir = new TrackingDirectoryWrapper(mergeDirectory);
         // TODO: unlike merge, on exception we arent sniping any trash cfs files here?
         // createCompoundFile tries to cleanup, but it might not always be able to...

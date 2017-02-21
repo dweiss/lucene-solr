@@ -105,8 +105,7 @@ public abstract class MergePolicy {
         count += info.info.maxDoc();
       }
       totalMaxDoc = count;
-
-      rateLimiter = new MergeRateLimiter(this);
+      rateLimiter = new MergeRateLimiter();
     }
 
     /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
