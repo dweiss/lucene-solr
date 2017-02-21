@@ -87,7 +87,9 @@ public abstract class MergePolicy {
     public final List<SegmentCommitInfo> segments;
 
     /** A private {@link RateLimiter} for this merge, used to rate limit writes and abort. */
-    public final MergeRateLimiter rateLimiter;
+    // TODO: this should be moved to a mergepolicy/mergescheduler-specific subclass so that
+    // they can maintain how the throughput is measured and controlled.
+    final MergeRateLimiter rateLimiter;
 
     volatile long mergeStartNS = -1;
 
@@ -200,10 +202,12 @@ public abstract class MergePolicy {
     }
 
     public boolean isAborted() {
+      // TODO: move from rateLimiter to this class, ideally.
       return rateLimiter.getAbort();
     }
 
     public void setAborted() {
+      // TODO: move from rateLimiter to this class, ideally.
       this.rateLimiter.setAbort();
     }
 
