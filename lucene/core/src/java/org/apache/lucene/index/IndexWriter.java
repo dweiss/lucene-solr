@@ -50,16 +50,13 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.LockValidatingDirectoryWrapper;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
@@ -2409,7 +2406,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now abort pending merge " + segString(merge.segments));
       }
-      merge.rateLimiter.setAbort();
+      merge.setAborted();
       mergeFinish(merge);
     }
     pendingMerges.clear();
@@ -2418,7 +2415,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "now abort running merge " + segString(merge.segments));
       }
-      merge.rateLimiter.setAbort();
+      merge.setAborted();
     }
 
     // We wait here to make all merges stop.  It should not
@@ -2843,8 +2840,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Now create the compound file if needed
       if (useCompoundFile) {
         Collection<String> filesToDelete = infoPerCommit.files();
-        Directory mergeDirectory = wrapForMerge(directory, new MergeRateLimiter());
-        TrackingDirectoryWrapper trackingCFSDir = new TrackingDirectoryWrapper(mergeDirectory);
+        // TODO: no throughput control after changes; should we comply with merge scheduler/ policy here?
+        TrackingDirectoryWrapper trackingCFSDir = new TrackingDirectoryWrapper(directory);
         // TODO: unlike merge, on exception we arent sniping any trash cfs files here?
         // createCompoundFile tries to cleanup, but it might not always be able to...
         try {
@@ -3725,7 +3722,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     // deleter.refresh() call that will remove any index
     // file that current segments does not reference), we
     // abort this merge
-    if (merge.rateLimiter.getAbort()) {
+    if (merge.isAborted()) {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "commitMerge: skip: it was aborted");
       }
@@ -3917,7 +3914,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "hit exception during merge");
             }
-          } else if (merge.rateLimiter.getAbort() == false && (merge.maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS || (!closed && !closing))) {
+          } else if (!merge.isAborted() && (merge.maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS || (!closed && !closing))) {
             // This merge (and, generally, any change to the
             // segments) may now enable new merges, so we call
             // merge policy & update pending merges.
@@ -3931,7 +3928,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       tragicEvent(t, "merge");
     }
 
-    if (merge.info != null && merge.rateLimiter.getAbort() == false) {
+    if (merge.info != null && merge.isAborted() == false) {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.info.maxDoc() + " docs");
       }
@@ -3956,7 +3953,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     assert merge.segments.size() > 0;
 
     if (stopMerges) {
-      merge.rateLimiter.setAbort();
+      merge.setAborted();
       throw new MergePolicy.MergeAbortedException("merge is aborted: " + segString(merge.segments));
     }
 
@@ -4067,7 +4064,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       return;
     }
 
-    if (merge.rateLimiter.getAbort()) {
+    if (merge.isAborted()) {
       return;
     }
 
@@ -4219,9 +4216,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  but without holding synchronized lock on IndexWriter
    *  instance */
   private int mergeMiddle(MergePolicy.OneMerge merge, MergePolicy mergePolicy) throws IOException {
-    merge.rateLimiter.checkAbort();
+    merge.checkAborted();
 
-    Directory mergeDirectory = wrapForMerge(directory, merge.rateLimiter);
+    Directory mergeDirectory = merge.wrapForMerge(directory);
     List<SegmentCommitInfo> sourceSegments = merge.segments;
     
     IOContext context = new IOContext(merge.getStoreMergeInfo());
@@ -4319,7 +4316,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
                                                      globalFieldNumberMap, 
                                                      context);
 
-      merge.rateLimiter.checkAbort();
+      merge.checkAborted();
 
       merge.mergeStartNS = System.nanoTime();
 
@@ -5041,28 +5038,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private void tooManyDocs(long addedNumDocs) {
     assert addedNumDocs >= 0;
     throw new IllegalArgumentException("number of documents in the index cannot exceed " + actualMaxDocs + " (current document count is " + pendingNumDocs.get() + "; added numDocs is " + addedNumDocs + ")");
-  }
-
-  /** Wraps the incoming {@link Directory} so that we assign a per-thread
-   *  {@link MergeRateLimiter} to all created {@link IndexOutput}s. */
-  private Directory wrapForMerge(Directory in, MergeRateLimiter rateLimiter) {
-    assert rateLimiter != null;
-    return new FilterDirectory(in) {
-      @Override
-      public IndexOutput createOutput(String name, IOContext context) throws IOException {
-        ensureOpen();
-
-        // Paranoia defense: if this trips we have a bug somewhere...
-        IndexWriter.this.ensureOpen(false);
-
-        // This Directory is only supposed to be used during merging,
-        // so all writes should have MERGE context, else there is a bug 
-        // somewhere that is failing to pass down the right IOContext:
-        assert context.context == IOContext.Context.MERGE: "got context=" + context.context;
-
-        return new RateLimitedIndexOutput(rateLimiter, in.createOutput(name, context));
-      }
-    };
   }
 
   /** Returns the highest <a href="#sequence_number">sequence number</a> across

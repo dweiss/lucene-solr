@@ -23,7 +23,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MergeInfo;
+import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.RateLimiter;
 
 /**
@@ -193,7 +197,42 @@ public abstract class MergePolicy {
     /** Return {@link MergeInfo} describing this merge. */
     public MergeInfo getStoreMergeInfo() {
       return new MergeInfo(totalMaxDoc, estimatedMergeBytes, isExternal, maxNumSegments);
-    }    
+    }
+
+    public boolean isAborted() {
+      return rateLimiter.getAbort();
+    }
+
+    public void setAborted() {
+      this.rateLimiter.setAbort();
+    }
+
+    public void checkAborted() throws MergeAbortedException {
+      if (isAborted()) {
+        throw new MergePolicy.MergeAbortedException("merge is aborted: " + segString());
+      }
+    }
+
+    /** Wraps the incoming {@link Directory} so that we assign a per-thread
+     *  {@link MergeRateLimiter} to all created {@link IndexOutput}s. */
+    public Directory wrapForMerge(Directory in) {
+      // by default it'd be a no-op; merge policy and merge scheduler could cooperate to implement
+      // throughput handling? This could also be a function given the the constructor.
+      assert rateLimiter != null;
+      return new FilterDirectory(in) {
+        @Override
+        public IndexOutput createOutput(String name, IOContext context) throws IOException {
+          ensureOpen();
+
+          // This Directory is only supposed to be used during merging,
+          // so all writes should have MERGE context, else there is a bug 
+          // somewhere that is failing to pass down the right IOContext:
+          assert context.context == IOContext.Context.MERGE: "got context=" + context.context;
+
+          return new RateLimitedIndexOutput(rateLimiter, in.createOutput(name, context));
+        }
+      };
+    }
   }
 
   /**

@@ -449,7 +449,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     Thread currentThread = Thread.currentThread();
     int count = 0;
     for (MergeThread mergeThread : mergeThreads) {
-      if (currentThread != mergeThread && mergeThread.isAlive() && mergeThread.merge.rateLimiter.getAbort() == false) {
+      if (currentThread != mergeThread && mergeThread.isAlive() && mergeThread.merge.isAborted() == false) {
         count++;
       }
     }
