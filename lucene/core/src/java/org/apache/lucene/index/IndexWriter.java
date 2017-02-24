@@ -4222,7 +4222,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private int mergeMiddle(MergePolicy.OneMerge merge, MergePolicy mergePolicy) throws IOException {
     merge.checkAborted();
 
-    Directory mergeDirectory = merge.wrapForMerge(directory);
+    Directory mergeDirectory = config.getMergeScheduler().wrapForMerge(merge, directory);
     List<SegmentCommitInfo> sourceSegments = merge.segments;
     
     IOContext context = new IOContext(merge.getStoreMergeInfo());

@@ -25,6 +25,11 @@ import java.util.Locale;
 import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.RateLimitedIndexOutput;
+import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -255,6 +260,31 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     assert false: "merge thread " + currentThread + " was not found";
   }
 
+  @Override
+  public Directory wrapForMerge(OneMerge merge, Directory in) {
+    if (!MergeThread.class.isInstance(Thread.currentThread())) {
+      throw new AssertionError("wrapForMerge should be called from MergeThread. Current thread: "
+          + Thread.currentThread());
+    }
+
+    // by default it'd be a no-op; merge policy and merge scheduler could cooperate to implement
+    // throughput handling? This could also be a function given the the constructor.
+    RateLimiter rateLimiter = new MergeRateLimiter(merge.getMergeProgress());
+    return new FilterDirectory(in) {
+      @Override
+      public IndexOutput createOutput(String name, IOContext context) throws IOException {
+        ensureOpen();
+
+        // This Directory is only supposed to be used during merging,
+        // so all writes should have MERGE context, else there is a bug 
+        // somewhere that is failing to pass down the right IOContext:
+        assert context.context == IOContext.Context.MERGE: "got context=" + context.context;
+
+        return new RateLimitedIndexOutput(rateLimiter, in.createOutput(name, context));
+      }
+    };
+  }
+  
   /**
    * Called whenever the running merges have changed, to set merge IO limits.
    * This method sorts the merge threads by their merge size in
@@ -327,7 +357,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         newMBPerSec = targetMBPerSec;
       }
 
-      MergeRateLimiter rateLimiter = merge.getRateLimiter();
+      MergeRateLimiter rateLimiter = mergeThread.rateLimiter;
       double curMBPerSec = rateLimiter.getMBPerSec();
 
       if (verbose()) {
@@ -498,8 +528,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         return;
       }
 
-      updateIOThrottle(merge);
-
       boolean success = false;
       try {
         if (verbose()) {
@@ -599,16 +627,17 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Runs a merge thread to execute a single merge, then exits. */
   protected class MergeThread extends Thread implements Comparable<MergeThread> {
-
     final IndexWriter writer;
     final OneMerge merge;
+    final MergeRateLimiter rateLimiter;
 
     /** Sole constructor. */
     public MergeThread(IndexWriter writer, OneMerge merge) {
       this.writer = writer;
       this.merge = merge;
+      this.rateLimiter = new MergeRateLimiter(merge.getMergeProgress());
     }
-    
+
     @Override
     public int compareTo(MergeThread other) {
       // Larger merges sort first:
@@ -617,13 +646,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
     @Override
     public void run() {
-
       try {
-
         if (verbose()) {
           message("  merge thread: start");
         }
 
+        updateIOThrottle(merge, rateLimiter);
         doMerge(writer, merge);
 
         if (verbose()) {
@@ -716,7 +744,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   /** Tunes IO throttle when a new merge starts. */
-  private synchronized void updateIOThrottle(OneMerge newMerge) throws IOException {
+  private synchronized void updateIOThrottle(OneMerge newMerge, MergeRateLimiter rateLimiter) throws IOException {
     if (doAutoIOThrottle == false) {
       return;
     }
@@ -795,7 +823,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     } else {
       rate = targetMBPerSec;
     }
-    newMerge.getRateLimiter().setMBPerSec(rate);
+    rateLimiter.setMBPerSec(rate);
     targetMBPerSecChanged();
   }
 

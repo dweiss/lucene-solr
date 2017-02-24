@@ -31,12 +31,7 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FilterDirectory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.store.RateLimitedIndexOutput;
-import org.apache.lucene.store.RateLimiter;
 
 /**
  * <p>Expert: a MergePolicy determines the sequence of
@@ -197,12 +192,6 @@ public abstract class MergePolicy {
      */
     private final OneMergeProgress mergeProgress;
 
-    /** 
-     * A private {@link RateLimiter} for this merge, used to rate limit writes and abort. By default
-     * this {@link RateLimiter} is returned from {@link #wrapForMerge(CodecReader)} 
-     */
-    private final MergeRateLimiter rateLimiter;
-
     volatile long mergeStartNS = -1;
 
     /** Total number of documents in segments to be merged, not accounting for deletions. */
@@ -225,7 +214,6 @@ public abstract class MergePolicy {
       totalMaxDoc = count;
 
       mergeProgress = new OneMergeProgress();
-      rateLimiter = new MergeRateLimiter(mergeProgress);
     }
 
     /** 
@@ -335,31 +323,6 @@ public abstract class MergePolicy {
       if (isAborted()) {
         throw new MergePolicy.MergeAbortedException("merge is aborted: " + segString());
       }
-    }
-
-    public MergeRateLimiter getRateLimiter() {
-      return rateLimiter;
-    }
-
-    /** Wraps the incoming {@link Directory} so that we assign a per-thread
-     *  {@link MergeRateLimiter} to all created {@link IndexOutput}s. */
-    public Directory wrapForMerge(Directory in) {
-      // by default it'd be a no-op; merge policy and merge scheduler could cooperate to implement
-      // throughput handling? This could also be a function given the the constructor.
-      assert rateLimiter != null;
-      return new FilterDirectory(in) {
-        @Override
-        public IndexOutput createOutput(String name, IOContext context) throws IOException {
-          ensureOpen();
-
-          // This Directory is only supposed to be used during merging,
-          // so all writes should have MERGE context, else there is a bug 
-          // somewhere that is failing to pass down the right IOContext:
-          assert context.context == IOContext.Context.MERGE: "got context=" + context.context;
-
-          return new RateLimitedIndexOutput(rateLimiter, in.createOutput(name, context));
-        }
-      };
     }
 
     /**
