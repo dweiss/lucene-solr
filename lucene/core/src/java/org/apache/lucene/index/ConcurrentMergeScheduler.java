@@ -327,8 +327,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         newMBPerSec = targetMBPerSec;
       }
 
-      double curMBPerSec = merge.rateLimiter.getMBPerSec();
-      
+      MergeRateLimiter rateLimiter = merge.getRateLimiter();
+      double curMBPerSec = rateLimiter.getMBPerSec();
+
       if (verbose()) {
         long mergeStartNS = merge.mergeStartNS;
         if (mergeStartNS == -1) {
@@ -339,11 +340,11 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         message.append(String.format(Locale.ROOT, "merge thread %s estSize=%.1f MB (written=%.1f MB) runTime=%.1fs (stopped=%.1fs, paused=%.1fs) rate=%s\n",
                                      mergeThread.getName(),
                                      bytesToMB(merge.estimatedMergeBytes),
-                                     bytesToMB(merge.rateLimiter.getTotalBytesWritten()),
+                                     bytesToMB(rateLimiter.getTotalBytesWritten()),
                                      nsToSec(now - mergeStartNS),
-                                     nsToSec(merge.rateLimiter.getTotalStoppedNS()),
-                                     nsToSec(merge.rateLimiter.getTotalPausedNS()),
-                                     rateToString(merge.rateLimiter.getMBPerSec())));
+                                     nsToSec(rateLimiter.getTotalStoppedNS()),
+                                     nsToSec(rateLimiter.getTotalPausedNS()),
+                                     rateToString(rateLimiter.getMBPerSec())));
 
         if (newMBPerSec != curMBPerSec) {
           if (newMBPerSec == 0.0) {
@@ -364,7 +365,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         }
       }
 
-      merge.rateLimiter.setMBPerSec(newMBPerSec);
+      rateLimiter.setMBPerSec(newMBPerSec);
     }
     if (verbose()) {
       message(message.toString());
@@ -794,7 +795,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     } else {
       rate = targetMBPerSec;
     }
-    newMerge.rateLimiter.setMBPerSec(rate);
+    newMerge.getRateLimiter().setMBPerSec(rate);
     targetMBPerSecChanged();
   }
 

@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.store.Directory;
@@ -88,6 +89,8 @@ public abstract class MergePolicy {
     
     private volatile boolean aborted;
 
+    private Thread owner;
+
     public OneMergeProgress() {
       // Place all the pause reasons in there immediately so that we can simply update values.
       pauseTimes = new EnumMap<PauseReason,AtomicLong>(PauseReason.class);
@@ -114,14 +117,23 @@ public abstract class MergePolicy {
 
     /**
      * Pauses the calling thread for at least <code>pauseNanos<code> nanoseconds
-     * unless the merge is aborted in which case returns immediately. 
+     * unless the merge is aborted in which case returns immediately.
+     * 
+     * @param condition The pause condition (should return true, unless the pause should 
+     *    terminate earlier). This prevents returning too early in case of spurious wakeups.
      */
-    public void pauseNanos(long pauseNanos, PauseReason reason) throws InterruptedException {
+    public void pauseNanos(long pauseNanos, PauseReason reason, BooleanSupplier condition) throws InterruptedException {
+      if (Thread.currentThread() != owner) {
+        throw new RuntimeException("Only the merge owner thread can call pauseNanos(). This thread: "
+            + Thread.currentThread().getName() + ", owner thread: "
+            + owner);
+      }
+
       long start = System.nanoTime();
       AtomicLong timeUpdate = pauseTimes.get(reason);
       pauseLock.lock();
       try {
-        while (pauseNanos > 0 && !aborted) {
+        while (pauseNanos > 0 && !aborted && condition.getAsBoolean()) {
           pauseNanos = pausing.awaitNanos(pauseNanos);
         }
       } finally {
@@ -148,6 +160,10 @@ public abstract class MergePolicy {
           .collect(Collectors.toMap(
               (e) -> e.getKey(),
               (e) -> e.getValue().get()));
+    }
+
+    final void setMergeThread(Thread owner) {
+      this.owner = owner;
     }
   }
 
@@ -212,6 +228,14 @@ public abstract class MergePolicy {
       rateLimiter = new MergeRateLimiter(mergeProgress);
     }
 
+    /** 
+     * Called by {@link IndexWriter} after the merge started and from the
+     * thread that will be executing the merge.
+     */
+    public void mergeInit() throws IOException {
+      mergeProgress.setMergeThread(Thread.currentThread());
+    }
+    
     /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
     public void mergeFinished() throws IOException {
     }
@@ -311,6 +335,10 @@ public abstract class MergePolicy {
       if (isAborted()) {
         throw new MergePolicy.MergeAbortedException("merge is aborted: " + segString());
       }
+    }
+
+    public MergeRateLimiter getRateLimiter() {
+      return rateLimiter;
     }
 
     /** Wraps the incoming {@link Directory} so that we assign a per-thread

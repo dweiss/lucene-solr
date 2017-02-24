@@ -35,6 +35,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -3885,8 +3886,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     boolean success = false;
 
-    //rateLimiters.set(merge.rateLimiter);
-
     final long t0 = System.currentTimeMillis();
 
     final MergePolicy mergePolicy = config.getMergePolicy();
@@ -4066,6 +4065,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // mergeInit already done
       return;
     }
+
+    merge.mergeInit();
 
     if (merge.isAborted()) {
       return;
@@ -4334,11 +4335,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
       if (infoStream.isEnabled("IW")) {
         if (merger.shouldMerge()) {
+          String pauseInfo = merge.getMergeProgress().getPauseTimes().entrySet()
+            .stream()
+            .filter((e) -> e.getValue() > 0)
+            .map((e) -> String.format(Locale.ROOT, "%.1f sec %s", 
+                e.getValue() / 1000000000., 
+                e.getKey().name().toLowerCase(Locale.ROOT)))
+            .collect(Collectors.joining(", "));
+          if (!pauseInfo.isEmpty()) {
+            pauseInfo = " (" + pauseInfo + ")";
+          }
+
           long t1 = System.nanoTime();
           double sec = (t1-merge.mergeStartNS)/1000000000.;
           double segmentMB = (merge.info.sizeInBytes()/1024./1024.);
-          double stoppedSec = merge.rateLimiter.getTotalStoppedNS()/1000000000.;
-          double throttleSec = merge.rateLimiter.getTotalPausedNS()/1000000000.;
           infoStream.message("IW", "merge codec=" + codec + " maxDoc=" + merge.info.info.maxDoc() + "; merged segment has " +
                              (mergeState.mergeFieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
                              (mergeState.mergeFieldInfos.hasNorms() ? "norms" : "no norms") + "; " + 
@@ -4347,10 +4357,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
                              (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs") + "; " +
                              (mergeState.mergeFieldInfos.hasPointValues() ? "points" : "no points") + "; " +
                              String.format(Locale.ROOT,
-                                           "%.1f sec (%.1f sec stopped, %.1f sec paused) to merge segment [%.2f MB, %.2f MB/sec]",
+                                           "%.1f sec%s to merge segment [%.2f MB, %.2f MB/sec]",
                                            sec,
-                                           stoppedSec,
-                                           throttleSec,
+                                           pauseInfo,
                                            segmentMB,
                                            segmentMB / sec));
         } else {

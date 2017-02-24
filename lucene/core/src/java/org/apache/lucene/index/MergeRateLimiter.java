@@ -140,7 +140,10 @@ public class MergeRateLimiter extends RateLimiter {
 
     long start = System.nanoTime();
     try {
-      mergeProgress.pauseNanos(curPauseNS, rate == 0.0 ? PauseReason.STOPPED : PauseReason.PAUSED);
+      mergeProgress.pauseNanos(
+          curPauseNS, 
+          rate == 0.0 ? PauseReason.STOPPED : PauseReason.PAUSED,
+          () -> rate == mbPerSec);
     } catch (InterruptedException ie) {
       throw new ThreadInterruptedException(ie);
     }
