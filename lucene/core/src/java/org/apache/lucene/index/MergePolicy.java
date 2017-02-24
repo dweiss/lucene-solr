@@ -69,6 +69,7 @@ public abstract class MergePolicy {
    * 
    * @lucene.experimental */
   public static class OneMergeProgress {
+    /** Reason for pausing the merge thread. */
     public static enum PauseReason {
       /* forcefully stopped. */
       STOPPED,
@@ -111,7 +112,7 @@ public abstract class MergePolicy {
     }
 
     /**
-     * Pauses the calling thread for at least <code>pauseNanos<code> nanoseconds
+     * Pauses the calling thread for at least <code>pauseNanos</code> nanoseconds
      * unless the merge is aborted in which case returns immediately.
      * 
      * @param condition The pause condition (should return true, unless the pause should 
