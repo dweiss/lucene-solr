@@ -106,7 +106,7 @@ public abstract class MergePolicy {
     }
 
     /**
-     * @return Return the aborted state of this merge.
+     * Return the aborted state of this merge.
      */
     public boolean isAborted() {
       return aborted;
@@ -332,7 +332,7 @@ public abstract class MergePolicy {
     }
 
     /**
-     * @return Returns a {@link OneMergeProgress} instance for this merge, which provides
+     * Returns a {@link OneMergeProgress} instance for this merge, which provides
      * statistics of the merge threads (run time vs. sleep time) if merging is throttled.
      */
     public OneMergeProgress getMergeProgress() {
