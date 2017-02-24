@@ -28,7 +28,7 @@ public class TestMergeRateLimiter extends LuceneTestCase {
     w.addDocument(new Document());
     w.close();
 
-    MergeRateLimiter rateLimiter = new MergeRateLimiter(new MergePolicy.MergeProgress());
+    MergeRateLimiter rateLimiter = new MergeRateLimiter(new MergePolicy.OneMergeProgress());
     assertEquals(Double.POSITIVE_INFINITY, rateLimiter.getMBPerSec(), 0.0);
     assertTrue(rateLimiter.getMinPauseCheckBytes() > 0);
     dir.close();

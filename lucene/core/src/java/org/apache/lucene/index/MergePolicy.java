@@ -19,10 +19,15 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -67,11 +72,29 @@ public abstract class MergePolicy {
    * or to abort the merge entirely.
    * 
    * @lucene.experimental */
-  public static class MergeProgress {
+  public static class OneMergeProgress {
+    public static enum PauseReason {
+      /* forcefully stopped. */
+      STOPPED,
+      /* paused because of throughput control. */
+      PAUSED,
+      /* other reason. */
+      OTHER
+    };
+
     private final ReentrantLock pauseLock = new ReentrantLock();
     private final Condition pausing = pauseLock.newCondition();
-
+    private final EnumMap<PauseReason, AtomicLong> pauseTimes;
+    
     private volatile boolean aborted;
+
+    public OneMergeProgress() {
+      // Place all the pause reasons in there immediately so that we can simply update values.
+      pauseTimes = new EnumMap<PauseReason,AtomicLong>(PauseReason.class);
+      for (PauseReason p : PauseReason.values()) {
+        pauseTimes.put(p, new AtomicLong());
+      }
+    }
 
     /**
      * Abort the merge this progress tracks at the next 
@@ -93,7 +116,9 @@ public abstract class MergePolicy {
      * Pauses the calling thread for at least <code>pauseNanos<code> nanoseconds
      * unless the merge is aborted in which case returns immediately. 
      */
-    public void pauseNanos(long pauseNanos) throws InterruptedException {
+    public void pauseNanos(long pauseNanos, PauseReason reason) throws InterruptedException {
+      long start = System.nanoTime();
+      AtomicLong timeUpdate = pauseTimes.get(reason);
       pauseLock.lock();
       try {
         while (pauseNanos > 0 && !aborted) {
@@ -101,6 +126,7 @@ public abstract class MergePolicy {
         }
       } finally {
         pauseLock.unlock();
+        timeUpdate.addAndGet(System.nanoTime() - start);
       }
     }
 
@@ -114,9 +140,17 @@ public abstract class MergePolicy {
       } finally {
         pauseLock.unlock();
       }
-    }    
+    }
+
+    public Map<PauseReason,Long> getPauseTimes() {
+      Set<Entry<PauseReason,AtomicLong>> entries = pauseTimes.entrySet();
+      return entries.stream()
+          .collect(Collectors.toMap(
+              (e) -> e.getKey(),
+              (e) -> e.getValue().get()));
+    }
   }
-  
+
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in
    *  a single new segment.  The merge spec includes the
@@ -142,11 +176,16 @@ public abstract class MergePolicy {
     /** Segments to be merged. */
     public final List<SegmentCommitInfo> segments;
 
-    /** A private {@link RateLimiter} for this merge, used to rate limit writes and abort. */
-    // TODO: this should be moved to a mergepolicy/mergescheduler-specific subclass so that
-    // they can maintain how the throughput is measured and controlled.
-    final MergeProgress mergeProgress;
-    final MergeRateLimiter rateLimiter;
+    /**
+     * Control used to pause/stop/resume the merge thread. 
+     */
+    private final OneMergeProgress mergeProgress;
+
+    /** 
+     * A private {@link RateLimiter} for this merge, used to rate limit writes and abort. By default
+     * this {@link RateLimiter} is returned from {@link #wrapForMerge(CodecReader)} 
+     */
+    private final MergeRateLimiter rateLimiter;
 
     volatile long mergeStartNS = -1;
 
@@ -169,7 +208,7 @@ public abstract class MergePolicy {
       }
       totalMaxDoc = count;
 
-      mergeProgress = new MergeProgress();
+      mergeProgress = new OneMergeProgress();
       rateLimiter = new MergeRateLimiter(mergeProgress);
     }
 
@@ -296,10 +335,10 @@ public abstract class MergePolicy {
     }
 
     /**
-     * @return Returns a {@link MergeProgress} instance for this merge, which provides
+     * @return Returns a {@link OneMergeProgress} instance for this merge, which provides
      * statistics of the merge threads (run time vs. sleep time) if merging is throttled.
      */
-    public MergeProgress getMergeProgress() {
+    public OneMergeProgress getMergeProgress() {
       return mergeProgress;
     }
   }
