@@ -2753,12 +2753,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * index.
    * 
    * <p>
-   * <b>NOTE:</b> this method merges all given {@link LeafReader}s in one
+   * <b>NOTE:</b> this merges all given {@link LeafReader}s in one
    * merge. If you intend to merge a large number of readers, it may be better
    * to call this method multiple times, each time with a small set of readers.
    * In principle, if you use a merge policy with a {@code mergeFactor} or
    * {@code maxMergeAtOnce} parameter, you should pass that many readers in one
    * call.
+   * 
+   * <p>
+   * <b>NOTE:</b> this method does not call or make use of the {@link MergeScheduler},
+   * so any custom bandwidth throttling is at the moment ignored.
    * 
    * @return The <a href="#sequence_number">sequence number</a>
    * for this operation
@@ -2840,7 +2844,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       // Now create the compound file if needed
       if (useCompoundFile) {
         Collection<String> filesToDelete = infoPerCommit.files();
-        // TODO: no throughput control after changes; should we comply with merge scheduler/ policy here?
         TrackingDirectoryWrapper trackingCFSDir = new TrackingDirectoryWrapper(directory);
         // TODO: unlike merge, on exception we arent sniping any trash cfs files here?
         // createCompoundFile tries to cleanup, but it might not always be able to...
