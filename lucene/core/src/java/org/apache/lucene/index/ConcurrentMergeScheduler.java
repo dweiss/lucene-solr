@@ -339,7 +339,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         message.append(String.format(Locale.ROOT, "merge thread %s estSize=%.1f MB (written=%.1f MB) runTime=%.1fs (stopped=%.1fs, paused=%.1fs) rate=%s\n",
                                      mergeThread.getName(),
                                      bytesToMB(merge.estimatedMergeBytes),
-                                     bytesToMB(merge.rateLimiter.totalBytesWritten),
+                                     bytesToMB(merge.rateLimiter.getTotalBytesWritten()),
                                      nsToSec(now - mergeStartNS),
                                      nsToSec(merge.rateLimiter.getTotalStoppedNS()),
                                      nsToSec(merge.rateLimiter.getTotalPausedNS()),

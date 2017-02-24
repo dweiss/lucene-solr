@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
@@ -59,7 +61,62 @@ import org.apache.lucene.store.RateLimiter;
  * @lucene.experimental
  */
 public abstract class MergePolicy {
+  /**
+   * Progress and state for an executing merge. This class
+   * encapsulates the logic to pause and resume the merge thread
+   * or to abort the merge entirely.
+   * 
+   * @lucene.experimental */
+  public static class MergeProgress {
+    private final ReentrantLock pauseLock = new ReentrantLock();
+    private final Condition pausing = pauseLock.newCondition();
 
+    private volatile boolean aborted;
+
+    /**
+     * Abort the merge this progress tracks at the next 
+     * possible moment.
+     */
+    public void abort() {
+      aborted = true;
+      wakeup(); // wakeup any paused merge thread.
+    }
+
+    /**
+     * @return Return the aborted state of this merge.
+     */
+    public boolean isAborted() {
+      return aborted;
+    }
+
+    /**
+     * Pauses the calling thread for at least <code>pauseNanos<code> nanoseconds
+     * unless the merge is aborted in which case returns immediately. 
+     */
+    public void pauseNanos(long pauseNanos) throws InterruptedException {
+      pauseLock.lock();
+      try {
+        while (pauseNanos > 0 && !aborted) {
+          pauseNanos = pausing.awaitNanos(pauseNanos);
+        }
+      } finally {
+        pauseLock.unlock();
+      }
+    }
+
+    /**
+     * Wakeup any threads stalled in {@link #pauseNanos}. 
+     */
+    public void wakeup() {
+      pauseLock.lock();
+      try {
+        pausing.signalAll();
+      } finally {
+        pauseLock.unlock();
+      }
+    }    
+  }
+  
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in
    *  a single new segment.  The merge spec includes the
@@ -68,7 +125,6 @@ public abstract class MergePolicy {
    *
    * @lucene.experimental */
   public static class OneMerge {
-
     SegmentCommitInfo info;         // used by IndexWriter
     boolean registerDone;           // used by IndexWriter
     long mergeGen;                  // used by IndexWriter
@@ -89,6 +145,7 @@ public abstract class MergePolicy {
     /** A private {@link RateLimiter} for this merge, used to rate limit writes and abort. */
     // TODO: this should be moved to a mergepolicy/mergescheduler-specific subclass so that
     // they can maintain how the throughput is measured and controlled.
+    final MergeProgress mergeProgress;
     final MergeRateLimiter rateLimiter;
 
     volatile long mergeStartNS = -1;
@@ -111,7 +168,9 @@ public abstract class MergePolicy {
         count += info.info.maxDoc();
       }
       totalMaxDoc = count;
-      rateLimiter = new MergeRateLimiter();
+
+      mergeProgress = new MergeProgress();
+      rateLimiter = new MergeRateLimiter(mergeProgress);
     }
 
     /** Called by {@link IndexWriter} after the merge is done and all readers have been closed. */
@@ -168,7 +227,7 @@ public abstract class MergePolicy {
       if (maxNumSegments != -1) {
         b.append(" [maxNumSegments=" + maxNumSegments + "]");
       }
-      if (rateLimiter.getAbort()) {
+      if (isAborted()) {
         b.append(" [ABORTED]");
       }
       return b.toString();
@@ -202,13 +261,11 @@ public abstract class MergePolicy {
     }
 
     public boolean isAborted() {
-      // TODO: move from rateLimiter to this class, ideally.
-      return rateLimiter.getAbort();
+      return mergeProgress.isAborted();
     }
 
     public void setAborted() {
-      // TODO: move from rateLimiter to this class, ideally.
-      this.rateLimiter.setAbort();
+      this.mergeProgress.abort();
     }
 
     public void checkAborted() throws MergeAbortedException {
@@ -236,6 +293,14 @@ public abstract class MergePolicy {
           return new RateLimitedIndexOutput(rateLimiter, in.createOutput(name, context));
         }
       };
+    }
+
+    /**
+     * @return Returns a {@link MergeProgress} instance for this merge, which provides
+     * statistics of the merge threads (run time vs. sleep time) if merging is throttled.
+     */
+    public MergeProgress getMergeProgress() {
+      return mergeProgress;
     }
   }
 
@@ -301,9 +366,9 @@ public abstract class MergePolicy {
     }
   }
 
-  /** Thrown when a merge was explicity aborted because
+  /** Thrown when a merge was explicitly aborted because
    *  {@link IndexWriter#abortMerges} was called.  Normally
-   *  this exception is privately caught and suppresed by
+   *  this exception is privately caught and suppressed by
    *  {@link IndexWriter}. */
   public static class MergeAbortedException extends IOException {
     /** Create a {@link MergeAbortedException}. */
