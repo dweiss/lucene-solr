@@ -71,11 +71,11 @@ public abstract class MergePolicy {
   public static class OneMergeProgress {
     /** Reason for pausing the merge thread. */
     public static enum PauseReason {
-      /* forcefully stopped. */
+      /** Forcefully stopped. */
       STOPPED,
-      /* paused because of throughput control. */
+      /** Temporarily paused because of throughput control. */
       PAUSED,
-      /* other reason. */
+      /** Other reason. */
       OTHER
     };
 
@@ -87,6 +87,7 @@ public abstract class MergePolicy {
 
     private Thread owner;
 
+    /** Creates a new merge progress info. */
     public OneMergeProgress() {
       // Place all the pause reasons in there immediately so that we can simply update values.
       pauseTimes = new EnumMap<PauseReason,AtomicLong>(PauseReason.class);
@@ -150,6 +151,7 @@ public abstract class MergePolicy {
       }
     }
 
+    /** Returns pause reasons and associated times in nanoseconds. */
     public Map<PauseReason,Long> getPauseTimes() {
       Set<Entry<PauseReason,AtomicLong>> entries = pauseTimes.entrySet();
       return entries.stream()
@@ -312,14 +314,17 @@ public abstract class MergePolicy {
       return new MergeInfo(totalMaxDoc, estimatedMergeBytes, isExternal, maxNumSegments);
     }
 
+    /** Returns true if this merge was or should be aborted. */
     public boolean isAborted() {
       return mergeProgress.isAborted();
     }
 
+    /** Marks this merge as aborted. The merge thread should terminate at the soonest possible moment. */
     public void setAborted() {
       this.mergeProgress.abort();
     }
 
+    /** Checks if merge has been aborted and throws a merge exception if so. */
     public void checkAborted() throws MergeAbortedException {
       if (isAborted()) {
         throw new MergePolicy.MergeAbortedException("merge is aborted: " + segString());
@@ -360,8 +365,7 @@ public abstract class MergePolicy {
       merges.add(merge);
     }
 
-    /** Returns a description of the merges in this
-    *  specification. */
+    /** Returns a description of the merges in this specification. */
     public String segString(Directory dir) {
       StringBuilder b = new StringBuilder();
       b.append("MergeSpec:\n");
@@ -373,8 +377,7 @@ public abstract class MergePolicy {
     }
   }
 
-  /** Exception thrown if there are any problems while
-   *  executing a merge. */
+  /** Exception thrown if there are any problems while executing a merge. */
   public static class MergeException extends RuntimeException {
     private Directory dir;
 
