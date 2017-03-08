@@ -177,7 +177,7 @@ public abstract class MergePolicy {
     }
 
     final void setMergeThread(Thread owner) {
-      assert owner == null;
+      assert this.owner == null;
       this.owner = owner;
     }
   }
