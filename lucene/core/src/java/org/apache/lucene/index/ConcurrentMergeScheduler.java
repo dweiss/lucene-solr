@@ -262,14 +262,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   @Override
   public Directory wrapForMerge(OneMerge merge, Directory in) {
-    if (!MergeThread.class.isInstance(Thread.currentThread())) {
+    Thread mergeThread = Thread.currentThread();
+    if (!MergeThread.class.isInstance(mergeThread)) {
       throw new AssertionError("wrapForMerge should be called from MergeThread. Current thread: "
-          + Thread.currentThread());
+          + mergeThread);
     }
 
-    // by default it'd be a no-op; merge policy and merge scheduler could cooperate to implement
-    // throughput handling? This could also be a function given the the constructor.
-    RateLimiter rateLimiter = new MergeRateLimiter(merge.getMergeProgress());
+    // Return a wrapped Directory which has rate-limited output.
+    RateLimiter rateLimiter = ((MergeThread) mergeThread).rateLimiter;
     return new FilterDirectory(in) {
       @Override
       public IndexOutput createOutput(String name, IOContext context) throws IOException {
@@ -279,6 +279,11 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         // so all writes should have MERGE context, else there is a bug 
         // somewhere that is failing to pass down the right IOContext:
         assert context.context == IOContext.Context.MERGE: "got context=" + context.context;
+        
+        // Because rateLimiter is bound to a particular merge thread, this method should
+        // always be called from that context. Verify this.
+        assert mergeThread == Thread.currentThread() : "Not the same merge thread, current="
+          + Thread.currentThread() + ", expected=" + mergeThread;
 
         return new RateLimitedIndexOutput(rateLimiter, in.createOutput(name, context));
       }
@@ -536,14 +541,16 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
         // OK to spawn a new merge thread to handle this
         // merge:
-        final MergeThread merger = getMergeThread(writer, merge);
-        mergeThreads.add(merger);
+        final MergeThread newMergeThread = getMergeThread(writer, merge);
+        mergeThreads.add(newMergeThread);
+
+        updateIOThrottle(newMergeThread.merge, newMergeThread.rateLimiter);
 
         if (verbose()) {
-          message("    launch new thread [" + merger.getName() + "]");
+          message("    launch new thread [" + newMergeThread.getName() + "]");
         }
 
-        merger.start();
+        newMergeThread.start();
         updateMergeThreads();
 
         success = true;
@@ -651,7 +658,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           message("  merge thread: start");
         }
 
-        updateIOThrottle(merge, rateLimiter);
         doMerge(writer, merge);
 
         if (verbose()) {

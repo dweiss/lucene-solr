@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.ThreadInterruptedException;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.MergePolicy.OneMergeProgress;
@@ -33,6 +34,9 @@ import org.apache.lucene.index.MergePolicy.OneMergeProgress.PauseReason;
 public class MergeRateLimiter extends RateLimiter {
 
   private final static int MIN_PAUSE_CHECK_MSEC = 25;
+  
+  private final static long MIN_PAUSE_NS = TimeUnit.MILLISECONDS.toNanos(2);
+  private final static long MAX_PAUSE_NS = TimeUnit.MILLISECONDS.toNanos(250);
 
   private volatile double mbPerSec;
   private volatile long minPauseCheckBytes;
@@ -85,7 +89,6 @@ public class MergeRateLimiter extends RateLimiter {
     // While loop because we may wake up and check again when our rate limit
     // is changed while we were pausing:
     long paused = 0;
-
     long delta;
     while ((delta = maybePause(bytes, System.nanoTime())) >= 0) {
       // Keep waiting.
@@ -105,7 +108,11 @@ public class MergeRateLimiter extends RateLimiter {
     return mergeProgress.getPauseTimes().get(PauseReason.PAUSED);
   } 
 
-  /** Returns NO if no pause happened, STOPPED if pause because rate was 0.0 (merge is stopped), PAUSED if paused with a normal rate limit. */
+  /** 
+   * Returns the number of nanoseconds spent in a paused state or <code>-1</code>
+   * if no pause was applied. If the thread needs pausing, this method delegates 
+   * to the linked {@link OneMergeProgress}. 
+   */
   private long maybePause(long bytes, long curNS) throws MergePolicy.MergeAbortedException {
     // Now is a good time to abort the merge:
     if (mergeProgress.isAborted()) {
@@ -122,20 +129,18 @@ public class MergeRateLimiter extends RateLimiter {
 
     long curPauseNS = targetNS - curNS;
 
-    // NOTE: except maybe on real-time JVMs, minimum realistic
-    // wait/sleep time is 1 msec; if you pass just 1 nsec the impl
-    // rounds up to 1 msec, so we don't bother unless it's > 2 msec:
-
-    if (curPauseNS <= 2000000) {
+    // We don't bother with thread pausing if the pause is smaller than 2 msec.
+    if (curPauseNS <= MIN_PAUSE_NS) {
       // Set to curNS, not targetNS, to enforce the instant rate, not
       // the "averaged over all history" rate:
       lastNS = curNS;
       return -1;
     }
 
-    // Defensive: sleep for at most 250 msec; the loop above will call us again if we should keep sleeping:
-    if (curPauseNS > 250L*1000000) {
-      curPauseNS = 250L*1000000;
+    // Defensive: don't sleep for too long; the loop above will call us again if
+    // we should keep sleeping and the rate may be adjusted in between.
+    if (curPauseNS > MAX_PAUSE_NS) {
+      curPauseNS = MAX_PAUSE_NS;
     }
 
     long start = System.nanoTime();

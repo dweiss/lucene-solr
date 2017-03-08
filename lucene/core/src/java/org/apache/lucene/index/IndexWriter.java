@@ -274,7 +274,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
   private final Directory directoryOrig;       // original user directory
   private final Directory directory;           // wrapped with additional checks
-  //private final Directory mergeDirectory;      // wrapped with throttling: used for merging
   private final Analyzer analyzer;    // how to analyze text
 
   private final AtomicLong changeCount = new AtomicLong(); // increments every time a change is completed

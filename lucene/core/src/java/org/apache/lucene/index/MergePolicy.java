@@ -71,9 +71,9 @@ public abstract class MergePolicy {
   public static class OneMergeProgress {
     /** Reason for pausing the merge thread. */
     public static enum PauseReason {
-      /** Forcefully stopped. */
+      /** Stopped (because of throughput rate set to 0, typically). */
       STOPPED,
-      /** Temporarily paused because of throughput control. */
+      /** Temporarily paused because of exceeded throughput rate. */
       PAUSED,
       /** Other reason. */
       OTHER
@@ -81,18 +81,27 @@ public abstract class MergePolicy {
 
     private final ReentrantLock pauseLock = new ReentrantLock();
     private final Condition pausing = pauseLock.newCondition();
-    private final EnumMap<PauseReason, AtomicLong> pauseTimes;
+
+    /**
+     * Pause times (in nanoseconds) for each {@link PauseReason}.
+     */
+    private final EnumMap<PauseReason, AtomicLong> pauseTimesNS;
     
     private volatile boolean aborted;
 
+    /**
+     * This field is for sanity-check purposes only. Only the same thread that invoked
+     * {@link OneMerge#mergeInit()} is permitted to be calling 
+     * {@link #pauseNanos}. This is always verified at runtime. 
+     */
     private Thread owner;
 
     /** Creates a new merge progress info. */
     public OneMergeProgress() {
       // Place all the pause reasons in there immediately so that we can simply update values.
-      pauseTimes = new EnumMap<PauseReason,AtomicLong>(PauseReason.class);
+      pauseTimesNS = new EnumMap<PauseReason,AtomicLong>(PauseReason.class);
       for (PauseReason p : PauseReason.values()) {
-        pauseTimes.put(p, new AtomicLong());
+        pauseTimesNS.put(p, new AtomicLong());
       }
     }
 
@@ -127,7 +136,7 @@ public abstract class MergePolicy {
       }
 
       long start = System.nanoTime();
-      AtomicLong timeUpdate = pauseTimes.get(reason);
+      AtomicLong timeUpdate = pauseTimesNS.get(reason);
       pauseLock.lock();
       try {
         while (pauseNanos > 0 && !aborted && condition.getAsBoolean()) {
@@ -153,7 +162,7 @@ public abstract class MergePolicy {
 
     /** Returns pause reasons and associated times in nanoseconds. */
     public Map<PauseReason,Long> getPauseTimes() {
-      Set<Entry<PauseReason,AtomicLong>> entries = pauseTimes.entrySet();
+      Set<Entry<PauseReason,AtomicLong>> entries = pauseTimesNS.entrySet();
       return entries.stream()
           .collect(Collectors.toMap(
               (e) -> e.getKey(),
@@ -161,6 +170,7 @@ public abstract class MergePolicy {
     }
 
     final void setMergeThread(Thread owner) {
+      assert owner == null;
       this.owner = owner;
     }
   }
