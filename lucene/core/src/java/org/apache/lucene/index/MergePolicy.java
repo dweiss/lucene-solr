@@ -123,10 +123,17 @@ public abstract class MergePolicy {
 
     /**
      * Pauses the calling thread for at least <code>pauseNanos</code> nanoseconds
-     * unless the merge is aborted in which case returns immediately.
+     * unless the merge is aborted or the external condition returns <code>false</code>,
+     * in which case control returns immediately.
      * 
-     * @param condition The pause condition (should return true, unless the pause should 
-     *    terminate earlier). This prevents returning too early in case of spurious wakeups.
+     * The external condition is required so that other threads can terminate the pausing immediately,
+     * before <code>pauseNanos</code> expires. We can't rely on just {@link Condition#awaitNanos(long)} alone
+     * because it can return due to spurious wakeups too.  
+     * 
+     * @param condition The pause condition that should return false if immediate return from this
+     *      method is needed. Other threads can wake up any sleeping thread by calling 
+     *      {@link #wakeup}, but it'd fall to sleep for the remainder of the requested time if this
+     *      condition 
      */
     public void pauseNanos(long pauseNanos, PauseReason reason, BooleanSupplier condition) throws InterruptedException {
       if (Thread.currentThread() != owner) {
@@ -149,7 +156,7 @@ public abstract class MergePolicy {
     }
 
     /**
-     * Wakeup any threads stalled in {@link #pauseNanos}. 
+     * Request a wakeup for any threads stalled in {@link #pauseNanos}.
      */
     public void wakeup() {
       pauseLock.lock();
