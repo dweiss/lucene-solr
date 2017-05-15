@@ -52,6 +52,13 @@ public abstract class AttributeFactory {
    */
   public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = new DefaultAttributeFactory();
   
+  @SuppressWarnings("serial")
+  public static final class AttributeInstantiationException extends RuntimeException {
+    private AttributeInstantiationException(Throwable cause) {
+      super(cause);
+    }
+  }
+  
   private static final class DefaultAttributeFactory extends AttributeFactory {
     private final ClassValue<MethodHandle> constructors = new ClassValue<MethodHandle>() {
       @Override
@@ -66,9 +73,10 @@ public abstract class AttributeFactory {
     public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
       try {
         return (AttributeImpl) constructors.get(attClass).invokeExact();
-      } catch (Throwable t) {
-        rethrow(t);
-        throw new AssertionError();
+      } catch (Error | RuntimeException e) {
+        throw e;
+      } catch (Throwable e) {
+        throw new AttributeInstantiationException(e);
       }
     }
     
@@ -138,23 +146,12 @@ public abstract class AttributeFactory {
       protected A createInstance() {
         try {
           return (A) constr.invokeExact();
-        } catch (Throwable t) {
-          rethrow(t);
-          throw new AssertionError();
+        } catch (Error | RuntimeException e) {
+          throw e;
+        } catch (Throwable e) {
+          throw new AttributeInstantiationException(e);
         }
       }
     };
   }
-  
-  // Hack to rethrow unknown Exceptions from {@link MethodHandle#invoke}:
-  // TODO: remove the impl in test-framework, this one is more elegant :-)
-  static void rethrow(Throwable t) {
-    AttributeFactory.<Error>rethrow0(t);
-  }
-  
-  @SuppressWarnings("unchecked")
-  private static <T extends Throwable> void rethrow0(Throwable t) throws T {
-    throw (T) t;
-  }
-  
 }
