@@ -52,6 +52,10 @@ public abstract class AttributeFactory {
    */
   public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = new DefaultAttributeFactory();
   
+  /**
+   * A subclass of {@code RuntimeException} propagated from {@link AttributeFactory#createAttributeInstance(Class)}
+   * if the attribute class being instantiated throws an unchecked exception.
+   */
   @SuppressWarnings("serial")
   public static final class AttributeInstantiationException extends RuntimeException {
     private AttributeInstantiationException(Throwable cause) {

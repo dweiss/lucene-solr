@@ -188,15 +188,20 @@ public final class JavascriptCompiler {
   private Expression compileExpression(ClassLoader parent) throws ParseException {
     final Map<String, Integer> externalsMap = new LinkedHashMap<>();
     final ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-    
-    generateClass(getAntlrParseTree(), classWriter, externalsMap);
-    
+
     try {
+      generateClass(getAntlrParseTree(), classWriter, externalsMap);
+
       final Class<? extends Expression> evaluatorClass = new Loader(parent)
         .define(COMPILED_EXPRESSION_CLASS, classWriter.toByteArray());
       final Constructor<? extends Expression> constructor = evaluatorClass.getConstructor(String.class, String[].class);
 
       return constructor.newInstance(sourceText, externalsMap.keySet().toArray(new String[externalsMap.size()]));
+    } catch (RuntimeException re) {
+      if (re.getCause() instanceof ParseException) {
+        throw (ParseException)re.getCause();
+      }
+      throw re;
     } catch (ReflectiveOperationException exception) {
       throw new IllegalStateException("An internal error occurred attempting to compile the expression (" + sourceText + ").", exception);
     }
@@ -209,20 +214,13 @@ public final class JavascriptCompiler {
    * @throws ParseException on failure to parse
    */
   private ParseTree getAntlrParseTree() throws ParseException {
-    try {
-      final ANTLRInputStream antlrInputStream = new ANTLRInputStream(sourceText);
-      final JavascriptErrorHandlingLexer javascriptLexer = new JavascriptErrorHandlingLexer(antlrInputStream);
-      javascriptLexer.removeErrorListeners();
-      final JavascriptParser javascriptParser = new JavascriptParser(new CommonTokenStream(javascriptLexer));
-      javascriptParser.removeErrorListeners();
-      javascriptParser.setErrorHandler(new JavascriptParserErrorStrategy());
-      return javascriptParser.compile();
-    } catch (RuntimeException re) {
-      if (re.getCause() instanceof ParseException) {
-        throw (ParseException)re.getCause();
-      }
-      throw re;
-    }
+    final ANTLRInputStream antlrInputStream = new ANTLRInputStream(sourceText);
+    final JavascriptErrorHandlingLexer javascriptLexer = new JavascriptErrorHandlingLexer(antlrInputStream);
+    javascriptLexer.removeErrorListeners();
+    final JavascriptParser javascriptParser = new JavascriptParser(new CommonTokenStream(javascriptLexer));
+    javascriptParser.removeErrorListeners();
+    javascriptParser.setErrorHandler(new JavascriptParserErrorStrategy());
+    return javascriptParser.compile();
   }
 
   /**
