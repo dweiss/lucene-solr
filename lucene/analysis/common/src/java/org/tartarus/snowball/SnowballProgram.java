@@ -31,6 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package org.tartarus.snowball;
 
+import java.lang.reflect.UndeclaredThrowableException;
+
 import org.apache.lucene.util.ArrayUtil;
 
 /**
@@ -316,7 +318,7 @@ public abstract class SnowballProgram {
           } catch (Error | RuntimeException e) {
             throw e;
           } catch (Throwable e) {
-            throw new AssertionError(e);
+            throw new UndeclaredThrowableException(e);
           }
           cursor = c + w.s_size;
           if (res) return w.result;
@@ -381,7 +383,7 @@ public abstract class SnowballProgram {
           } catch (Error | RuntimeException e) {
             throw e;
           } catch (Throwable e) {
-            throw new AssertionError(e);
+            throw new UndeclaredThrowableException(e);
           }
           cursor = c - w.s_size;
           if (res) return w.result;
