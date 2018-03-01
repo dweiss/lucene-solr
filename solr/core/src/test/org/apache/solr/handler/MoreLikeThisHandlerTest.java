@@ -27,7 +27,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
