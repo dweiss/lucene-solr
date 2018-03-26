@@ -415,16 +415,28 @@ public final class MoreLikeThis {
   }
 
   /**
-   * Set the maximum percentage in which words may still appear. Words that appear
-   * in more than this many percent of all docs will be ignored.
+   * Set the maximum document frequency threshold based on the number of documents
+   * in the index: terms that appear in more than the given percentage of all documents
+   * will be ignored.
+   *
+   * This method calls {@link #setMaxDocFreq(int)} internally (both conditions cannot
+   * be used at the same time).
    *
    * @param maxPercentage the maximum percentage of documents (0-100) that a term may appear
-   * in to be still considered relevant
+   * in to be still considered relevant.
    */
   public void setMaxDocFreqPct(int maxPercentage) {
-    this.maxDocFreq = maxPercentage * ir.numDocs() / 100;
+    setMaxDocFreq(computeMaxDocFreqPct(maxPercentage, ir.numDocs()));
   }
 
+  // Package-scope for tests.
+  static int computeMaxDocFreqPct(int maxPercentage, int numDocs) {
+    if (maxPercentage < 0 || maxPercentage > 100) {
+      throw new IllegalArgumentException("The argument must be within [0, 100]: "
+          + maxPercentage);
+    }
+    return Math.toIntExact((long) maxPercentage * numDocs / 100);
+  }
 
   /**
    * Returns whether to boost terms in query based on "score" or not. The default is

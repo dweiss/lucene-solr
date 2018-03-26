@@ -194,6 +194,12 @@ public class TestMoreLikeThis extends LuceneTestCase {
     analyzer.close();
   }
 
+  public void testSetMaxDocFreqPct() {
+    assertEquals(Integer.MAX_VALUE, MoreLikeThis.computeMaxDocFreqPct(100, Integer.MAX_VALUE));
+    expectThrows(IllegalArgumentException.class, () -> MoreLikeThis.computeMaxDocFreqPct(101, 0));
+    expectThrows(IllegalArgumentException.class, () -> MoreLikeThis.computeMaxDocFreqPct(-1, 0));
+  }
+
   public void testTopN() throws Exception {
     int numDocs = 100;
     int topN = 25;
