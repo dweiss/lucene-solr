@@ -35,7 +35,6 @@ public class JsonRecordReader {
   private Node rootNode = new Node("/", (Node) null);
 
   public static JsonRecordReader getInst(String split, List<String> fieldMappings) {
-
     JsonRecordReader jsonRecordReader = new JsonRecordReader();
     jsonRecordReader.addSplit(split);
     for (String s : fieldMappings) {
@@ -54,6 +53,7 @@ public class JsonRecordReader {
 
   private JsonRecordReader() {
   }
+
   /**
    * a '|' separated list of path expressions
    * which define sub sections of the JSON stream that are to be emitted as
@@ -164,6 +164,7 @@ public class JsonRecordReader {
     Node wildCardChild;
     Node recursiveWildCardChild;
     private boolean useFqn = false;
+    private List<Map<String, Object>> delayedExtractedRecords;
 
 
     public Node(String name, Node p) {
@@ -171,8 +172,9 @@ public class JsonRecordReader {
       // Node.pathName and Node.name are set to same value.
       this.name = name;
       parent = p;
+      delayedExtractedRecords = (p == null) ? new ArrayList<>() : p.delayedExtractedRecords;
     }
-
+    
     public Node(String name, String fieldName) {
       // This is only called from build() when describing an attribute.
       this.name = name;               // a segment from the path
@@ -359,7 +361,7 @@ public class JsonRecordReader {
         void walkObject() throws IOException {
           if (node.isChildRecord) {
             node.handleObjectStart(parser,
-                (record, path) -> addChildDoc2ParentDoc(record, values),
+                new AddChildDoc2ParentDocHandler(values),
                 new LinkedHashMap<>(),
                 new Stack<>(),
                 true,
@@ -369,15 +371,14 @@ public class JsonRecordReader {
             node.handleObjectStart(parser, handler, values, stack, isRecordStarted, this);
           }
         }
+
       }
 
       try {
         for (; ; ) {
           int event = parser.nextEvent();
           if (event == OBJECT_END) {
-            if (isRecord()) {
-              handler.handle(values, splitPath);
-            }
+            consumeObject(handler, values);
             return;
           }
           assert event == STRING;
@@ -438,20 +439,58 @@ public class JsonRecordReader {
       }
     }
 
-    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values) {
-      record =  Utils.getDeepCopy(record, 2);
-      Object oldVal = values.get(null);
-      if (oldVal == null) {
-        values.put(null, record);
-      } else if (oldVal instanceof List) {
-        ((List) oldVal).add(record);
+    private void consumeObject(Handler handler, Map<String, Object> values) {
+      if (isRecord()) {
+        if (isRootLevelOrInternalHandler(handler)) {
+          handler.handle(Utils.getDeepCopy(values, 2), splitPath);
+        } else {
+          delayedExtractedRecords.add(Utils.getDeepCopy(values, 2));
+        }
       } else {
-        ArrayList l = new ArrayList();
-        l.add(oldVal);
-        l.add(record);
-        values.put(null, l);
+        if (isRootLevel()) {
+          // Fill all delayed records with the current set of top-level values
+          // and propagate to the handler.
+          for (Map<String, Object> record : delayedExtractedRecords) {
+            record.putAll(values);
+            handler.handle(record, splitPath);
+          }
+          delayedExtractedRecords.clear();
+        }
       }
     }
+
+    private boolean isRootLevel() {
+      return parent == null;
+    }
+
+    private boolean isRootLevelOrInternalHandler(Handler handler) {
+      return isRootLevel() || handler instanceof AddChildDoc2ParentDocHandler;
+    }
+
+    private static class AddChildDoc2ParentDocHandler implements Handler {
+      private Map<String, Object> values;
+
+      AddChildDoc2ParentDocHandler(Map<String, Object> values) {
+        this.values = values;
+      }
+
+      @Override
+      public void handle(Map<String, Object> record, String path) {
+        record =  Utils.getDeepCopy(record, 2);
+        Object oldVal = values.get(null);
+        if (oldVal == null) {
+          values.put(null, record);
+        } else if (oldVal instanceof List) {
+          ((List) oldVal).add(record);
+        } else {
+          ArrayList l = new ArrayList();
+          l.add(oldVal);
+          l.add(record);
+          values.put(null, l);
+        }
+      }
+    }
+
 
     /**
      * Construct the name as it would appear in the final record

@@ -128,7 +128,8 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         "\n" +
         "  \"nested_data\" : {\n" +
         "    \"nested_inside\" : \"check check check 1\"\n" +
-        "  }\n" +
+        "  },\n" +
+        "  \"after\": \"456\"\n" +
         "}";
 
     String json2 =
@@ -169,6 +170,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         Map m = (Map) Utils.fromJSONString(buf);
         if (count == 1) {
           assertEquals(m.get("id"), "123");
+          assertEquals(m.get("after"), "456");
           assertEquals(m.get("description"), "Testing /json/docs srcField 1");
           assertEquals(((Map) m.get("nested_data")).get("nested_inside"), "check check check 1");
         }
@@ -236,11 +238,12 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         "        \"subject\": \"Maths\",\n" +
         "        \"test\"   : \"term1\",\n" +
         "        \"marks\":90},\n" +
-        "        {\n" +
+        "      {\n" +
         "         \"subject\": \"Biology\",\n" +
         "         \"test\"   : \"term1\",\n" +
         "         \"marks\":86}\n" +
-        "      ]\n" +
+        "  ],\n" +
+        "  \"after\": \"456\"\n" +
         "}";
 
     JsonRecordReader streamer;
@@ -250,34 +253,44 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(2, records.size());
     for (Map<String, Object> record : records) {
-      assertEquals(6, record.size());
+      assertEquals(7, record.size());
       assertTrue(record.containsKey("subject"));
       assertTrue(record.containsKey("test"));
       assertTrue(record.containsKey("marks"));
+      assertTrue(record.containsKey("first"));
+      assertTrue(record.containsKey("last"));
+      assertTrue(record.containsKey("grade"));
+      assertTrue(record.containsKey("after"));
     }
 
     streamer = JsonRecordReader.getInst("/exams", Collections.singletonList("$FQN:/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(2, records.size());
     for (Map<String, Object> record : records) {
-      assertEquals(6, record.size());
+      assertEquals(7, record.size());
       assertTrue(record.containsKey("exams.subject"));
       assertTrue(record.containsKey("exams.test"));
       assertTrue(record.containsKey("exams.marks"));
+      assertTrue(record.containsKey("after"));
     }
 
     streamer = JsonRecordReader.getInst("/", Collections.singletonList("txt:/**"));
     records = streamer.getAllRecords(new StringReader(json));
     assertEquals(1, records.size());
-    assertEquals(9, ((List) records.get(0).get("txt")).size());
+    assertEquals(10, ((List) records.get(0).get("txt")).size());
 
   }
 
   public void testNestedDocs() throws Exception {
-    String json = "{a:{" +
-        "b:{c:d}," +
-        "x:y" +
-        "}}";
+    String json =
+        "{" +
+        "  a: { " +
+        "    b: { " +
+        "      c: d" +
+        "    }," +
+        "    x: y " +
+        "  } " +
+        "}";
     JsonRecordReader streamer = JsonRecordReader.getInst("/|/a/b", Arrays.asList("/a/x", "/a/b/*"));
     streamer.streamRecords(new StringReader(json), (record, path) -> {
       assertEquals(record.get("x"), "y");
