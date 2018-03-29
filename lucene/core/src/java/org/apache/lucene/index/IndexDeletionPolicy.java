@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.util.List;
 import java.io.IOException;
 
-import org.apache.lucene.store.Directory;
-
 /**
  * <p>Expert: policy for deletion of stale {@link IndexCommit index commits}. 
  * 
