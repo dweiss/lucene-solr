@@ -67,6 +67,8 @@ Upgrade Notes
 * LUCENE-7976: TieredMergePolicy now respects maxSegmentSizeMB by default when executing
   findForcedMerges (optimize) and findForcedDeletesMerges (expungeDeletes) (Erick Erickson)
 
+* SOLR-12395: SignificantTermsQParserPlugin's name is now 'significantTerms' and its old name 'sigificantTerms' is deprecated.
+
 New Features
 ----------------------
 
@@ -129,6 +131,11 @@ Bug Fixes
 
 * SOLR-12427: Improve error message for invalid 'start', 'rows' parameters. (Munendra S N via Jason Gerlowski)
 
+* SOLR-12395: Make 'significantTerms' the SignificantTermsQParserPlugin's name and deprecate its old 'sigificantTerms' name.
+  (Tobias Kässmann, Christine Poerschke)
+
+* SOLR-12533 Collection collection fails if metrics are called during core creation (Peter Cseh, Mano Kovacs)
+
 Optimizations
 ----------------------
 
@@ -151,6 +158,8 @@ Other Changes
 * SOLR-12208: Renamed the autoscaling variable 'INDEX.sizeInBytes' to 'INDEX.sizeInGB' (noble)
 
 * SOLR-12468: Upgrade Jetty to 9.4.11.v20180605 (Michael Braun, shalin)
+
+* SOLR-12527: factor out a test-framework/ConfigRequest class (Christine Poerschke)
 
 ==================  7.4.0 ==================
 
