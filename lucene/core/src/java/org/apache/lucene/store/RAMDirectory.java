@@ -242,7 +242,8 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     if (file == null) {
       throw new FileNotFoundException(name);
     }
-    return new RAMInputStream(name, file);
+
+    return file.openInput();
   }
 
   /** Closes the store to future operations, releasing associated memory. */

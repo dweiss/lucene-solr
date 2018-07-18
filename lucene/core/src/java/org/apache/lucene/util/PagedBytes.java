@@ -18,6 +18,7 @@ package org.apache.lucene.util;
 
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;

@@ -17,101 +17,91 @@
 package org.apache.lucene.store;
 
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.PagedBytes;
 
 /** 
  * Represents a file in RAM as a list of byte[] buffers.
  * @lucene.internal */
 public class RAMFile implements Accountable {
-  protected final ArrayList<byte[]> buffers = new ArrayList<>();
-  long length;
-  RAMDirectory directory;
-  protected long sizeInBytes;
+  private volatile PagedBytes content;
 
-  // File used as buffer, in no RAMDirectory
-  public RAMFile() {}
-  
-  RAMFile(RAMDirectory directory) {
-    this.directory = directory;
+  void setContent(PagedBytes newContent) {
+    this.content = content;
   }
 
-  // For non-stream access from thread that might be concurrent with writing
-  public synchronized long getLength() {
-    return length;
-  }
-
-  protected synchronized void setLength(long length) {
-    this.length = length;
-  }
-
-  protected final byte[] addBuffer(int size) {
-    byte[] buffer = newBuffer(size);
-    synchronized(this) {
-      buffers.add(buffer);
-      sizeInBytes += size;
-    }
-
-    if (directory != null) {
-      directory.sizeInBytes.getAndAdd(size);
-    }
-    return buffer;
-  }
-
-  protected final synchronized byte[] getBuffer(int index) {
-    return buffers.get(index);
-  }
-
-  protected final synchronized int numBuffers() {
-    return buffers.size();
-  }
-
-  /**
-   * Expert: allocate a new buffer. 
-   * Subclasses can allocate differently. 
-   * @param size size of allocated buffer.
-   * @return allocated buffer.
-   */
-  protected byte[] newBuffer(int size) {
-    return new byte[size];
+  public long getLength() {
+    PagedBytes local = this.content;
+    return local == null ? 0 : local.getPointer();
   }
 
   @Override
-  public synchronized long ramBytesUsed() {
-    return sizeInBytes;
+  public long ramBytesUsed() {
+    PagedBytes local = this.content;
+    return local == null ? 0 : local.ramBytesUsed();
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(length=" + length + ")";
+    return getClass().getSimpleName() + "(length=" + getLength() + ")";
   }
 
   @Override
   public int hashCode() {
-    int h = (int) (length ^ (length >>> 32));
-    for (byte[] block : buffers) {
-      h = 31 * h + Arrays.hashCode(block);
-    }
-    return h;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
-    RAMFile other = (RAMFile) obj;
-    if (length != other.length) return false;
-    if (buffers.size() != other.buffers.size()) {
-      return false;
+    throw new UnsupportedOperationException();
+  }
+
+  IndexInput openInput() {
+    PagedBytes local = this.content;
+    if (local == null) {
+      return new ByteArrayIndexInput("content", new byte [0]);
+    } else {
+      return new IndexInput() {
+        DataInput in = local.getDataInput();
+
+        @Override
+        public void close() throws IOException {
+          in = null;
+        }
+
+        @Override
+        public long getFilePointer() {
+          return 0;
+        }
+
+        @Override
+        public void seek(long pos) throws IOException {
+        }
+
+        @Override
+        public long length() {
+          return 0;
+        }
+
+        @Override
+        public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+          return null;
+        }
+
+        @Override
+        public byte readByte() throws IOException {
+          return 0;
+        }
+
+        @Override
+        public void readBytes(byte[] b, int offset, int len) throws IOException {
+
+        }
+      };
     }
-    for (int i = 0; i < buffers.size(); i++) {
-      if (!Arrays.equals(buffers.get(i), other.buffers.get(i))) {
-        return false;
-      }
-    }
-    return true;
   }
 }
