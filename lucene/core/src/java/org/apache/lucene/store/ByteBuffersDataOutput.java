@@ -226,16 +226,16 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * (which sometimes may be required to avoid double copying).
    */
   public ArrayList<ByteBuffer> toWriteableBufferList() {
+    ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
     if (blocks.isEmpty()) {
-      return new ArrayList<>();
+      result.add(EMPTY);
     } else {
-      ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
       for (ByteBuffer bb : blocks) {
         bb = (ByteBuffer) bb.duplicate().flip(); // cast for jdk8 (covariant in jdk9+) 
         result.add(bb);
       }
-      return result;
     }
+    return result;
   }
 
   /**
