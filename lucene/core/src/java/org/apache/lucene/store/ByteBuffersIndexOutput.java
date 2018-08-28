@@ -24,6 +24,9 @@ import java.util.function.Consumer;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
+/**
+ * An {@link IndexOutput} writing to a {@link ByteBuffersDataOutput}.
+ */
 public final class ByteBuffersIndexOutput extends IndexOutput {
   private final Consumer<ByteBuffersDataOutput> onClose;
   

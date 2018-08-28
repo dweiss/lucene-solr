@@ -36,6 +36,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.UnicodeUtil;
 
+/**
+ * A {@link DataOutput} storing data in a list of {@link ByteBuffer}s.
+ */
 public final class ByteBuffersDataOutput extends DataOutput implements Accountable {
   private final static ByteBuffer EMPTY = ByteBuffer.allocate(0);
   private final static byte [] EMPTY_BYTE_ARRAY = {};
@@ -49,6 +52,11 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
     throw new RuntimeException("reset() is not allowed on this buffer.");
   };
 
+  /**
+   * An implementation of a {@link ByteBuffer} allocation and recycling policy.
+   * The blocks are recycled if exactly the same size is requested, otherwise
+   * they're released to be GCed.
+   */
   public final static class ByteBufferRecycler {
     private final ArrayDeque<ByteBuffer> reuse = new ArrayDeque<>();
     private final IntFunction<ByteBuffer> delegate;

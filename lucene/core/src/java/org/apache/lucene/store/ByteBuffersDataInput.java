@@ -30,6 +30,10 @@ import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
+/**
+ * A {@link DataInput} implementing {@link RandomAccessInput} and reading data from a
+ * list of {@link ByteBuffer}s.
+ */
 public final class ByteBuffersDataInput extends DataInput implements Accountable, RandomAccessInput {
   private final ByteBuffer[] blocks;
   private final int blockBits;
