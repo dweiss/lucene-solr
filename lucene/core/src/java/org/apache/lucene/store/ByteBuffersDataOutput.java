@@ -201,16 +201,16 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    * current content written to the output.
    */
   public ArrayList<ByteBuffer> toBufferList() {
+    ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
     if (blocks.isEmpty()) {
-      return new ArrayList<>();
+      result.add(EMPTY);
     } else {
-      ArrayList<ByteBuffer> result = new ArrayList<>(Math.max(blocks.size(), 1));
       for (ByteBuffer bb : blocks) {
         bb = (ByteBuffer) bb.asReadOnlyBuffer().flip(); // cast for jdk8 (covariant in jdk9+) 
         result.add(bb);
       }
-      return result;
     }
+    return result;
   }
 
   /**
