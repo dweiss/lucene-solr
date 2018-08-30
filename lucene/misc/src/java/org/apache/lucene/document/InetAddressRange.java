@@ -21,7 +21,7 @@ import java.net.InetAddress;
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FutureArrays;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * An indexed InetAddress Range Field
@@ -84,7 +84,7 @@ public class InetAddressRange extends Field {
     final byte[] minEncoded = InetAddressPoint.encode(min);
     final byte[] maxEncoded = InetAddressPoint.encode(max);
     // ensure min is lt max
-    if (FutureArrays.compareUnsigned(minEncoded, 0, 0 + BYTES, maxEncoded, 0, 0 + BYTES) > 0) {
+    if (StringHelper.compare(BYTES, minEncoded, 0, maxEncoded, 0) > 0) {
       throw new IllegalArgumentException("min value cannot be greater than max value for InetAddressRange field");
     }
     System.arraycopy(minEncoded, 0, bytes, 0, BYTES);
