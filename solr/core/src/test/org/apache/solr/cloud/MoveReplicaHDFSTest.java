@@ -52,6 +52,10 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
     System.setProperty("solr.hdfs.blockcache.enabled", "false");
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
+    int NODE_COUNT = 2;
+    configureCluster(NODE_COUNT)
+        .configure();
+
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
     configManager.uploadConfigDir(configset("cloud-hdfs"), "conf1");
 
@@ -64,13 +68,6 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
       IOUtils.close(
           () -> {
             try {
-              if (cluster != null) cluster.shutdown();
-            } catch (Exception e) {
-              throw new IOException("Could not shut down the cluster.", e);
-            }
-          },
-          () -> {
-            try {
               if (dfsCluster != null) HdfsTestUtil.teardownClass(dfsCluster);
             } catch (Exception e) {
               throw new IOException("Could not shut down dfs cluster.", e);
@@ -78,7 +75,6 @@ public class MoveReplicaHDFSTest extends MoveReplicaTest {
           }
       );
     } finally {
-      cluster = null;
       dfsCluster = null;
     }
   }
