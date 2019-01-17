@@ -149,31 +149,32 @@ public final class RamUsageTester {
          */
         try {
           boolean needsReflection = true;
-          if (Constants.JRE_IS_MINIMUM_JAVA9 && obClazz.getName().startsWith("java.")) {
+          if (Constants.JRE_IS_MINIMUM_JAVA9) {
             long alignedShallowInstanceSize = RamUsageEstimator.shallowSizeOf(ob);
 
             // Java 9: Best guess for some known types, as we cannot precisely look into runtime classes:
+            needsReflection = false;
             final ToLongFunction<Object> func = SIMPLE_TYPES.get(obClazz);
             if (func != null) { // some simple type like String where the size is easy to get from public properties
               totalSize += accumulator.accumulateObject(ob, alignedShallowInstanceSize + func.applyAsLong(ob),
                   Collections.emptyMap(), stack);
-              needsReflection = false;
+            } else if (ob instanceof Enum) {
+              totalSize += alignedShallowInstanceSize;
             } else if (ob instanceof ByteBuffer) {
               // Approximate ByteBuffers with their underlying storage (ignores field overhead).
               totalSize += byteArraySize(((ByteBuffer) ob).capacity());
-              needsReflection = false;
             }  else if (ob instanceof Map) {
               final List<Object> values = ((Map<?,?>) ob).entrySet().stream()
                   .flatMap(e -> Stream.of(e.getKey(), e.getValue()))
                   .collect(Collectors.toList());
               totalSize += accumulator.accumulateArray(ob, alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack);
               totalSize += RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
-              needsReflection = false;
             } else if (ob instanceof Iterable) {
-            final List<Object> values = StreamSupport.stream(((Iterable<?>) ob).spliterator(), false)
+              final List<Object> values = StreamSupport.stream(((Iterable<?>) ob).spliterator(), false)
                 .collect(Collectors.toList());
               totalSize += accumulator.accumulateArray(ob, alignedShallowInstanceSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER, values, stack);
-              needsReflection = false;
+            } else {
+              needsReflection = true; // Revert back to reflective access.
             }
           }
 
@@ -274,9 +275,9 @@ public final class RamUsageTester {
                 referenceFields.add(f);
               } catch (RuntimeException re) {
                 throw new RuntimeException(String.format(Locale.ROOT,
-                    "Can't access field %s of class %s for RAM estimation.",
-                    f.toString(),
-                    c.getName()), re);
+                    "Can't access field '%s' of class '%s' for RAM estimation.",
+                    f.getName(),
+                    clazz.getName()), re);
               }
             }
           }
