@@ -132,7 +132,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
           try {
             mockDir.corruptFiles(Collections.singleton(file));
-          } catch (RuntimeException | FileNotFoundException e) {
+          } catch (RuntimeException | FileNotFoundException | NoSuchFileException e) {
             // merges can lead to this exception
           }
         }
