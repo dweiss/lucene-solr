@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
   id "base"
@@ -5,8 +6,19 @@ plugins {
   id "com.gradle.build-scan" version "3.0"
 }
 
+allprojects {
+  tasks.withType(Test) { task ->
+    maxParallelForks = (int) Math.max(Runtime.runtime.availableProcessors() / 2.0, 4.0)
+  }
+}
+
 apply from: file('gradle/buildscan.gradle')
 apply from: file('gradle/travis.gradle')
+
+apply from: file('gradle/test-per-project-summary.gradle')
+apply from: file('gradle/test-slowest.gradle')
+
+apply from: file('gradle/ant-back-compat.gradle')
 
 allprojects {
   repositories {
@@ -21,13 +33,6 @@ allprojects {
 
     compileJava.options.encoding = "UTF-8"
     compileTestJava.options.encoding = "UTF-8"
-
-    sourceSets {
-      main.java.srcDirs = ['src/java']
-      main.resources.srcDirs = ['src/resources']
-      test.java.srcDirs = ['src/test']
-      test.resources.srcDirs = ['src/test-files']
-    }
   }
 }
 
@@ -46,3 +51,4 @@ allprojects {
     }
   }
 }
+
