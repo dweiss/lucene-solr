@@ -2,7 +2,10 @@
 plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.12.4"
+  id "com.gradle.build-scan" version "3.0"
 }
+
+apply from: file('gradle/buildscan.gradle')
 
 allprojects {
   repositories {
