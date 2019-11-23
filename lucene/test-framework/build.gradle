@@ -1,7 +1,8 @@
+apply plugin: 'java-library'
 
 dependencies {
-  implementation project(':lucene:lucene-core')
-  implementation project(':lucene:lucene-codecs')
+  implementation project(':lucene:core')
+  implementation project(':lucene:codecs')
 
   api ("com.carrotsearch.randomizedtesting:randomizedtesting-runner")
   api ('org.hamcrest:hamcrest-core')

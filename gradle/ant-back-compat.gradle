@@ -1,20 +1,31 @@
+//
 // Ant backward compatibility. All of this should be gone at some point.
+//
 
+// Exclude inner classes from testing.
 allprojects {
   tasks.withType(Test) { task ->
-    // Exclude inner classes from testing.
     exclude '**/*$*'
   }
 }
 
+// Adapt to custom folder convention.
 allprojects {
   plugins.withType(JavaPlugin) {
-    // Adapt to custom folder convention.
     sourceSets {
       main.java.srcDirs = ['src/java']
       main.resources.srcDirs = ['src/resources']
       test.java.srcDirs = ['src/test']
       test.resources.srcDirs = ['src/test-files']
+    }
+  }
+}
+
+// Stick to previous artifact names (not identical to path/ folders).
+configure(subprojects.findAll { it.path.contains(':analysis:') } ) {
+  afterEvaluate {
+    plugins.withType(JavaPlugin) {
+      project.archivesBaseName = project.archivesBaseName.replace("-analysis-", "-analyzers-")
     }
   }
 }

@@ -21,6 +21,8 @@ apply from: file('gradle/test-slowest.gradle')
 apply from: file('gradle/ant-back-compat.gradle')
 
 allprojects {
+  apply plugin: 'base'
+
   repositories {
     mavenCentral()
   }
@@ -33,11 +35,9 @@ allprojects {
 
     compileJava.options.encoding = "UTF-8"
     compileTestJava.options.encoding = "UTF-8"
-  }
-}
 
-subprojects {
-  apply plugin: 'java-library'
+    project.archivesBaseName = project.path.replaceAll("^:", "").replace(':', '-')
+  }
 }
 
 allprojects {
@@ -51,4 +51,3 @@ allprojects {
     }
   }
 }
-
