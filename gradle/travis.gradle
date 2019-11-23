@@ -1,0 +1,15 @@
+import org.gradle.api.tasks.testing.logging.*
+
+if (hasProperty("travis")) {
+  allprojects {
+    tasks.withType(Test) { task ->
+      maxParallelForks = 2
+      testLogging {
+        events += [
+          TestLogEvent.PASSED,
+          TestLogEvent.SKIPPED,
+        ]
+      }
+    }
+  }
+}

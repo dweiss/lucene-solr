@@ -13,4 +13,5 @@ cache:
     - $HOME/.gradle/wrapper/
 
 script:
-  - ./gradlew check assemble --console=plain --info --scan --stacktrace
+  - ./gradlew check assemble --scan --stacktrace -Ptravis
+

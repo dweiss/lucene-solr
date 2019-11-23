@@ -6,6 +6,7 @@ plugins {
 }
 
 apply from: file('gradle/buildscan.gradle')
+apply from: file('gradle/travis.gradle')
 
 allprojects {
   repositories {
