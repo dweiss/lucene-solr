@@ -1,21 +1,20 @@
 
-// Map module names to project folders (ideally, remove this mapping in the future).
+// This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
 [
-  // These are dummy modules that don't really produce anything.
-  // Maybe we can skip them entirely?
-  "lucene"                                                 : "lucene",
-  "lucene:analysis"                                        : "lucene/analysis",
+  // These are dummy modules that don't really produce anything. Maybe we can skip them entirely?
+  "lucene"                       : "lucene",
+  "lucene:analysis"              : "lucene/analysis",
 
-  "lucene:core"                                            : "lucene/core",
-  "lucene:codecs"                                          : "lucene/codecs",
-  "lucene:test-framework"                                  : "lucene/test-framework",
-  "lucene:analysis:common"                                 : "lucene/analysis/common",
-  "lucene:analysis:icu"                                    : "lucene/analysis/icu",
+  // Java modules
+  "lucene:core"                  : "lucene/core",
+  "lucene:codecs"                : "lucene/codecs",
+  "lucene:test-framework"        : "lucene/test-framework",
+  "lucene:analysis:common"       : "lucene/analysis/common",
+  "lucene:analysis:icu"          : "lucene/analysis/icu",
+  "lucene:analysis:kuromoji"     : "lucene/analysis/kuromoji",
+  "lucene:analysis:morfologik"   : "lucene/analysis/morfologik",
 
 /*
-  "lucene:lucene-analyzers:lucene-analyzers-icu"           : "lucene/analysis/icu",
-  "lucene:lucene-analyzers:lucene-analyzers-kuromoji"      : "lucene/analysis/kuromoji",
-  "lucene:lucene-analyzers:lucene-analyzers-morfologik"    : "lucene/analysis/morfologik",
   "lucene:lucene-analyzers:lucene-analyzers-nori"          : "lucene/analysis/nori",
   "lucene:lucene-analyzers:lucene-analyzers-opennlp"       : "lucene/analysis/opennlp",
   "lucene:lucene-analyzers:lucene-analyzers-phonetic"      : "lucene/analysis/phonetic",

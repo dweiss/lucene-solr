@@ -29,3 +29,16 @@ configure(subprojects.findAll { it.path.contains(':analysis:') } ) {
     }
   }
 }
+
+// Add a 'resolve' task that copies dependencies to each module's lib/ folder.
+allprojects {
+  plugins.withType(JavaPlugin) {
+    task resolve(type: Sync) {
+      from(configurations.runtimeClasspath, {
+        exclude "lucene-*"
+      })
+
+      into 'lib'
+    }
+  }
+}
