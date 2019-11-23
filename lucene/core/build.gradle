@@ -1,0 +1,5 @@
+
+dependencies {
+  testImplementation project(':lucene:lucene-codecs')
+  testImplementation project(':lucene:lucene-test-framework')
+}

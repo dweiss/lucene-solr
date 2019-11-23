@@ -1,0 +1,44 @@
+
+plugins {
+  id "base"
+  id "com.palantir.consistent-versions" version "1.12.4"
+}
+
+allprojects {
+  repositories {
+    mavenCentral()
+  }
+}
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
+
+    compileJava.options.encoding = "UTF-8"
+    compileTestJava.options.encoding = "UTF-8"
+
+    sourceSets {
+      main.java.srcDirs = ['src/java']
+      main.resources.srcDirs = ['src/resources']
+      test.java.srcDirs = ['src/test']
+      test.resources.srcDirs = ['src/test-files']
+    }
+  }
+}
+
+subprojects {
+  apply plugin: 'java-library'
+}
+
+allprojects {
+  apply plugin: 'idea'
+
+  idea {
+    module {
+      outputDir file('build/idea/classes/main')
+      testOutputDir file('build/idea/classes/test')
+      downloadSources = true
+    }
+  }
+}
