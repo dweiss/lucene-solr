@@ -13,13 +13,13 @@
   "lucene:analysis:icu"          : "lucene/analysis/icu",
   "lucene:analysis:kuromoji"     : "lucene/analysis/kuromoji",
   "lucene:analysis:morfologik"   : "lucene/analysis/morfologik",
+  "lucene:analysis:nori"         : "lucene/analysis/nori",
+  "lucene:analysis:opennlp"      : "lucene/analysis/opennlp",
+  "lucene:analysis:phonetic"     : "lucene/analysis/phonetic",
+  "lucene:analysis:smartcn"      : "lucene/analysis/smartcn",
+  "lucene:analysis:stempel"      : "lucene/analysis/stempel",
 
 /*
-  "lucene:lucene-analyzers:lucene-analyzers-nori"          : "lucene/analysis/nori",
-  "lucene:lucene-analyzers:lucene-analyzers-opennlp"       : "lucene/analysis/opennlp",
-  "lucene:lucene-analyzers:lucene-analyzers-phonetic"      : "lucene/analysis/phonetic",
-  "lucene:lucene-analyzers:lucene-analyzers-smartcn"       : "lucene/analysis/smartcn",
-  "lucene:lucene-analyzers:lucene-analyzers-stempel"       : "lucene/analysis/stempel",
   "lucene:lucene-backward-codecs"                          : "lucene/backward-codecs",
   "lucene:lucene-benchmark"                                : "lucene/benchmark",
   "lucene:lucene-benchmark"                                : "lucene/benchmark",
