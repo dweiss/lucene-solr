@@ -1,0 +1,19 @@
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+  api project(':lucene:codecs')
+
+  implementation 'org.antlr:antlr4-runtime'
+
+  // We avoid pulling in asm-tree here.
+  // The dependency chain is:
+  //   asm-commons -> asm-tree -> asm
+  // It is awkward we force-omit the intermediate dependency here (?).
+  implementation 'org.ow2.asm:asm'
+  implementation('org.ow2.asm:asm-commons', {
+    exclude group: "org.ow2.asm", module: "asm-tree"
+  })
+
+  testImplementation project(':lucene:test-framework')
+}

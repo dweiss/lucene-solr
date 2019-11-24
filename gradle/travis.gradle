@@ -8,7 +8,7 @@ if (hasProperty("travis")) {
       afterSuite { desc, result ->
         if (desc.className) {
           def tc = result.testCount
-          logger.lifecycle("Completed: ${desc.className} (${tc} ${tc = 1 ? 'test' : 'tests'})")
+          logger.lifecycle("Completed: ${desc.className} (${tc} ${tc == 1 ? 'test' : 'tests'})")
         }
       }
     }
