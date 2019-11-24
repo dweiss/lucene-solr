@@ -1,47 +1,45 @@
 
+// These are dummy modules that don't really produce anything. Maybe we can skip them entirely?
+include "lucene"
+include "lucene:core"
+
+include "lucene:analysis:common"
+include "lucene:analysis:icu"
+include "lucene:analysis:kuromoji"
+include "lucene:analysis:morfologik"
+include "lucene:analysis:nori"
+include "lucene:analysis:opennlp"
+include "lucene:analysis:phonetic"
+include "lucene:analysis:smartcn"
+include "lucene:analysis:stempel"
+include "lucene:backward-codecs"
+include "lucene:benchmark"
+include "lucene:classification"
+include "lucene:codecs"
+include "lucene:demo"
+include "lucene:expressions"
+include "lucene:facet"
+include "lucene:grouping"
+include "lucene:highlighter"
+include "lucene:join"
+include "lucene:luke"
+include "lucene:memory"
+include "lucene:misc"
+include "lucene:monitor"
+include "lucene:queries"
+include "lucene:queryparser"
+include "lucene:replicator"
+include "lucene:sandbox"
+include "lucene:spatial"
+include "lucene:spatial-extras"
+include "lucene:spatial3d"
+include "lucene:suggest"
+include "lucene:test-framework"
+
+
+
 // This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
 [
-  // These are dummy modules that don't really produce anything. Maybe we can skip them entirely?
-  "lucene"                       : "lucene",
-  "lucene:analysis"              : "lucene/analysis",
-
-  // Java modules
-  "lucene:core"                  : "lucene/core",
-  "lucene:codecs"                : "lucene/codecs",
-  "lucene:test-framework"        : "lucene/test-framework",
-  "lucene:analysis:common"       : "lucene/analysis/common",
-  "lucene:analysis:icu"          : "lucene/analysis/icu",
-  "lucene:analysis:kuromoji"     : "lucene/analysis/kuromoji",
-  "lucene:analysis:morfologik"   : "lucene/analysis/morfologik",
-  "lucene:analysis:nori"         : "lucene/analysis/nori",
-  "lucene:analysis:opennlp"      : "lucene/analysis/opennlp",
-  "lucene:analysis:phonetic"     : "lucene/analysis/phonetic",
-  "lucene:analysis:smartcn"      : "lucene/analysis/smartcn",
-  "lucene:analysis:stempel"      : "lucene/analysis/stempel",
-  "lucene:backward-codecs"       : "lucene/backward-codecs",
-
-  "lucene:expressions"           : "lucene/expressions",
-  "lucene:queries"               : "lucene/queries",
-  "lucene:facet"                 : "lucene/facet",
-  "lucene:grouping"              : "lucene/grouping",
-  "lucene:highlighter"           : "lucene/highlighter",
-  "lucene:memory"                : "lucene/memory",
-  "lucene:queryparser"           : "lucene/queryparser",
-  "lucene:sandbox"               : "lucene/sandbox",
-  "lucene:classification"        : "lucene/classification",
-  "lucene:demo"                  : "lucene/demo",
-  "lucene:join"                  : "lucene/join",
-  "lucene:luke"                  : "lucene/luke",
-  "lucene:misc"                  : "lucene/misc",
-  "lucene:monitor"               : "lucene/monitor",
-  "lucene:suggest"               : "lucene/suggest",
-  "lucene:replicator"            : "lucene/replicator",
-
-  "lucene:spatial"               : "lucene/spatial",
-  "lucene:spatial3d"             : "lucene/spatial3d",
-  "lucene:spatial-extras"        : "lucene/spatial-extras",
-  "lucene:benchmark"             : "lucene/benchmark",
-
 /*
   "solr"                                                   : "solr",
   "solr:solr-contrib"                                      : "solr/contrib",
