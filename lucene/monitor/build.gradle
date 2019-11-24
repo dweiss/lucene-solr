@@ -1,0 +1,10 @@
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+  api project(':lucene:analysis:common')
+  api project(':lucene:queryparser')
+  api project(':lucene:memory')
+
+  testImplementation project(':lucene:test-framework')
+}

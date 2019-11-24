@@ -33,16 +33,16 @@
   "lucene:join"                  : "lucene/join",
   "lucene:luke"                  : "lucene/luke",
   "lucene:misc"                  : "lucene/misc",
+  "lucene:monitor"               : "lucene/monitor",
+  "lucene:suggest"               : "lucene/suggest",
 
   "lucene:spatial"               : "lucene/spatial",
   //"lucene:spatial-extras"        : "lucene/spatial-extras",
   //"lucene:benchmark"             : "lucene/benchmark",
 
 /*
-  "lucene:lucene-monitor"                                  : "lucene/monitor",
   "lucene:lucene-replicator"                               : "lucene/replicator",
   "lucene:lucene-spatial3d"                                : "lucene/spatial3d",
-  "lucene:lucene-suggest"                                  : "lucene/suggest",
   "solr"                                                   : "solr",
   "solr:solr-contrib"                                      : "solr/contrib",
   "solr:solr-contrib:solr-contrib-analysis-extras"         : "solr/contrib/analysis-extras",
