@@ -35,14 +35,14 @@
   "lucene:misc"                  : "lucene/misc",
   "lucene:monitor"               : "lucene/monitor",
   "lucene:suggest"               : "lucene/suggest",
+  "lucene:replicator"            : "lucene/replicator",
 
   "lucene:spatial"               : "lucene/spatial",
-  //"lucene:spatial-extras"        : "lucene/spatial-extras",
-  //"lucene:benchmark"             : "lucene/benchmark",
+  "lucene:spatial3d"             : "lucene/spatial3d",
+  "lucene:spatial-extras"        : "lucene/spatial-extras",
+  "lucene:benchmark"             : "lucene/benchmark",
 
 /*
-  "lucene:lucene-replicator"                               : "lucene/replicator",
-  "lucene:lucene-spatial3d"                                : "lucene/spatial3d",
   "solr"                                                   : "solr",
   "solr:solr-contrib"                                      : "solr/contrib",
   "solr:solr-contrib:solr-contrib-analysis-extras"         : "solr/contrib/analysis-extras",

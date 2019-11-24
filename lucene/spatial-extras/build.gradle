@@ -9,7 +9,6 @@ dependencies {
   
   testImplementation 'org.locationtech.jts:jts-core'
   testImplementation 'org.locationtech.spatial4j:spatial4j::tests'
-  
+
   testImplementation project(':lucene:test-framework')
-  testImplementation project(path: ':lucene:lucene-spatial3d', configuration: 'testOutput')
 }

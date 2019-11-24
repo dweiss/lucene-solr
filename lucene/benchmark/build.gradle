@@ -18,11 +18,3 @@ dependencies {
 
   testImplementation project(':lucene:test-framework')
 }
-
-// Treat 'conf' as resources folder.
-
-task copyConfResources(type: Copy) {
-  from('conf')
-  into mfile(sourceSets.test.java.outputDir, "conf")
-}
-processTestResources.dependsOn copyConfResources

@@ -1,11 +1,22 @@
 //
-// Ant backward compatibility. All of this should be gone at some point.
+// Ant-compatibility layer. ALL of sections below should be gone at some point. They are
+// here so that we can coexist with current ant build but they are potential problems or
+// can be cleaned up by following conventions.
 //
 
 // Exclude inner classes from testing.
 allprojects {
   tasks.withType(Test) { task ->
     exclude '**/*$*'
+  }
+}
+
+// Exclude test classes that are not actually stand-alone tests (they're executed from other stuff).
+configure(project(":lucene:replicator")) {
+  afterEvaluate {
+    test {
+      exclude "**/SimpleServer*"
+    }
   }
 }
 
@@ -30,7 +41,7 @@ allprojects {
 }
 
 // Stick to previous artifact names (not identical to path/ folders).
-configure(subprojects.findAll { it.path.contains(':analysis:') } ) {
+configure(subprojects.findAll { it.path.contains(':analysis:') }) {
   afterEvaluate {
     plugins.withType(JavaPlugin) {
       project.archivesBaseName = project.archivesBaseName.replace("-analysis-", "-analyzers-")
@@ -48,5 +59,40 @@ allprojects {
 
       into 'lib'
     }
+  }
+}
+
+// Set up cross-project dependency on test classes. This should be resolved by pulling reused classes into
+// a separate regular module. Exporting test classes is sort of weird.
+configure(project(":lucene:spatial3d")) {
+  afterEvaluate {
+    configurations {
+      testClassesExported
+    }
+
+    artifacts {
+      testClassesExported sourceSets.test.java.outputDir, {
+        builtBy compileTestJava
+      }
+    }
+  }
+}
+
+configure(project(":lucene:spatial-extras")) {
+  afterEvaluate {
+    dependencies {
+      testImplementation project(path: ':lucene:spatial3d', configuration: 'testClassesExported')
+    }
+  }
+}
+
+// Resources from top-level project folder are looked up via getClass(). Strange.
+configure(project(":lucene:benchmark")) {
+  afterEvaluate {
+    task syncConf(type: Sync) {
+      from('conf')
+      into file("${sourceSets.test.java.outputDir}/conf")
+    }
+    processTestResources.dependsOn syncConf
   }
 }
