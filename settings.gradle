@@ -33,8 +33,8 @@ include "lucene:spatial3d"
 include "lucene:suggest"
 include "lucene:test-framework"
 
-include "solr:core"
 include "solr:solrj"
+include "solr:core"
 include "solr:test-framework"
 
 // This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
