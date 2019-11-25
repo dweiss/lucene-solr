@@ -57,3 +57,19 @@ allprojects {
     }
   }
 }
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    test {
+      useJUnit()
+      minHeapSize = "256m"
+      maxHeapSize = "512m"
+     
+      systemProperty 'java.security.egd', 'file:/dev/./urandom'  
+      systemProperty 'java.awt.headless', 'true'
+      systemProperty 'jetty.testMode', '1'
+      systemProperty 'jetty.insecurerandom', '1'
+      systemProperty 'jdk.map.althashing.threshold', '0'
+    }
+  }
+}
