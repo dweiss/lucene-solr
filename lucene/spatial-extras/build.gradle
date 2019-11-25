@@ -6,7 +6,7 @@ dependencies {
   
   implementation 'org.locationtech.spatial4j:spatial4j'
   implementation 'io.sgr:s2-geometry-library-java'
-  
+
   testImplementation 'org.locationtech.jts:jts-core'
   testImplementation 'org.locationtech.spatial4j:spatial4j::tests'
 

@@ -42,8 +42,8 @@ allprojects {
 
 // Stick to previous artifact names (not identical to path/ folders).
 configure(subprojects.findAll { it.path.contains(':analysis:') }) {
-  afterEvaluate {
-    plugins.withType(JavaPlugin) {
+  plugins.withType(JavaPlugin) {
+    afterEvaluate {
       project.archivesBaseName = project.archivesBaseName.replace("-analysis-", "-analyzers-")
     }
   }
@@ -54,7 +54,10 @@ allprojects {
   plugins.withType(JavaPlugin) {
     task resolve(type: Sync) {
       from({
-        return configurations.runtimeClasspath.copyRecursive({ dep -> !(dep instanceof org.gradle.api.artifacts.ProjectDependency) })
+        return configurations.compileClasspath.copyRecursive({ dep -> !(dep instanceof org.gradle.api.artifacts.ProjectDependency) })
+      })
+      from({
+        return configurations.testCompileClasspath.copyRecursive({ dep -> !(dep instanceof org.gradle.api.artifacts.ProjectDependency) })
       })
 
       into 'lib'
@@ -65,7 +68,7 @@ allprojects {
 // Set up cross-project dependency on test classes. This should be resolved by pulling reused classes into
 // a separate regular module. Exporting test classes is sort of weird.
 configure(project(":lucene:spatial3d")) {
-  afterEvaluate {
+  plugins.withType(JavaPlugin) {
     configurations {
       testClassesExported
     }
@@ -79,20 +82,34 @@ configure(project(":lucene:spatial3d")) {
 }
 
 configure(project(":lucene:spatial-extras")) {
-  afterEvaluate {
+  plugins.withType(JavaPlugin) {
     dependencies {
       testImplementation project(path: ':lucene:spatial3d', configuration: 'testClassesExported')
+      testImplementation 'org.slf4j:slf4j-api'
     }
   }
 }
 
 // Resources from top-level project folder are looked up via getClass(). Strange.
 configure(project(":lucene:benchmark")) {
-  afterEvaluate {
+  plugins.withType(JavaPlugin) {
     task syncConf(type: Sync) {
       from('conf')
       into file("${sourceSets.test.java.outputDir}/conf")
     }
     processTestResources.dependsOn syncConf
+  }
+}
+
+// lucene:replicator has httpclient dependency with transitive commons-logging:1.2 but currently
+// requires 1.1.2. This commons-logging should be removed entirely and replaced with slf4j-to-*
+// redirector.
+configure(project(":lucene:replicator")) {
+  plugins.withType(JavaPlugin) {
+    configurations.all {
+      resolutionStrategy {
+        force 'commons-logging:commons-logging:1.1.3'
+      }
+    }
   }
 }
