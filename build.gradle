@@ -70,6 +70,7 @@ allprojects {
       systemProperty 'jetty.testMode', '1'
       systemProperty 'jetty.insecurerandom', '1'
       systemProperty 'jdk.map.althashing.threshold', '0'
+      systemProperty 'tests.seed', '1554DC1435B62ACC'
     }
   }
 }

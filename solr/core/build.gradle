@@ -75,7 +75,7 @@ dependencies {
   implementation 'org.codehaus.janino:janino'
   implementation 'org.eclipse.jetty.http2:http2-common'
   implementation 'org.eclipse.jetty.http2:http2-server'
-  implementation 'org.eclipse.jetty:jetty-alpn-server'
+  api 'org.eclipse.jetty:jetty-alpn-server'
   implementation 'org.eclipse.jetty:jetty-rewrite'
   api 'org.eclipse.jetty:jetty-servlet'
   api 'org.restlet.jee:org.restlet'

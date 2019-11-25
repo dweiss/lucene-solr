@@ -25,6 +25,7 @@ dependencies {
   api 'org.eclipse.jetty:jetty-util'
   api 'org.eclipse.jetty:jetty-http'
   api 'org.eclipse.jetty:jetty-alpn-java-client'
+  api 'org.eclipse.jetty:jetty-alpn-client'
 
   api 'io.netty:netty-buffer'
   api 'io.netty:netty-codec'
@@ -39,8 +40,9 @@ dependencies {
     exclude group: "javax.xml.stream", module: "stax-api"
   })
 
-  testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
   testImplementation 'org.eclipse.jetty:jetty-webapp'
+  testImplementation 'org.eclipse.jetty:jetty-alpn-java-server'
+  testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
   testImplementation 'org.objenesis:objenesis'
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
