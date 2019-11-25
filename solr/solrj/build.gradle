@@ -50,6 +50,7 @@ dependencies {
   testImplementation("org.apache.logging.log4j:log4j-slf4j-impl", {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
+  testImplementation "org.hsqldb:hsqldb"
 
   testImplementation project(':solr:test-framework')
 }
