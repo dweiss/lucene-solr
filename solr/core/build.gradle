@@ -15,6 +15,7 @@ dependencies {
   api project(':lucene:core')
 
   implementation project(':lucene:codecs')
+  implementation project(':lucene:analysis:phonetic')
   implementation project(':lucene:analysis:common')
   implementation project(':lucene:analysis:kuromoji')
   implementation project(':lucene:analysis:nori')
