@@ -2,7 +2,18 @@
 apply plugin: 'java-library'
 
 dependencies {
+  runtimeOnly ('com.lmax:disruptor')
+
+  // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
+  runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false }
+  runtimeOnly ('org.apache.kerby:kerb-core')
+  runtimeOnly ('org.apache.kerby:kerb-util')
+  runtimeOnly ('org.apache.kerby:kerby-asn1')
+  runtimeOnly ('org.apache.kerby:kerby-pkix')
+  runtimeOnly ('com.google.protobuf:protobuf-java')
+
   api project(':lucene:core')
+
   implementation project(':lucene:codecs')
   implementation project(':lucene:analysis:common')
   implementation project(':lucene:analysis:kuromoji')
