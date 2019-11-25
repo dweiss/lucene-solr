@@ -4,8 +4,8 @@ dependencies {
   api project(':lucene:core')
   api project(':lucene:spatial3d')
   
-  implementation 'org.locationtech.spatial4j:spatial4j'
-  implementation 'io.sgr:s2-geometry-library-java'
+  api 'org.locationtech.spatial4j:spatial4j'
+  api 'io.sgr:s2-geometry-library-java'
 
   testImplementation 'org.locationtech.jts:jts-core'
   testImplementation 'org.locationtech.spatial4j:spatial4j::tests'

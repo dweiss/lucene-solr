@@ -1,8 +1,4 @@
 
-// These are dummy modules that don't really produce anything. Maybe we can skip them entirely?
-include "lucene"
-include "lucene:core"
-
 include "lucene:analysis:common"
 include "lucene:analysis:icu"
 include "lucene:analysis:kuromoji"
@@ -16,6 +12,7 @@ include "lucene:backward-codecs"
 include "lucene:benchmark"
 include "lucene:classification"
 include "lucene:codecs"
+include "lucene:core"
 include "lucene:demo"
 include "lucene:expressions"
 include "lucene:facet"
@@ -36,7 +33,9 @@ include "lucene:spatial3d"
 include "lucene:suggest"
 include "lucene:test-framework"
 
-
+include "solr:core"
+include "solr:solrj"
+include "solr:test-framework"
 
 // This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
 [
@@ -53,7 +52,6 @@ include "lucene:test-framework"
   "solr:solr-contrib:solr-contrib-ltr"                     : "solr/contrib/ltr",
   "solr:solr-contrib:solr-contrib-prometheus-exporter"     : "solr/contrib/prometheus-exporter",
   "solr:solr-contrib:solr-contrib-velocity"                : "solr/contrib/velocity",
-  "solr:solr-core"                                         : "solr/core",
   "solr:solr-example"                                      : "solr/example",
   "solr:solr-example:solr-example-DIH"                     : "solr/example/example-DIH",
   "solr:solr-ref-guide"                                    : "solr/solr-ref-guide",

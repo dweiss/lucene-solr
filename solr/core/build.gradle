@@ -1,0 +1,97 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+  implementation project(':lucene:codecs')
+  implementation project(':lucene:analysis:common')
+  implementation project(':lucene:analysis:kuromoji')
+  implementation project(':lucene:analysis:nori')
+  implementation project(':lucene:suggest')
+  implementation project(':lucene:queries')
+  implementation project(':lucene:highlighter')
+  implementation project(':lucene:spatial-extras')
+  implementation project(':lucene:grouping')
+  implementation project(':lucene:classification')
+  implementation project(':lucene:expressions')
+  implementation project(':lucene:sandbox')
+  implementation project(':lucene:queryparser')
+  implementation project(':lucene:misc')
+  implementation project(':lucene:join')
+
+  api project(':solr:solrj')
+
+  implementation 'com.carrotsearch:hppc'
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
+  implementation 'com.github.ben-manes.caffeine:caffeine'
+  implementation 'com.github.zafarkhaja:java-semver'
+  api('com.google.guava:guava', {
+    exclude group: "org.codehaus.mojo", module: "animal-sniffer-annotations"
+    exclude group: "com.google.j2objc", module: "j2objc-annotations"
+    exclude group: "com.google.errorprone", module: "error_prone_annotations"
+    exclude group: "org.checkerframework", module: "checker-qual"
+    exclude group: "com.google.code.findbugs", module: "jsr305"
+  })
+  implementation 'com.google.re2j:re2j'
+  implementation 'com.jayway.jsonpath:json-path'
+  implementation 'com.tdunning:t-digest'
+  api 'commons-cli:commons-cli'
+  implementation 'commons-codec:commons-codec'
+  api 'commons-collections:commons-collections'
+  implementation 'commons-fileupload:commons-fileupload'
+  implementation 'commons-io:commons-io'
+  api ('io.dropwizard.metrics:metrics-core') {
+    exclude group: 'com.rabbitmq', module: 'amqp-client'
+  }
+  implementation ('io.dropwizard.metrics:metrics-graphite') {
+    exclude group: 'com.rabbitmq', module: 'amqp-client'
+  }
+  implementation 'io.dropwizard.metrics:metrics-jmx'
+  implementation 'io.dropwizard.metrics:metrics-jvm'
+  implementation 'io.opentracing:opentracing-api'
+  implementation 'io.opentracing:opentracing-noop'
+  implementation 'io.opentracing:opentracing-util'
+  implementation 'org.apache.commons:commons-exec'
+  api 'org.apache.commons:commons-lang3'
+  implementation 'org.apache.commons:commons-text'
+  implementation 'org.apache.logging.log4j:log4j-api'
+  implementation 'org.apache.logging.log4j:log4j-core'
+  implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+  api 'org.bitbucket.b_c:jose4j'
+  implementation 'org.codehaus.janino:commons-compiler'
+  implementation 'org.codehaus.janino:janino'
+  implementation 'org.eclipse.jetty.http2:http2-common'
+  implementation 'org.eclipse.jetty.http2:http2-server'
+  implementation 'org.eclipse.jetty:jetty-alpn-server'
+  implementation 'org.eclipse.jetty:jetty-rewrite'
+  api 'org.eclipse.jetty:jetty-servlet'
+  api 'org.restlet.jee:org.restlet'
+  implementation 'org.rrd4j:rrd4j'
+
+  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
+  implementation ('org.apache.calcite:calcite-core') { transitive = false }
+  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
+  implementation ('org.apache.curator:curator-client') { transitive = false }
+  implementation ('org.apache.curator:curator-framework') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
+
+  testImplementation project(':solr:test-framework')
+
+  // hdfs
+  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+
+  testImplementation ('com.sun.jersey:jersey-servlet:1.19.4') { transitive = false }
+
+  testImplementation 'com.google.protobuf:protobuf-java'
+  testImplementation 'commons-logging:commons-logging'
+  testImplementation 'org.mockito:mockito-core'
+  testImplementation 'org.restlet.jee:org.restlet.ext.servlet'
+  testImplementation 'org.eclipse.jetty:jetty-webapp'
+}
