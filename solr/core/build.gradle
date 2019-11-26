@@ -2,8 +2,6 @@
 apply plugin: 'java-library'
 
 dependencies {
-  runtimeOnly ('com.lmax:disruptor')
-
   // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
   runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false }
   runtimeOnly ('org.apache.kerby:kerb-core')
@@ -13,7 +11,6 @@ dependencies {
   runtimeOnly ('com.google.protobuf:protobuf-java')
 
   api project(':lucene:core')
-
   implementation project(':lucene:codecs')
   implementation project(':lucene:analysis:phonetic')
   implementation project(':lucene:analysis:common')
@@ -32,6 +29,7 @@ dependencies {
   implementation project(':lucene:join')
 
   api project(':solr:solrj')
+  api project(':solr:server')
 
   implementation 'com.carrotsearch:hppc'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
