@@ -55,6 +55,9 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8213: LRUQueryCache#doCache now uses IndexSearcher's Executor (if present)
+  to asynchronously cache heavy queries (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -89,6 +92,10 @@ Improvements
 
 * LUCENE-9036: ExitableDirectoryReader may interupt scaning over DocValues (Mikhail Khludnev)
 
+* LUCENE-9062: QueryVisitor now has a consumeTermsMatching() method, allowing queries
+  that match a class of terms to pass a ByteRunAutomaton matching those that class
+  back to the visitor. (Alan Woodward, David Smiley)
+
 Optimizations
 
 * LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
@@ -115,6 +122,9 @@ Optimizations
 
 * LUCENE-9027: Use SIMD instructions to decode postings. (Adrien Grand)
 
+* LUCENE-9049: Remove FST cached root arcs now redundant with labels indexed by bitset.
+  This frees some on-heap FST space. (Jack Conradson via Bruno Roustant)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
@@ -122,10 +132,9 @@ Bug Fixes
 * LUCENE-9030: Fix WordnetSynonymParser behaviour so it behaves similar to
   SolrSynonymParser. (Christoph Buescher via Alan Woodward)
 
-* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
-  visitor. (Alan Woodward)
-
 * LUCENE-9054: Fix reproduceJenkinsFailures.py to not overwrite junit XML files when retrying (hossman)
+
+* LUCENE-9031: UnsupportedOperationException on MatchesIterator.getQuery() (Alan Woodward, Mikhail Khludnev)
 
 Other
 
@@ -138,11 +147,22 @@ Other
 
 * LUCENE-9046: Fix wrong example in Javadoc of TermInSetQuery (Namgyu Kim)
 
+* LUCENE-8983: Add sandbox PhraseWildcardQuery to control multi-terms expansions in a phrase. (Bruno Roustant)
+
+* LUCENE-9067: Polygon2D#contains() is now thread safe. (Ignacio Vera)
+
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
 
 * LUCENE-9041: Upgrade ecj to 3.19.0 to fix sporadic precommit javadoc issues (Kevin Risden)
+
+======================= Lucene 8.3.1 =======================
+
+Bug Fixes
+
+* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
+  visitor. (Alan Woodward)
 
 ======================= Lucene 8.3.0 =======================
 

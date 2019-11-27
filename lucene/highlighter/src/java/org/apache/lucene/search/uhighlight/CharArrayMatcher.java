@@ -14,26 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
 
+package org.apache.lucene.search.uhighlight;
 
-import java.util.concurrent.Executor;
+import java.util.List;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
- * A cache for queries.
+ * Matches a character array
  *
- * @see LRUQueryCache
- * @lucene.experimental
+ * @lucene.internal
  */
-public interface QueryCache {
+public interface CharArrayMatcher {
 
   /**
-   * Return a wrapper around the provided <code>weight</code> that will cache
-   * matching docs per-segment accordingly to the given <code>policy</code>.
-   * NOTE: The returned weight will only be equivalent if scores are not needed.
-   * @see Collector#scoreMode()
-   * If the Executor is not null, it will be used to perform asynchronous caching
+   * Return {@code true} if the passed-in character array matches
    */
-  Weight doCache(Weight weight, QueryCachingPolicy policy, Executor executor);
+  boolean match(char[] s, int offset, int length);
+
+  /**
+   * Return {@code true} if the passed-in CharsRef matches
+   */
+  default boolean match(CharsRef chars) {
+    return match(chars.chars, chars.offset, chars.length);
+  }
+
+  static CharArrayMatcher fromTerms(List<BytesRef> terms) {
+    CharacterRunAutomaton a = new CharacterRunAutomaton(Automata.makeStringUnion(terms));
+    return a::run;
+  }
 
 }
