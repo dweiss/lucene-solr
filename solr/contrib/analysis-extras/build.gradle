@@ -2,10 +2,7 @@
 apply plugin: 'java-library'
 
 dependencies {
-  implementation project(':solr:solrj')
   implementation project(':solr:core')
-  implementation project(':lucene:core')
-  implementation project(':lucene:codecs')
   implementation project(':lucene:analysis:icu')
   implementation project(':lucene:analysis:smartcn')
   implementation project(':lucene:analysis:morfologik')

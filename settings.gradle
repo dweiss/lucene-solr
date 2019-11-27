@@ -39,14 +39,11 @@ include "solr:test-framework"
 include "solr:server"
 include "solr:contrib:analysis-extras"
 include "solr:contrib:dataimporthandler"
+include "solr:contrib:analytics"
 
 // This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
 [
 /*
-  "solr"                                                   : "solr",
-  "solr:solr-contrib"                                      : "solr/contrib",
-  "solr:solr-contrib:solr-contrib-analysis-extras"         : "solr/contrib/analysis-extras",
-  "solr:solr-contrib:solr-contrib-analytics"               : "solr/contrib/analytics",
   "solr:solr-contrib:solr-contrib-clustering"              : "solr/contrib/clustering",
   "solr:solr-contrib:solr-contrib-dataimporthandler"       : "solr/contrib/dataimporthandler",
   "solr:solr-contrib:solr-contrib-dataimporthandler-extras": "solr/contrib/dataimporthandler-extras",

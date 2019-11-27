@@ -33,7 +33,7 @@ dependencies {
   api project(':solr:server')
 
   implementation 'com.carrotsearch:hppc'
-  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  api 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
   implementation 'com.github.ben-manes.caffeine:caffeine'
   implementation 'com.github.zafarkhaja:java-semver'
@@ -96,11 +96,18 @@ dependencies {
   testImplementation project(':solr:contrib:analysis-extras')
   testImplementation project(':solr:test-framework')
 
-  // hdfs
   testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+
+  testImplementation ('org.apache.kerby:kerb-client') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-common') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-identity') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-server') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-simplekdc') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-admin') { transitive = false }
+  testImplementation ('org.apache.kerby:kerby-kdc') { transitive = false }
 
   testImplementation ('com.sun.jersey:jersey-servlet:1.19.4') { transitive = false }
 
