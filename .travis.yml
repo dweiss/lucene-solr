@@ -12,6 +12,13 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
 
+env:
+  - PROJECT=lucene
+  - PROJECT=solr/core
+  - PROJECT=solr/solrj
+  - PROJECT=solr/contrib
+  - PROJECT=solr/server
+
 script:
-  - ./gradlew -p lucene check assemble --scan --stacktrace -Ptravis
+  - ./gradlew -p $PROJECT check assemble --scan --stacktrace -Ptravis
 
