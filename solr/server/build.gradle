@@ -59,47 +59,22 @@ dependencies {
   api 'javax.servlet:javax.servlet-api'
 }
 
-task collectDependencies(type: Sync) {
+task startJar(type: Copy) {
   from { project.configurations.startJar.singleFile } {
     rename { file -> 'start.jar' }\
   }
 
-  from(project.configurations.compileClasspath, {
-    into 'lib/'
-  })
-
-  from(project.configurations.libExt, {
-    into 'lib/ext/'
-  })
-
-  from(projectDir, {
-    include "contexts/**"
-    include "etc/**"
-    include "modules/**"
-    include "resources/**"
-    include "scripts/**"
-    include "solr/**"
-    include "README.txt"
-  })
-
-  into "$buildDir/assembled"
-}
-
-// faux module, does not produce any actual JAR files. We only export deps.
-jar.enabled = false
-
-// This copies JARs back from the assembly location into the project source location(s).
-// TODO: we should get rid of this, it's insane (ant-compat).
-task copyIntoProjectSources(type: Copy) {
-  dependsOn collectDependencies
-
-  from "$buildDir/assembled"
   into projectDir
 }
 
-assemble.dependsOn collectDependencies, copyIntoProjectSources
+task libs(type: Sync) {
+  from project.configurations.compileClasspath
 
-resolve {
-  dependsOn assemble
-  preserve "lib/ext"
+  from(project.configurations.libExt, {
+    into 'ext/'
+  })
+
+  into file("lib")
 }
+
+resolve.dependsOn startJar, libs

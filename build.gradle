@@ -1,4 +1,4 @@
-import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.apache.tools.ant.taskdefs.condition.Os
 
 plugins {
   id "base"
@@ -71,6 +71,8 @@ allprojects {
       systemProperty 'jetty.insecurerandom', '1'
       systemProperty 'jdk.map.althashing.threshold', '0'
       systemProperty 'tests.seed', '1554DC1435B62ACC'
+
+      systemProperty 'tests.disableHdfs', Os.isFamily(Os.FAMILY_WINDOWS) ? 'true' : 'false'
     }
   }
 }

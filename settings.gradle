@@ -37,6 +37,8 @@ include "solr:solrj"
 include "solr:core"
 include "solr:test-framework"
 include "solr:server"
+include "solr:contrib:analysis-extras"
+include "solr:contrib:dataimporthandler"
 
 // This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
 [

@@ -11,4 +11,5 @@ dependencies {
   testImplementation 'org.locationtech.spatial4j:spatial4j::tests'
 
   testImplementation project(':lucene:test-framework')
+  testImplementation 'org.slf4j:slf4j-api'
 }
