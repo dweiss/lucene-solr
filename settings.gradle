@@ -40,6 +40,7 @@ include "solr:server"
 include "solr:contrib:analysis-extras"
 include "solr:contrib:dataimporthandler"
 include "solr:contrib:analytics"
+include "solr:solr-ref-guide"
 
 // This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
 [
@@ -54,7 +55,6 @@ include "solr:contrib:analytics"
   "solr:solr-contrib:solr-contrib-velocity"                : "solr/contrib/velocity",
   "solr:solr-example"                                      : "solr/example",
   "solr:solr-example:solr-example-DIH"                     : "solr/example/example-DIH",
-  "solr:solr-ref-guide"                                    : "solr/solr-ref-guide",
   "solr:solr-solrj"                                        : "solr/solrj",
   "solr:solr-test-framework"                               : "solr/test-framework",
 */
