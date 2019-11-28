@@ -1,0 +1,14 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':solr:core')
+  implementation project(':lucene:analysis:common')
+
+  implementation 'org.apache.velocity:velocity-engine-core'
+  implementation 'org.apache.velocity.tools:velocity-tools-generic'
+  implementation 'org.apache.velocity.tools:velocity-tools-view'
+  implementation 'org.apache.velocity.tools:velocity-tools-view-jsp'
+
+  testImplementation project(':solr:test-framework')
+}

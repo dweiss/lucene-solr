@@ -113,3 +113,4 @@ org.tallison:jmatio=1.5
 org.tukaani:xz=1.8
 ua.net.nlp:morfologik-ukrainian-search=3.9.0
 xerces:xercesImpl=2.9.1
+io.jaegertracing:*=0.35.5

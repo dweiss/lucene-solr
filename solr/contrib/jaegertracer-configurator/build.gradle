@@ -1,0 +1,10 @@
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':solr:core')
+
+  implementation "io.jaegertracing:jaeger-core"
+  implementation "io.jaegertracing:jaeger-thrift"
+
+  testImplementation project(':solr:test-framework')
+}

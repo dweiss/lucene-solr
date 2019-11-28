@@ -40,6 +40,13 @@ allprojects {
   }
 }
 
+// Adapt to custom 'web' folder location.
+configure(project(":solr:webapp")) {
+  plugins.withType(WarPlugin) {
+    webAppDirName = "web"
+  }
+}
+
 // Stick to previous artifact names (not identical to path/ folders).
 configure(subprojects.findAll { it.path.contains(':analysis:') }) {
   plugins.withType(JavaPlugin) {
@@ -166,3 +173,4 @@ configure(project(":solr:contrib:dataimporthandler-extras")) {
     }
   }
 }
+

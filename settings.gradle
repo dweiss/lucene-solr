@@ -42,16 +42,10 @@ include "solr:contrib:dataimporthandler-extras"
 include "solr:contrib:analytics"
 include "solr:contrib:clustering"
 include "solr:contrib:extraction"
-
+include "solr:contrib:langid"
+include "solr:contrib:jaegertracer-configurator"
+include "solr:contrib:prometheus-exporter"
+include "solr:contrib:velocity"
+include "solr:webapp"
 include "solr:test-framework"
 include "solr:solr-ref-guide"
-
-// This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
-/*
-  "solr:solr-contrib:solr-contrib-langid"                  : "solr/contrib/langid",
-  "solr:solr-contrib:solr-contrib-ltr"                     : "solr/contrib/ltr",
-  "solr:solr-contrib:solr-contrib-prometheus-exporter"     : "solr/contrib/prometheus-exporter",
-  "solr:solr-contrib:solr-contrib-velocity"                : "solr/contrib/velocity",
-  "solr:solr-example"                                      : "solr/example",
-  "solr:solr-example:solr-example-DIH"                     : "solr/example/example-DIH",
-*/
