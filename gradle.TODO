@@ -3,6 +3,8 @@ could use some improvement.
 
 - add the remaining Solr projects.
 
+- ant back-compat solr:contrib:extraction is solr-contrib-cell (why?!)
+
 - create a 'distribution' subproject for Solr that packages everything as it was
   in the ant distribution.
 
@@ -36,3 +38,5 @@ could use some improvement.
 
 - any IDE integration layers, if required.
 
+- clean up dependencies: any { transitive = false } should just explicitly exclude whatevery they don't need
+  (and their dependencies currently declared explicitly should be folded).

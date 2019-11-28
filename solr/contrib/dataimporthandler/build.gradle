@@ -3,7 +3,7 @@ apply plugin: 'java-library'
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':solr:solrj')
+
   implementation project(':lucene:core')
   implementation project(':lucene:analysis:common')
   implementation project(':lucene:join')
@@ -17,9 +17,8 @@ dependencies {
   implementation ('org.apache.zookeeper:zookeeper-jute')
   implementation ('io.dropwizard.metrics:metrics-core')
   
-  testImplementation project(':lucene:test-framework')
   testImplementation project(':solr:test-framework')
-  
+
   testImplementation ('org.mockito:mockito-core')
   testImplementation ('org.hsqldb:hsqldb')
   testImplementation ('org.apache.derby:derby')

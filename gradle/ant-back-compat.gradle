@@ -158,3 +158,11 @@ configure(project(":solr:contrib:analysis-extras")) {
     }
   }
 }
+
+configure(project(":solr:contrib:dataimporthandler-extras")) {
+  plugins.withType(JavaPlugin) {
+    dependencies {
+      testImplementation project(path: ':solr:contrib:dataimporthandler', configuration: 'testClassesExported')
+    }
+  }
+}

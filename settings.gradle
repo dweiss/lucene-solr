@@ -35,26 +35,23 @@ include "lucene:test-framework"
 
 include "solr:solrj"
 include "solr:core"
-include "solr:test-framework"
 include "solr:server"
 include "solr:contrib:analysis-extras"
 include "solr:contrib:dataimporthandler"
+include "solr:contrib:dataimporthandler-extras"
 include "solr:contrib:analytics"
 include "solr:contrib:clustering"
+include "solr:contrib:extraction"
+
+include "solr:test-framework"
 include "solr:solr-ref-guide"
 
 // This is module name -> folder mapping. Ideally, we wouldn't need it (physical path would reflect module path).
 /*
-  "solr:solr-contrib:solr-contrib-clustering"              : "solr/contrib/clustering",
-  "solr:solr-contrib:solr-contrib-dataimporthandler"       : "solr/contrib/dataimporthandler",
-  "solr:solr-contrib:solr-contrib-dataimporthandler-extras": "solr/contrib/dataimporthandler-extras",
-  "solr:solr-contrib:solr-contrib-cell"                    : "solr/contrib/extraction",
   "solr:solr-contrib:solr-contrib-langid"                  : "solr/contrib/langid",
   "solr:solr-contrib:solr-contrib-ltr"                     : "solr/contrib/ltr",
   "solr:solr-contrib:solr-contrib-prometheus-exporter"     : "solr/contrib/prometheus-exporter",
   "solr:solr-contrib:solr-contrib-velocity"                : "solr/contrib/velocity",
   "solr:solr-example"                                      : "solr/example",
   "solr:solr-example:solr-example-DIH"                     : "solr/example/example-DIH",
-  "solr:solr-solrj"                                        : "solr/solrj",
-  "solr:solr-test-framework"                               : "solr/test-framework",
 */
