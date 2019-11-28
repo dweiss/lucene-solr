@@ -1,8 +1,10 @@
 
 // Maven publications and configuration.
+//
+// the 'published' list contains an explicit list of all projects
+// which should be published to Maven repositories.
 
 configure(rootProject) {
-  // Enumerate all projects that should be published to Maven repos.
   ext {
     published = [
         ":lucene:analysis:common",
@@ -38,6 +40,20 @@ configure(rootProject) {
         ":lucene:spatial3d",
         ":lucene:suggest",
         ":lucene:test-framework",
+
+        ":solr:core",
+        ":solr:solrj",
+        ":solr:contrib:analysis-extras",
+        ":solr:contrib:dataimporthandler",
+        ":solr:contrib:dataimporthandler-extras",
+        ":solr:contrib:analytics",
+        ":solr:contrib:clustering",
+        ":solr:contrib:extraction",
+        ":solr:contrib:langid",
+        ":solr:contrib:jaegertracer-configurator",
+        ":solr:contrib:prometheus-exporter",
+        ":solr:contrib:velocity",
+        ":solr:test-framework",
     ]
   }
 
@@ -75,7 +91,7 @@ configure(rootProject) {
           // JARS and sources, no javadocs (for local inspection only).
           jars(MavenPublication) {
             from components.java
-            group = project.group
+            groupId = project.group
             artifactId = project.archivesBaseName
 
             artifact sourcesJar
@@ -86,7 +102,7 @@ configure(rootProject) {
           // Full set of signed artifacts.
           signed(MavenPublication) {
             from components.java
-            group = project.group
+            groupId = project.group
             artifactId = project.archivesBaseName
 
             artifact sourcesJar

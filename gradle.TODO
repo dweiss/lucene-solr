@@ -1,8 +1,6 @@
 Things that gradle build is currently missing or
 could use some improvement.
 
-- add the remaining Solr projects.
-
 - ant back-compat solr:contrib:extraction is solr-contrib-cell (why?!)
 
 - create a 'distribution' subproject for Solr that packages everything as it was
