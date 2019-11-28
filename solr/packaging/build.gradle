@@ -14,9 +14,13 @@ configurations {
   distSolr {
     transitive = false
   }
+
+  distSolrj
 }
 
 dependencies {
+  distSolrj project(":solr:solrj")
+
   distSolr project(":solr:contrib:analysis-extras")
   distSolr project(":solr:contrib:analytics")
   distSolr project(":solr:contrib:extraction")
@@ -52,11 +56,14 @@ task toDir(type: Sync) {
     into "dist"
   })
 
+  from(configurations.distSolrj - configurations.distSolr, {
+    into "dist/solrj-lib"
+  })
+
+  // docs/   - TODO: how is this assembled?
   // contrib/
-  // dist/
-  // docs/
   // example/
-  // server/
+  // server/ (+webapp)
 
   into distDir
 

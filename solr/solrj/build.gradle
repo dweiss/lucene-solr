@@ -2,8 +2,6 @@
 apply plugin: 'java-library'
 
 dependencies {
-  runtimeOnly 'org.slf4j:log4j-over-slf4j'
-
   // Exported right now, but should be hidden/ managed at a higher level (ant-compat)
   api 'org.slf4j:slf4j-api'
   api 'org.slf4j:jcl-over-slf4j'

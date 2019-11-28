@@ -37,3 +37,5 @@ could use some improvement.
 
 - clean up dependencies: any { transitive = false } should just explicitly exclude whatevery they don't need
   (and their dependencies currently declared explicitly should be folded).
+
+- how is Solr distribution's docs/* assembled (see TODO in packaging/build.gradle)?
