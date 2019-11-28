@@ -77,4 +77,4 @@ task libs(type: Sync) {
   into file("lib")
 }
 
-resolve.dependsOn startJar, libs
+assemble.dependsOn startJar, libs

@@ -1,0 +1,22 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    test {
+      useJUnit()
+      minHeapSize = "256m"
+      maxHeapSize = "512m"
+
+      systemProperty 'java.security.egd', 'file:/dev/./urandom'
+      systemProperty 'java.awt.headless', 'true'
+      systemProperty 'jetty.testMode', '1'
+      systemProperty 'jetty.insecurerandom', '1'
+      systemProperty 'jdk.map.althashing.threshold', '0'
+      systemProperty 'tests.seed', '1554DC1435B62ACC'
+
+      systemProperty 'tests.disableHdfs', Os.isFamily(Os.FAMILY_WINDOWS) ? 'true' : 'false'
+
+      maxParallelForks = (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))
+    }
+  }
+}
