@@ -72,15 +72,19 @@ configure(rootProject) {
         }
 
         publications {
+          // JARS and sources, no javadocs (for local inspection only).
           jars(MavenPublication) {
             from components.java
             group = project.group
             artifactId = project.archivesBaseName
 
+            artifact sourcesJar
+
             pom(configurePom)
           }
 
-          maven(MavenPublication) {
+          // Full set of signed artifacts.
+          signed(MavenPublication) {
             from components.java
             group = project.group
             artifactId = project.archivesBaseName
@@ -94,7 +98,7 @@ configure(rootProject) {
       }
 
       signing {
-        sign publishing.publications.maven
+        sign publishing.publications.signed
       }
     }
   }
