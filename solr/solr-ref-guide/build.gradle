@@ -38,25 +38,20 @@ plugins {
 }
 
 configurations {
-    tools
-    refGuide
     depVer
+    refGuide
 }
 
 dependencies {
     // Dependencies to compile internal tools.
-    tools gradleApi()
-    tools localGroovy()
-    tools('org.asciidoctor:asciidoctorj')
-    tools('com.vaadin.external.google:android-json')
-    tools('org.jsoup:jsoup')
-    tools('org.slf4j:jcl-over-slf4j')
-    tools('org.slf4j:slf4j-api')
-    tools('org.slf4j:slf4j-simple')
-    tools('org.apache.logging.log4j:log4j-api')
-    tools('org.apache.logging.log4j:log4j-core')
-    tools('com.google.guava:guava')
-    tools('commons-codec:commons-codec')
+    implementation('org.asciidoctor:asciidoctorj')
+    implementation('com.vaadin.external.google:android-json')
+    implementation('org.jsoup:jsoup')
+    implementation('org.slf4j:jcl-over-slf4j')
+    implementation('org.slf4j:slf4j-simple')
+    implementation('org.apache.logging.log4j:log4j-core')
+    implementation('com.google.guava:guava')
+    implementation('commons-codec:commons-codec')
 
     // Dependencies referenced in the guide.
     depVer('commons-codec:commons-codec')
@@ -79,21 +74,17 @@ dependencies {
 }
 
 sourceSets {
-    tools {
-        compileClasspath += sourceSets.main.runtimeClasspath += configurations.tools
-        runtimeClasspath += sourceSets.main.runtimeClasspath
-
+    refGuide {
         java {
-            exclude '**/CustomizedAsciidoctorAntTask.java'
-        }
-
-        resources {
-            srcDirs += file('tools')
+            srcDirs = ['src']
         }
     }
 
-    tools.java.srcDirs = ['tools']
-    refGuide.java.srcDirs = ['src']
+    main {
+        java {
+            srcDirs = ['tools']
+        }
+    }
 }
 
 ext {
@@ -225,15 +216,10 @@ task buildInit(type: Sync) {
     into buildContentDir
 }
 
-task buildToolsJar(type: Jar) {
-    dependsOn toolsClasses
-    from sourceSets.tools.output
-    archivesBaseName = 'solr-ref-guide-tools'
-}
-
 task buildNavDataFiles(type: JavaExec) {
-    dependsOn buildInit, buildToolsJar
-    classpath = sourceSets.tools.runtimeClasspath
+    dependsOn buildInit, classes
+    classpath = sourceSets.main.runtimeClasspath
+
     main = 'BuildNavDataFiles'
     workingDir = buildContentDir
 
@@ -293,7 +279,7 @@ task bareBonesHtmlValidation(type: JavaExec) {
     dependsOn bareBonesAsciiDoctor
     description("Builds (w/o Jekyll) a very simple html version of the guide and runs link/anchor validation on it")
 
-    classpath = sourceSets.tools.runtimeClasspath
+    classpath = sourceSets.main.runtimeClasspath
     main = 'CheckLinksAndAnchors'
     workingDir = buildContentDir
 
@@ -324,7 +310,7 @@ task buildSite(type: JavaExec) {
 
     dependsOn buildSiteJekyll
 
-    classpath = sourceSets.tools.runtimeClasspath
+    classpath = sourceSets.main.runtimeClasspath
     main = 'CheckLinksAndAnchors'
     workingDir = buildContentDir
 
