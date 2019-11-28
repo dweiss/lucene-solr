@@ -61,7 +61,7 @@ dependencies {
 
 task startJar(type: Copy) {
   from { project.configurations.startJar.singleFile } {
-    rename { file -> 'start.jar' }\
+    rename { file -> 'start.jar' }
   }
 
   into projectDir

@@ -1,8 +1,6 @@
 Things that gradle build is currently missing or
 could use some improvement.
 
-- ant back-compat solr:contrib:extraction is solr-contrib-cell (why?!)
-
 - create a 'distribution' subproject for Solr that packages everything as it was
   in the ant distribution.
 
@@ -18,6 +16,7 @@ could use some improvement.
 - port precommit tasks
 
 - apply forbiddenAPIs
+
 - and other "check" utilities that may be called from ant
 
 - port various "regenerate" tasks from ant builds (javacc, precompiled automata, etc.)

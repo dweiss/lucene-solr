@@ -31,3 +31,9 @@ specify a particular task or module. For example:
 gradlew -p lucene/core check
 gradlew :lucene:core:check
 
+
+Solr-specific targets
+---------------------
+
+ant create-package  => gradlew -p solr/packaging assemble
+

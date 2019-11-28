@@ -1,0 +1,69 @@
+
+// This project puts together a "distribution", assembling dependencies from
+// various other projects.
+
+plugins {
+  id 'base'
+}
+
+ext {
+  distDir = file("$buildDir/solr-${version}")
+}
+
+configurations {
+  distSolr {
+    transitive = false
+  }
+}
+
+dependencies {
+  distSolr project(":solr:contrib:analysis-extras")
+  distSolr project(":solr:contrib:analytics")
+  distSolr project(":solr:contrib:extraction")
+  distSolr project(":solr:contrib:clustering")
+  distSolr project(":solr:contrib:dataimporthandler")
+  distSolr project(":solr:contrib:dataimporthandler-extras")
+  distSolr project(":solr:contrib:jaegertracer-configurator")
+  distSolr project(":solr:contrib:langid")
+  distSolr project(":solr:contrib:ltr")
+  distSolr project(":solr:contrib:prometheus-exporter")
+  distSolr project(":solr:contrib:velocity")
+  distSolr project(":solr:core")
+  distSolr project(":solr:solrj")
+  distSolr project(":solr:test-framework")
+}
+
+task toDir(type: Sync) {
+  from(project(":solr").projectDir, {
+    include "bin/**"
+    include "licenses/**"
+    include "CHANGES.txt"
+    include "LICENSE.txt"
+    include "NOTICE.txt"
+    include "README.txt"
+  })
+
+  from(project(":lucene").projectDir, {
+    include "CHANGES.txt"
+    rename { file -> 'LUCENE_CHANGES.txt' }
+  })
+
+  from(configurations.distSolr, {
+    into "dist"
+  })
+
+  // contrib/
+  // dist/
+  // docs/
+  // example/
+  // server/
+
+  into distDir
+
+  doLast {
+    logger.lifecycle "Solr distribution assembled under: ${distDir}"
+  }
+}
+
+assemble.dependsOn toDir
+
