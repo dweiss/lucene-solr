@@ -1,0 +1,31 @@
+Things that gradle build is currently missing or
+could use some improvement.
+
+- add the remaining Solr projects.
+
+- create a 'distribution' subproject for Solr that packages everything as it was
+  in the ant distribution.
+
+- add any other ant-emulation layer tasks that copy solr libs all over source locations
+  (unless we don't need it if packaging works?)
+
+- helper guides (port from previous gradle branch)
+- apply forbiddenAPIs
+- and other "check" utilities that may be called from ant
+
+- port various "regenerate" tasks from ant builds (javacc, precompiled automata, etc.)
+
+- passing test properties from command line
+- configure build output folders. 
+- configure default temp dir for test processes.
+- configure cwd for test processes. check if build folders are independent for each forked JVM.
+- configure security policy/ sandboxing for test processes.
+
+- rendering of javadocs (gradlew javadoc)
+- fill in POM details in defaults-maven.gradle
+
+- fine-tune defaults so that they're saner (number of test workers running concurrently, 
+  for example).
+
+- any IDE integration layers, if required.
+
