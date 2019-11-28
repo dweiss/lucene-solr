@@ -1,0 +1,33 @@
+Gralde for Ant users
+====================
+
+This shows some common ant targets and their equivalent Gradle commands.
+
+Examples below assume cwd is at the top of the checkout (gradlew 
+script available from ./).
+
+Quoted [string] gives a better, more conventional and commonly used 
+task alternative.
+
+
+ant clean           => gradlew clean
+ant jar             => gradlew jar             [gradlew assemble]
+
+ant compile         => gradlew classes         [gradlew assemble]
+                       gradlew testClasses     [gradlew assemble]
+
+ant validate        => gradlew check
+ant test            => gradlew test            [gradlew check]
+
+ant jar-checksums   => TODO
+ant clean-jars      => NO REPLACEMENT
+
+ant precommit       => gradlew check -x test
+
+If not otherwise qualified, gradle tasks apply to all modules that contain
+a given task name. Use "-p" switch with a directory or a colon-notation to
+specify a particular task or module. For example:
+
+gradlew -p lucene/core check
+gradlew :lucene:core:check
+

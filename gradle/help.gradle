@@ -1,0 +1,15 @@
+// Add "help" tasks which display plain text files under 'help' folder.
+
+configure(rootProject) {
+  [
+    ["Gradle", "help/gradle.txt", "Gradle help for Ant users."],
+  ].each { section, path, sectionInfo ->
+    task "help${section}" {
+      group = 'Help (developer guides and hints)'
+      description = sectionInfo
+      doFirst {
+        println "\n" + rootProject.file(path).getText("UTF-8")
+      }
+    }
+  }
+}

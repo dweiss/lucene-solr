@@ -32,6 +32,7 @@ apply from: file('gradle/defaults-idea.gradle')
 apply from: file('gradle/maven-local.gradle')
 apply from: file('gradle/test-per-project-summary.gradle')
 apply from: file('gradle/test-slowest.gradle')
+apply from: file('gradle/help.gradle')
 
 // ANT backward compatibility layer. This should be eventually gone!
 apply from: file('gradle/ant-back-compat.gradle')

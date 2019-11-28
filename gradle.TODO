@@ -9,7 +9,14 @@ could use some improvement.
 - add any other ant-emulation layer tasks that copy solr libs all over source locations
   (unless we don't need it if packaging works?)
 
-- helper guides (port from previous gradle branch)
+- jar checksums, jar checksum validation
+
+- add an explanation to how the dependency system works (palantir plugin, lockfile) and
+  how to retrieve structured information about current dependencies of a given module 
+  (in a tree-like output)
+
+- port precommit tasks
+
 - apply forbiddenAPIs
 - and other "check" utilities that may be called from ant
 
