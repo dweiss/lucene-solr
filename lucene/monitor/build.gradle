@@ -2,9 +2,10 @@ apply plugin: 'java-library'
 
 dependencies {
   api project(':lucene:core')
-  api project(':lucene:analysis:common')
-  api project(':lucene:queryparser')
-  api project(':lucene:memory')
 
+  implementation project(':lucene:memory')
+  implementation project(':lucene:analysis:common')
+
+  testImplementation project(':lucene:queryparser')
   testImplementation project(':lucene:test-framework')
 }

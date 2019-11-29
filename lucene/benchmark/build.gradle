@@ -3,12 +3,13 @@ apply plugin: 'java-library'
 
 dependencies {  
   api project(':lucene:core')
-  api project(':lucene:analysis:common')
-  api project(':lucene:facet')
-  api project(':lucene:highlighter')
-  api project(':lucene:queries')
-  api project(':lucene:spatial-extras')
-  api project(':lucene:queryparser')
+
+  implementation project(':lucene:analysis:common')
+  implementation project(':lucene:facet')
+  implementation project(':lucene:highlighter')
+  implementation project(':lucene:queries')
+  implementation project(':lucene:spatial-extras')
+  implementation project(':lucene:queryparser')
 
   implementation "org.apache.commons:commons-compress"
   implementation "com.ibm.icu:icu4j"

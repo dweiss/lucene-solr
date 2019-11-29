@@ -2,7 +2,6 @@ apply plugin: 'java-library'
 
 dependencies {
   api project(':lucene:core')
-  api project(':lucene:codecs')
   api project(':lucene:queries')
   api project(':lucene:sandbox')
 
