@@ -2,21 +2,42 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 allprojects {
   plugins.withType(JavaPlugin) {
+    project.ext {
+      testsWorkDir = file("${buildDir}/tmp/tests-cwd")
+      testsTmpDir = file("${buildDir}/tmp/tests-tmp")
+    }
+
     test {
+      workingDir testsWorkDir
+
       useJUnit()
       minHeapSize = "256m"
       maxHeapSize = "512m"
 
       systemProperty 'java.security.egd', 'file:/dev/./urandom'
       systemProperty 'java.awt.headless', 'true'
-      systemProperty 'jetty.testMode', '1'
-      systemProperty 'jetty.insecurerandom', '1'
       systemProperty 'jdk.map.althashing.threshold', '0'
       systemProperty 'tests.seed', '1554DC1435B62ACC'
 
-      systemProperty 'tests.disableHdfs', Os.isFamily(Os.FAMILY_WINDOWS) ? 'true' : 'false'
-
+      // Set up parallel execution.
       maxParallelForks = (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))
+
+      // Set up locations.
+      systemProperty("java.io.tmpdir", testsTmpDir)
+      doFirst {
+        testsWorkDir.mkdirs()
+        testsTmpDir.mkdirs()
+      }
+
+      // Solr-specific stuff (should be moved to a separate file)
+      systemProperty 'tests.disableHdfs', Os.isFamily(Os.FAMILY_WINDOWS) ? 'true' : 'false'
+      systemProperty 'jetty.testMode', '1'
+      systemProperty 'jetty.insecurerandom', '1'
+
+      // Print some diagnostics about locations used.
+      doFirst {
+        logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsWorkDir, testsTmpDir)
+      }
     }
   }
 }

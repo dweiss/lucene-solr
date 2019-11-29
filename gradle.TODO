@@ -23,8 +23,6 @@ could use some improvement.
 
 - passing test properties from command line
 - configure build output folders. 
-- configure default temp dir for test processes.
-- configure cwd for test processes. check if build folders are independent for each forked JVM.
 - configure security policy/ sandboxing for test processes.
 
 - rendering of javadocs (gradlew javadoc)
