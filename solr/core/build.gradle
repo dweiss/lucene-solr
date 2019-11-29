@@ -2,56 +2,46 @@
 apply plugin: 'java-library'
 
 dependencies {
-  // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
-  runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false }
-  runtimeOnly ('org.apache.kerby:kerb-core')
-  runtimeOnly ('org.apache.kerby:kerb-util')
-  runtimeOnly ('org.apache.kerby:kerby-asn1')
-  runtimeOnly ('org.apache.kerby:kerby-pkix')
-  runtimeOnly ('com.google.protobuf:protobuf-java')
-
   api project(':lucene:core')
-  implementation project(':lucene:codecs')
-  implementation project(':lucene:backward-codecs')
-  implementation project(':lucene:analysis:phonetic')
-  implementation project(':lucene:analysis:common')
-  implementation project(':lucene:analysis:kuromoji')
-  implementation project(':lucene:analysis:nori')
-  implementation project(':lucene:suggest')
-  implementation project(':lucene:queries')
-  implementation project(':lucene:highlighter')
-  implementation project(':lucene:spatial-extras')
-  implementation project(':lucene:grouping')
-  implementation project(':lucene:classification')
-  implementation project(':lucene:expressions')
-  implementation project(':lucene:sandbox')
-  implementation project(':lucene:queryparser')
-  implementation project(':lucene:misc')
-  implementation project(':lucene:join')
+  api project(':lucene:analysis:common')
+  api project(':lucene:analysis:kuromoji')
+  api project(':lucene:analysis:nori')
+  api project(':lucene:analysis:phonetic')
+  api project(':lucene:backward-codecs')
+  api project(':lucene:classification')
+  api project(':lucene:codecs')
+  api project(':lucene:expressions')
+  api project(':lucene:grouping')
+  api project(':lucene:highlighter')
+  api project(':lucene:join')
+  api project(':lucene:misc')
+  api project(':lucene:queries')
+  api project(':lucene:queryparser')
+  api project(':lucene:sandbox')
+  api project(':lucene:spatial-extras')
+  api project(':lucene:suggest')
 
   api project(':solr:solrj')
   api project(':solr:server')
 
-  implementation 'com.carrotsearch:hppc'
+  implementation ('com.google.guava:guava', excludesGuava)
+
+  api 'org.apache.commons:commons-lang3'
+  api 'com.carrotsearch:hppc'
   api 'com.fasterxml.jackson.core:jackson-databind'
+  api 'commons-cli:commons-cli'
+  api 'commons-codec:commons-codec'
+  api 'commons-collections:commons-collections'
+  api 'commons-io:commons-io'
+
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
   implementation 'com.github.ben-manes.caffeine:caffeine'
   implementation 'com.github.zafarkhaja:java-semver'
-  api('com.google.guava:guava', {
-    exclude group: "org.codehaus.mojo", module: "animal-sniffer-annotations"
-    exclude group: "com.google.j2objc", module: "j2objc-annotations"
-    exclude group: "com.google.errorprone", module: "error_prone_annotations"
-    exclude group: "org.checkerframework", module: "checker-qual"
-    exclude group: "com.google.code.findbugs", module: "jsr305"
-  })
   implementation 'com.google.re2j:re2j'
   implementation 'com.jayway.jsonpath:json-path'
   implementation 'com.tdunning:t-digest'
-  api 'commons-cli:commons-cli'
-  implementation 'commons-codec:commons-codec'
-  api 'commons-collections:commons-collections'
   implementation 'commons-fileupload:commons-fileupload'
-  implementation 'commons-io:commons-io'
+
   api ('io.dropwizard.metrics:metrics-core') {
     exclude group: 'com.rabbitmq', module: 'amqp-client'
   }
@@ -64,7 +54,6 @@ dependencies {
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
   implementation 'org.apache.commons:commons-exec'
-  api 'org.apache.commons:commons-lang3'
   implementation 'org.apache.commons:commons-text'
   implementation "org.apache.commons:commons-configuration2"
   implementation 'org.apache.htrace:htrace-core4'
@@ -91,6 +80,14 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
+
+  // kerb, kerby, and curator deps used for security and auth with zk/hdfs/kerberos
+  runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false }
+  runtimeOnly ('org.apache.kerby:kerb-core')
+  runtimeOnly ('org.apache.kerby:kerb-util')
+  runtimeOnly ('org.apache.kerby:kerby-asn1')
+  runtimeOnly ('org.apache.kerby:kerby-pkix')
+  runtimeOnly ('com.google.protobuf:protobuf-java')
 
   testImplementation project(':lucene:analysis:icu')
   testImplementation project(':solr:contrib:analysis-extras')

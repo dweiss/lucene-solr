@@ -2,7 +2,6 @@
 apply plugin: 'java-library'
 
 dependencies {
-  // Exported right now, but should be hidden/ managed at a higher level (ant-compat)
   api 'org.slf4j:slf4j-api'
   api 'org.slf4j:jcl-over-slf4j'
 
@@ -44,7 +43,7 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation 'org.eclipse.jetty:jetty-webapp'
   testImplementation 'org.eclipse.jetty:jetty-alpn-java-server'
-  testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
+  testImplementation 'org.restlet.jee:org.restlet.ext.servlet'
   testImplementation 'org.objenesis:objenesis'
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
