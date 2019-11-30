@@ -4,7 +4,7 @@ apply plugin: 'java-library'
 dependencies {
   implementation project(':solr:core')
   implementation project(':lucene:analysis:common')
-  implementation ('org.carrot2:carrot2-mini')
+  implementation 'org.carrot2:carrot2-mini'
 
   testImplementation project(':solr:test-framework')
 }

@@ -1,0 +1,99 @@
+
+// For Lucene, a 'resolve' task that copies any (non-project) dependencies
+// under lib/ folder.
+configure(allprojects.findAll {project -> project.path.startsWith(":lucene") }) {
+  plugins.withType(JavaPlugin) {
+    configurations {
+      runtimeLibs {
+        extendsFrom runtimeElements
+        extendsFrom testRuntimeClasspath
+      }
+    }
+
+    task resolve(type: Sync) {
+      from({
+        return configurations.runtimeLibs.copyRecursive { dep ->
+          !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
+        }
+      })
+
+      into 'lib'
+    }
+  }
+}
+
+// For Solr, a 'resolve' task copies dependencies
+// under lib/ and test dependencies under test-lib/ folder.
+//
+// These are the dependencies *outside* of the set included by a union of "platform" projects
+// (core, solrj, server) and also not included by any dependent project module.
+configure(rootProject) {
+  configurations {
+    solrPlatformLibs
+    solrTestPlatformLibs
+  }
+
+  dependencies {
+    solrPlatformLibs project(":solr:core")
+    solrPlatformLibs project(":solr:solrj")
+    solrPlatformLibs project(":solr:server")
+
+    solrTestPlatformLibs project(":solr:test-framework")
+  }
+}
+
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib") }) {
+  plugins.withType(JavaPlugin) {
+    configurations {
+      runtimeLibs {
+        extendsFrom runtimeElements
+      }
+    }
+
+    task resolveLibs(type: Sync) {
+      from "README.txt"
+
+      from ({
+        def projectLibs = configurations.runtimeLibs.copyRecursive { dep ->
+          (dep instanceof org.gradle.api.artifacts.ProjectDependency)
+        }
+        def externalLibs = configurations.runtimeLibs.copyRecursive { dep ->
+          !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
+        }
+        return externalLibs - rootProject.configurations.solrPlatformLibs - projectLibs
+      }, {
+        into "lib"
+      })
+
+      from ({
+        def projectLibs = configurations.runtimeLibs.copyRecursive { dep ->
+          (dep instanceof org.gradle.api.artifacts.ProjectDependency)
+        }
+        return projectLibs - rootProject.configurations.solrPlatformLibs
+      }, {
+        include "lucene-*"
+        into "lucene-libs"
+      })
+
+      // From test runtime classpath exclude:
+      // 1) project dependencies (and their dependencies)
+      // 2) runtime dependencies
+      // What remains is this module's "own" test dependency.
+      from({
+        def testRuntimeLibs = configurations.testRuntimeClasspath.copyRecursive { dep ->
+          !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
+        }
+
+        return testRuntimeLibs - configurations.runtimeLibs - rootProject.configurations.solrTestPlatformLibs
+      }, {
+        into "test-lib"
+      })
+
+      into "${buildDir}/distLib"
+    }
+
+    task resolve() {
+      dependsOn resolveLibs
+    }
+  }
+}

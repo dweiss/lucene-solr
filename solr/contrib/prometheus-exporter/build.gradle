@@ -8,7 +8,9 @@ dependencies {
   implementation ('io.prometheus:simpleclient')
   implementation ('io.prometheus:simpleclient_common')
   implementation ('io.prometheus:simpleclient_httpserver')
-  implementation ('net.thisptr:jackson-jq')
+  implementation ('net.thisptr:jackson-jq', {
+    exclude group: "org.jruby.joni", module: "joni"
+  })
   implementation ('net.sourceforge.argparse4j:argparse4j')
 
   testImplementation ('org.apache.httpcomponents:httpcore')

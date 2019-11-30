@@ -44,3 +44,5 @@ Intentional differences
 - the back-compatibility target 'resolve' is added to gradle but it's really for informational purposes
   and debugging - it's not used anywhere in the actual build process.
   For Lucene it also does *not* copy test dependencies under lib/ (like ant version does).
+
+- transitive export of certain core libraries from solr-core/ solrj (guava, etc.).

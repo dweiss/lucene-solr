@@ -4,24 +4,12 @@ apply plugin: 'java-library'
 dependencies {
   implementation project(':solr:core')
 
-  implementation project(':lucene:core')
-  implementation project(':lucene:analysis:common')
-  implementation project(':lucene:join')
-  
-  implementation ('org.slf4j:slf4j-api')
-  implementation ('commons-io:commons-io')
-  implementation ('com.google.guava:guava')
-  implementation ('org.apache.httpcomponents:httpclient')
-  implementation ('org.apache.httpcomponents:httpcore')
-  implementation ('org.apache.zookeeper:zookeeper')
-  implementation ('org.apache.zookeeper:zookeeper-jute')
-  implementation ('io.dropwizard.metrics:metrics-core')
-  
   testImplementation project(':solr:test-framework')
 
-  testImplementation ('org.mockito:mockito-core')
+  testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
   testImplementation ('org.hsqldb:hsqldb')
   testImplementation ('org.apache.derby:derby')
-  testImplementation ('net.bytebuddy:byte-buddy')
   testImplementation ('org.objenesis:objenesis')
 }

@@ -8,8 +8,8 @@ dependencies {
   implementation project(':lucene:analysis:smartcn')
   implementation project(':lucene:analysis:morfologik')
   implementation project(':lucene:analysis:opennlp')
-
-  implementation ('com.google.guava:guava', excludesGuava)
+  implementation project(':lucene:analysis:smartcn')
+  implementation project(':lucene:analysis:stempel')
 
   testImplementation project(':solr:test-framework')
 }

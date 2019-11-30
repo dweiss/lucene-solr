@@ -34,6 +34,15 @@ apply from: file('gradle/test-per-project-summary.gradle')
 apply from: file('gradle/test-slowest.gradle')
 apply from: file('gradle/help.gradle')
 
-// ANT backward compatibility layer. This should be eventually gone!
-apply from: file('gradle/ant-back-compat.gradle')
+//
+// Ant-compatibility layer. ALL of sections below should be gone at some point. They are
+// here so that we can coexist with current ant build but they are indicative of potential problems
+// with the build conventions, dependencies, etc.
+//
+
+apply from: file('gradle/ant-compat/folder-layout.gradle')
+apply from: file('gradle/ant-compat/misc.gradle')
+apply from: file('gradle/ant-compat/resolve.gradle')
+apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
+apply from: file('gradle/ant-compat/artifact-naming.gradle')
 

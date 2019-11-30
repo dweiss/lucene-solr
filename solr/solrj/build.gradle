@@ -3,7 +3,7 @@ apply plugin: 'java-library'
 
 dependencies {
   api 'org.slf4j:slf4j-api'
-  api 'org.slf4j:jcl-over-slf4j'
+  implementation 'org.slf4j:jcl-over-slf4j'
 
   api 'commons-io:commons-io'
   api 'org.apache.commons:commons-math3'

@@ -3,12 +3,12 @@ apply plugin: 'java-library'
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':lucene:analysis:common')
 
-  implementation 'org.apache.velocity:velocity-engine-core'
-  implementation 'org.apache.velocity.tools:velocity-tools-generic'
-  implementation 'org.apache.velocity.tools:velocity-tools-view'
-  implementation 'org.apache.velocity.tools:velocity-tools-view-jsp'
+  implementation('org.apache.velocity.tools:velocity-tools-view-jsp', {
+    exclude group: "commons-beanutils", module: "commons-beanutils"
+    exclude group: "org.apache.commons", module: "commons-digester3"
+    exclude group: "com.github.cliftonlabs", module: "json-simple"
+  })
 
   testImplementation project(':solr:test-framework')
 }

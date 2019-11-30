@@ -4,10 +4,9 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':lucene:analysis:common')
 
-  testRuntimeOnly ("org.slf4j:jcl-over-slf4j")
-
-  testImplementation ('org.mockito:mockito-core')
-  testImplementation ('net.bytebuddy:byte-buddy')
+  testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
   testImplementation ('org.objenesis:objenesis')
   testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
 

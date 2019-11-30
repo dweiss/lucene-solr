@@ -7,6 +7,11 @@ dependencies {
   implementation ('org.apache.tika:tika-core') { transitive = false }
   implementation ('org.apache.tika:tika-parsers') { transitive = false }
 
+  runtimeOnly ('org.apache.james:apache-mime4j-core') { transitive = false }
+  runtimeOnly ('org.apache.james:apache-mime4j-dom') { transitive = false }
+  runtimeOnly ('org.apache.tika:tika-java7') { transitive = false }
+  runtimeOnly ('org.apache.tika:tika-xmp') { transitive = false }
+
   implementation ('com.healthmarketscience.jackcess:jackcess') { transitive = false }
   implementation ('com.healthmarketscience.jackcess:jackcess-encrypt') { transitive = false }
   implementation ('org.gagravarr:vorbis-java-tika') { transitive = false }
@@ -44,9 +49,6 @@ dependencies {
   implementation ('xerces:xercesImpl') { transitive = false }
 
   implementation ('com.ibm.icu:icu4j')
-  implementation ('commons-io:commons-io')
-  implementation ('commons-codec:commons-codec')
-  implementation ('com.google.guava:guava')
-  
+
   testImplementation project(':solr:test-framework')
 }

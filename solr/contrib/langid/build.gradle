@@ -8,6 +8,7 @@ dependencies {
   implementation 'com.cybozu.labs:langdetect'
   implementation 'net.arnx:jsonic'
   implementation 'org.apache.opennlp:opennlp-tools'
+
   implementation ('org.apache.tika:tika-core') { transitive = false }
 
   testImplementation project(':solr:test-framework')
