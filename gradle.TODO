@@ -46,3 +46,7 @@ Intentional differences
   For Lucene it also does *not* copy test dependencies under lib/ (like ant version does).
 
 - transitive export of certain core libraries from solr-core/ solrj (guava, etc.).
+
+- didn't bother adding dist/test-framework (who'd use it from a binary distribution?)
+
+-

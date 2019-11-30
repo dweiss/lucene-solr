@@ -13,3 +13,4 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
 }
+

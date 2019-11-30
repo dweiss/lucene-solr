@@ -10,8 +10,5 @@ dependencies {
   implementation ('com.sun.mail:javax.mail')
   implementation ('com.sun.mail:gimap')
 
-  implementation ('org.apache.tika:tika-core') { transitive = false }
-  implementation ('org.apache.tika:tika-parsers') { transitive = false }
-
   testImplementation project(':solr:test-framework')
 }

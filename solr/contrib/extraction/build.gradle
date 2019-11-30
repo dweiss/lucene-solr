@@ -2,10 +2,11 @@ apply plugin: 'java-library'
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':lucene:analysis:common')
 
-  implementation ('org.apache.tika:tika-core') { transitive = false }
-  implementation ('org.apache.tika:tika-parsers') { transitive = false }
+  // We export tika because other contribs depend on it (and its submodules)
+  // and we don't want to duplicate the dependency across different contribs.
+  api ('org.apache.tika:tika-core') { transitive = false }
+  api ('org.apache.tika:tika-parsers') { transitive = false }
 
   runtimeOnly ('org.apache.james:apache-mime4j-core') { transitive = false }
   runtimeOnly ('org.apache.james:apache-mime4j-dom') { transitive = false }

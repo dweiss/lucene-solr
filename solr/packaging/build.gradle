@@ -14,24 +14,29 @@ configurations {
   distSolr {
     transitive = false
   }
-
   distSolrj
+  contrib
 }
 
 dependencies {
   distSolrj project(":solr:solrj")
 
-  distSolr project(":solr:contrib:analysis-extras")
-  distSolr project(":solr:contrib:analytics")
-  distSolr project(":solr:contrib:extraction")
-  distSolr project(":solr:contrib:clustering")
-  distSolr project(":solr:contrib:dataimporthandler")
-  distSolr project(":solr:contrib:dataimporthandler-extras")
-  distSolr project(":solr:contrib:jaegertracer-configurator")
-  distSolr project(":solr:contrib:langid")
-  distSolr project(":solr:contrib:ltr")
-  distSolr project(":solr:contrib:prometheus-exporter")
-  distSolr project(":solr:contrib:velocity")
+  [":solr:contrib:analysis-extras",
+   ":solr:contrib:analytics",
+   ":solr:contrib:extraction",
+   ":solr:contrib:clustering",
+   ":solr:contrib:dataimporthandler",
+   ":solr:contrib:dataimporthandler-extras",
+   ":solr:contrib:jaegertracer-configurator",
+   ":solr:contrib:langid",
+   ":solr:contrib:ltr",
+   ":solr:contrib:prometheus-exporter",
+   ":solr:contrib:velocity",
+  ].each { contribName ->
+    distSolr project(contribName)
+    contrib  project(path: contribName, configuration: "packaging")
+  }
+
   distSolr project(":solr:core")
   distSolr project(":solr:solrj")
   distSolr project(":solr:test-framework")
@@ -52,6 +57,10 @@ task toDir(type: Sync) {
     rename { file -> 'LUCENE_CHANGES.txt' }
   })
 
+  from(configurations.contrib, {
+    into "contrib"
+  })
+
   from(configurations.distSolr, {
     into "dist"
   })
@@ -60,8 +69,12 @@ task toDir(type: Sync) {
     into "dist/solrj-lib"
   })
 
+  [":solr:contrib:analysis-extras"].each { contrib ->
+
+  }
+
   // docs/   - TODO: how is this assembled?
-  // contrib/
+
   // example/
   // server/ (+webapp)
 
