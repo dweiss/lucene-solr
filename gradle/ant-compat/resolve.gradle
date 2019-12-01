@@ -45,20 +45,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":lucene") }) 
 // Unfortunately this "resolution" process is also related to how the final Solr packaging is assembled.
 // I don't know how to untie these two cleanly.
 //
-configure(rootProject) {
-  configurations {
-    solrPlatformLibs
-    solrTestPlatformLibs
-  }
-
-  dependencies {
-    solrPlatformLibs project(":solr:core")
-    solrPlatformLibs project(":solr:solrj")
-    solrPlatformLibs project(":solr:server")
-
-    solrTestPlatformLibs project(":solr:test-framework")
-  }
-}
 
 configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib") }) {
   plugins.withType(JavaPlugin) {
@@ -68,10 +54,20 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
     }
 
     configurations {
+      solrPlatformLibs
+      solrTestPlatformLibs
       runtimeLibs {
         extendsFrom runtimeElements
       }
       packaging
+    }
+
+    dependencies {
+      solrPlatformLibs project(":solr:core")
+      solrPlatformLibs project(":solr:solrj")
+      solrPlatformLibs project(":solr:server")
+
+      solrTestPlatformLibs project(":solr:test-framework")
     }
 
     // An aggregate that configures lib, lucene-libs and test-lib in a temporary location.
@@ -86,7 +82,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
             return true
           }
         }
-        return externalLibs - rootProject.configurations.solrPlatformLibs
+        return externalLibs - configurations.solrPlatformLibs
       }, {
         exclude "lucene-*"
         into "lib"
@@ -96,7 +92,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
         def projectLibs = configurations.runtimeLibs.copyRecursive { dep ->
           (dep instanceof org.gradle.api.artifacts.ProjectDependency)
         }
-        return projectLibs - rootProject.configurations.solrPlatformLibs
+        return projectLibs - configurations.solrPlatformLibs
       }, {
         include "lucene-*"
         into "lucene-libs"
@@ -124,7 +120,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
           !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
         }
 
-        return testRuntimeLibs - configurations.runtimeLibs - rootProject.configurations.solrTestPlatformLibs
+        return testRuntimeLibs - configurations.runtimeLibs - configurations.solrTestPlatformLibs
       })
 
       into file("${projectDir}/test-lib")
@@ -144,7 +140,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
 }
 
 configure(project(":solr:example")) {
-  evaluationDependsOn(":solr:example") // explicitly wait for configs to be declared
+  evaluationDependsOn(":solr:example") // explicitly wait for other configs to be applied
 
   task resolve(type: Copy) {
     from(configurations.postJar, {
@@ -153,6 +149,22 @@ configure(project(":solr:example")) {
 
     from(configurations.dih, {
       into "example-DIH/solr/db/lib"
+    })
+
+    into projectDir
+  }
+}
+
+configure(project(":solr:server")) {
+  evaluationDependsOn(":solr:server")
+
+  task resolve(type: Copy) {
+    dependsOn assemblePackaging
+
+    from({ packagingDir }, {
+      include "**/*.jar"
+      include "solr-webapp/webapp/**"
+      includeEmptyDirs false
     })
 
     into projectDir

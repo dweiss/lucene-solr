@@ -1,13 +1,8 @@
 Things that gradle build is currently missing or
 could use some improvement.
 
-- create a 'distribution' subproject for Solr that packages everything as it was
-  in the ant distribution.
-
-- add any other ant-emulation layer tasks that copy solr libs all over source locations
-  (unless we don't need it if packaging works?)
-
-- jar checksums, jar checksum validation
+- jar checksums, jar checksum validation. this should be done without intermediate folders (directly
+  on dependency sets).
 
 - add an explanation to how the dependency system works (palantir plugin, lockfile) and
   how to retrieve structured information about current dependencies of a given module 
@@ -26,6 +21,7 @@ could use some improvement.
 - configure security policy/ sandboxing for test processes.
 
 - rendering of javadocs (gradlew javadoc)
+
 - fill in POM details in defaults-maven.gradle
 
 - fine-tune defaults so that they're saner (number of test workers running concurrently, 
@@ -38,17 +34,15 @@ could use some improvement.
 
 - how is Solr distribution's docs/* assembled (see TODO in packaging/build.gradle)?
 
-- "The configuration :solrPlatformLibs was resolved without accessing the project in a safe manner."
-  this is cause by hacks to get resolve working... should be improved or cleaned up.
-
 Intentional differences
 
 - the back-compatibility target 'resolve' is added to gradle but it's really for informational purposes
-  and debugging - it's not used anywhere in the actual build process.
-  For Lucene it also does *not* copy test dependencies under lib/ (like ant version does).
+  and debugging. Packaging should be done from subcomponent configurations and dependencies,
+  not from source folders... "gradlew -p packaging assemble" puts together the entire Solr distribution
+  under packaging/build where it doesn't interfere with sources.
+
+  'resolve' for Lucene  also does *not* copy test dependencies under lib/ (like ant version does).
 
 - transitive export of certain core libraries from solr-core/ solrj (guava, etc.).
 
 - didn't bother adding dist/test-framework (who'd use it from a binary distribution?)
-
--
