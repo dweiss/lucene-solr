@@ -142,3 +142,19 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
     }
   }
 }
+
+configure(project(":solr:example")) {
+  evaluationDependsOn(":solr:example") // explicitly wait for configs to be declared
+
+  task resolve(type: Copy) {
+    from(configurations.postJar, {
+      into "exampledocs/"
+    })
+
+    from(configurations.dih, {
+      into "example-DIH/solr/db/lib"
+    })
+
+    into projectDir
+  }
+}

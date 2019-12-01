@@ -43,6 +43,7 @@ apply from: file('gradle/help.gradle')
 apply from: file('gradle/ant-compat/folder-layout.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
 apply from: file('gradle/ant-compat/resolve.gradle')
+apply from: file('gradle/ant-compat/post-jar.gradle')
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 

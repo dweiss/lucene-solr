@@ -50,5 +50,6 @@ include "solr:contrib:ltr"
 include "solr:webapp"
 include "solr:test-framework"
 include "solr:solr-ref-guide"
+include "solr:example"
 
 include "solr:packaging"

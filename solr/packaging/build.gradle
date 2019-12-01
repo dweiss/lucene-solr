@@ -16,6 +16,7 @@ configurations {
   }
   distSolrj
   contrib
+  example
 }
 
 dependencies {
@@ -40,6 +41,8 @@ dependencies {
   distSolr project(":solr:core")
   distSolr project(":solr:solrj")
   distSolr project(":solr:test-framework")
+
+  example project(path: ":solr:example", configuration: "packaging")
 }
 
 task toDir(type: Sync) {
@@ -69,13 +72,11 @@ task toDir(type: Sync) {
     into "dist/solrj-lib"
   })
 
-  [":solr:contrib:analysis-extras"].each { contrib ->
-
-  }
+  from(configurations.example, {
+    into "example"
+  })
 
   // docs/   - TODO: how is this assembled?
-
-  // example/
   // server/ (+webapp)
 
   into distDir
