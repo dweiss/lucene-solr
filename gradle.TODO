@@ -38,6 +38,8 @@ could use some improvement.
 
 - how is Solr distribution's docs/* assembled (see TODO in packaging/build.gradle)?
 
+- "The configuration :solrPlatformLibs was resolved without accessing the project in a safe manner."
+  this is cause by hacks to get resolve working... should be improved or cleaned up.
 
 Intentional differences
 

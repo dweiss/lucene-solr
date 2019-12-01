@@ -1,35 +1,23 @@
-
 apply plugin: 'java-library'
 
 configurations {
-  startJar
-  libExt
-
   api {
     exclude group: "org.slf4j"
   }
+  startJar
+  libExt
+  webapp
+  packaging
 }
 
 dependencies {
-  startJar('org.eclipse.jetty:jetty-start::shaded', {
-    transitive false
-  })
-
-  libExt 'com.lmax:disruptor'
-  libExt 'org.slf4j:jcl-over-slf4j'
-  libExt 'org.slf4j:jul-to-slf4j'
-  libExt 'org.slf4j:slf4j-api'
-  libExt 'org.apache.logging.log4j:log4j-1.2-api'
-  libExt 'org.apache.logging.log4j:log4j-api'
-  libExt 'org.apache.logging.log4j:log4j-core'
-  libExt 'org.apache.logging.log4j:log4j-slf4j-impl'
-  libExt 'org.apache.logging.log4j:log4j-web'
-
   api('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
 
-  api 'io.dropwizard.metrics:metrics-core'
+  api('io.dropwizard.metrics:metrics-core', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
   api('io.dropwizard.metrics:metrics-graphite', {
     exclude group: "com.rabbitmq", module: "amqp-client"
   })
@@ -57,24 +45,63 @@ dependencies {
   api 'org.eclipse.jetty.http2:http2-hpack'
 
   api 'javax.servlet:javax.servlet-api'
+
+  libExt 'com.lmax:disruptor'
+  libExt 'org.slf4j:jcl-over-slf4j'
+  libExt 'org.slf4j:jul-to-slf4j'
+  libExt 'org.slf4j:slf4j-api'
+  libExt 'org.apache.logging.log4j:log4j-1.2-api'
+  libExt 'org.apache.logging.log4j:log4j-api'
+  libExt 'org.apache.logging.log4j:log4j-core'
+  libExt 'org.apache.logging.log4j:log4j-slf4j-impl'
+  libExt 'org.apache.logging.log4j:log4j-web'
+
+  webapp project(path: ":solr:webapp", configuration: "war")
+
+  startJar('org.eclipse.jetty:jetty-start::shaded', {
+    transitive false
+  })
 }
 
-task startJar(type: Copy) {
+ext {
+  packagingDir = file("${buildDir}/packaging")
+}
+
+task assemblePackaging(type: Sync) {
+  from(projectDir, {
+    include "contexts/**"
+    include "etc/**"
+    include "modules/**"
+    include "resources/**"
+    include "scripts/**"
+    include "solr/**"
+    include "README.txt"
+  })
+
+  from(configurations.compileClasspath, {
+    into "lib/"
+  })
+
+  from(configurations.libExt, {
+    into "lib/ext"
+  })
+
   from { project.configurations.startJar.singleFile } {
     rename { file -> 'start.jar' }
   }
 
-  into projectDir
-}
-
-task libs(type: Sync) {
-  from project.configurations.compileClasspath
-
-  from(project.configurations.libExt, {
-    into 'ext/'
+  dependsOn configurations.webapp
+  from( { zipTree(configurations.webapp.asPath) }, {
+    into "solr-webapp/webapp"
   })
 
-  into file("lib")
+  into packagingDir
 }
 
-assemble.dependsOn startJar, libs
+artifacts {
+  packaging packagingDir, {
+    builtBy assemblePackaging
+  }
+}
+
+assemble.dependsOn assemblePackaging

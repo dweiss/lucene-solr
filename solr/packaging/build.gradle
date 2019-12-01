@@ -17,6 +17,7 @@ configurations {
   distSolrj
   contrib
   example
+  server
 }
 
 dependencies {
@@ -43,6 +44,7 @@ dependencies {
   distSolr project(":solr:test-framework")
 
   example project(path: ":solr:example", configuration: "packaging")
+  server project(path: ":solr:server", configuration: "packaging")
 }
 
 task toDir(type: Sync) {
@@ -76,8 +78,11 @@ task toDir(type: Sync) {
     into "example"
   })
 
-  // docs/   - TODO: how is this assembled?
-  // server/ (+webapp)
+  from(configurations.server, {
+    into "server"
+  })
+
+  // docs/   - TODO: this is assembled via XSLT... leaving out for now.
 
   into distDir
 
