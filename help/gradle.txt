@@ -2,13 +2,19 @@ Gralde for Ant users
 ====================
 
 This shows some common ant targets and their equivalent Gradle commands.
+Examples below assume cwd is at the top of the checkout (gradlew
+script available from ./). Quoted [string] gives a better or more
+conventional and commonly used task alternative.
 
-Examples below assume cwd is at the top of the checkout (gradlew 
-script available from ./).
+Gradle tasks apply to all modules that contain a given task name. Use
+"-p" switch with a directory or a colon-notation to specify a particular
+task or module. For example these two are equivalent:
 
-Quoted [string] gives a better, more conventional and commonly used 
-task alternative.
+gradlew -p lucene/core check
+gradlew :lucene:core:check
 
+List of common targets
+----------------------
 
 ant clean           => gradlew clean
 ant jar             => gradlew jar             [gradlew assemble]
@@ -24,16 +30,18 @@ ant clean-jars      => NO REPLACEMENT
 
 ant precommit       => gradlew check -x test
 
-If not otherwise qualified, gradle tasks apply to all modules that contain
-a given task name. Use "-p" switch with a directory or a colon-notation to
-specify a particular task or module. For example:
-
-gradlew -p lucene/core check
-gradlew :lucene:core:check
-
-
 Solr-specific targets
 ---------------------
 
 ant create-package  => gradlew -p solr/packaging assemble
+  # assembled Solr distribution is at solr/packaging/build/...
 
+ant resolve         => gradlew -p solr resolve
+  # this task should *not* be used. It is added for backward
+  # compatibility with ant but it mixes sources with output locations
+  # and this workflow should be discouraged. Instead repackage:
+  # gradlew -p solr/packaging assemble
+
+?                   => gradlew mavenLocal
+  # create a build-local maven repository with poms, jars, etc.
+  # you can preview what would be published.

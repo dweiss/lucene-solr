@@ -10,6 +10,10 @@ configure(rootProject) {
   task mavenLocal() {
     group "Publishing"
     description "Publish Maven JARs and POMs locally to " + mavenLocalDir
+
+    doLast {
+      logger.lifecycle "Local maven artifacts (poms, jars) created at: ${mavenLocalDir}"
+    }
   }
 
   task mavenLocalClean(type: Delete) {
