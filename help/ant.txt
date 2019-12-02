@@ -1,4 +1,4 @@
-Gralde for Ant users
+Gradle for Ant users
 ====================
 
 This shows some common ant targets and their equivalent Gradle commands.
@@ -13,35 +13,37 @@ task or module. For example these two are equivalent:
 gradlew -p lucene/core check
 gradlew :lucene:core:check
 
-List of common targets
-----------------------
+List of common dev task equivalents
+-----------------------------------
 
 ant clean           => gradlew clean
-ant jar             => gradlew jar             [gradlew assemble]
+ant jar             => gradlew jar          [better: gradlew assemble]
 
-ant compile         => gradlew classes         [gradlew assemble]
-                       gradlew testClasses     [gradlew assemble]
+ant compile         => gradlew classes      [better: gradlew assemble]
+                       gradlew testClasses  [better: gradlew assemble]
 
 ant validate        => gradlew check
-ant test            => gradlew test            [gradlew check]
+ant test            => gradlew test
 
 ant jar-checksums   => TODO
 ant clean-jars      => NO REPLACEMENT
 
 ant precommit       => gradlew check -x test
 
+ant get-maven-poms  => gradlew mavenLocal
+
 Solr-specific targets
 ---------------------
 
+Assemble Solr distribution at solr/packaging/build/...
+
 ant create-package  => gradlew -p solr/packaging assemble
-  # assembled Solr distribution is at solr/packaging/build/...
+
+"Resolve" libraries by copying them to lib/ and other source
+locations. This task should *not* be used anymore. It is added
+for backward compatibility with ant (and for debugging)
+but it mixes sources with output locations and this workflow
+should be discouraged. Instead run assemble on packaging (above).
 
 ant resolve         => gradlew -p solr resolve
-  # this task should *not* be used. It is added for backward
-  # compatibility with ant but it mixes sources with output locations
-  # and this workflow should be discouraged. Instead repackage:
-  # gradlew -p solr/packaging assemble
 
-?                   => gradlew mavenLocal
-  # create a build-local maven repository with poms, jars, etc.
-  # you can preview what would be published.
