@@ -19,8 +19,9 @@ allprojects {
 apply from: file('gradle/buildscan.gradle')
 apply from: file('gradle/travis.gradle')
 
-// Project and module defaults.
-apply from: file('gradle/defaults-everything.gradle')
+// Set up defaults and configure aspects for certain modules or functionality
+// (java, tests)
+apply from: file('gradle/defaults.gradle')
 apply from: file('gradle/defaults-java.gradle')
 apply from: file('gradle/defaults-tests.gradle')
 apply from: file('gradle/defaults-maven.gradle')

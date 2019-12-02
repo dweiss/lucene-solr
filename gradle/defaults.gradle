@@ -3,6 +3,7 @@ allprojects {
 
   group "org.apache"
 
+  // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
 
@@ -11,5 +12,7 @@ allprojects {
     }
   }
 
+  // Artifacts will have names after full gradle project path
+  // so :solr:core will have solr-core.jar, etc.
   project.archivesBaseName = project.path.replaceAll("^:", "").replace(':', '-')
 }
