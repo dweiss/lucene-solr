@@ -27,14 +27,23 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrParamResourceLoader;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.VelocityResponseWriter;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("velocity.resourceloader.params.enabled", "true");
+    System.setProperty("velocity.resourceloader.solr.enabled", "true");
     initCore("solrconfig.xml", "schema.xml", getFile("velocity/solr").getAbsolutePath());
     System.out.println(getFile("velocity/solr").getAbsolutePath());
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("velocity.resourceloader.params.enabled");
+    System.clearProperty("velocity.resourceloader.solr.enabled");
   }
 
   @Test

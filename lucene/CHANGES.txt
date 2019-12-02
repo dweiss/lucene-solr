@@ -55,9 +55,6 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
-* LUCENE-8213: LRUQueryCache#doCache now uses IndexSearcher's Executor (if present)
-  to asynchronously cache heavy queries (Atri Sharma)
-
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -124,6 +121,8 @@ Optimizations
 
 * LUCENE-9049: Remove FST cached root arcs now redundant with labels indexed by bitset.
   This frees some on-heap FST space. (Jack Conradson via Bruno Roustant)
+
+* LUCENE-9045: Do not use TreeMap/TreeSet in BlockTree and PerFieldPostingsFormat. (Bruno Roustant)
 
 Bug Fixes
 
