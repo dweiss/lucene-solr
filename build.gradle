@@ -4,7 +4,7 @@ plugins {
   id "com.gradle.build-scan" version "3.0"
 }
 
-// Sets main version and properties. Applies to all projects.
+// Project version and main properties. Applies to all projects.
 allprojects {
   version = "9.0.0-SNAPSHOT"
 }
@@ -37,12 +37,9 @@ apply from: file('gradle/testing/per-project-summary.gradle')
 apply from: file('gradle/testing/slowest-tests-at-end.gradle')
 apply from: file('gradle/help.gradle')
 
-//
-// Ant-compatibility layer. ALL of sections below should be gone at some point. They are
-// here so that we can coexist with current ant build but they are indicative of potential problems
-// with the build conventions, dependencies, etc.
-//
-
+// Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
+// here so that we can coexist with current ant build but they are indicative
+// of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/folder-layout.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
 apply from: file('gradle/ant-compat/resolve.gradle')
