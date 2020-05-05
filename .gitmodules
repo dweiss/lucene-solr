@@ -1,0 +1,4 @@
+[submodule "lucene"]
+	path = lucene
+	url = git@github.com:dweiss/lucene-solr.git
+	branch = split/lucene
