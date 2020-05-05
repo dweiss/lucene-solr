@@ -17,681 +17,570 @@
     limitations under the License.
  -->
 
-<project name="lucene-solr" default="-projecthelp" basedir=".">
-  <import file="lucene/common-build.xml"/>
+<project name="lucene" default="default" basedir="."
+         xmlns:jacoco="antlib:org.jacoco.ant"
+         xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
-  <property name="jgit-version" value="5.3.0.201903130848-r"/>
-  
-  <property name="tests.heap-dump-dir" location="heapdumps"/>
-  
-  <property name="maven-build-dir" value="maven-build"/>
-  <property name="maven-version" value="3.5.0"/>
-  <property name="maven.dependencies.filters.file" location="lucene/build/maven.dependencies.filters.properties"/>
+  <import file="common-build.xml"/>
 
-  <property name="smokeTestRelease.dir" location="lucene/build/smokeTestRelease/dist"/>
-  <property name="smokeTestRelease.tmp" location="lucene/build/smokeTestRelease/tmp"/>
-  <property name="smokeTestRelease.testArgs" value=""/>
+  <path id="classpath">
+    <pathelement location="${common.dir}/build/core/classes/java"/>
+  </path>
 
-  <target name="-projecthelp">
-    <java fork="false" classname="org.apache.tools.ant.Main" taskname="-">
-      <arg value="-projecthelp"/>
-      <arg value="-f"/>
-      <arg value="${ant.file}"/>
-    </java>
-  </target>
+  <patternset id="binary.build.dist.patterns"
+              includes="docs/,**/*.jar,**/*.war"
+              excludes="poms/**,**/*-src.jar,**/*-javadoc.jar"
+  />
+  <patternset id="binary.root.dist.patterns"
+              includes="LICENSE.txt,NOTICE.txt,README.txt,
+                        MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
+                        SYSTEM_REQUIREMENTS.txt,
+                        CHANGES.txt,
+                        **/lib/*.jar,
+                        licenses/**,
+                        */docs/,**/README*"
+              excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar,dev-docs/**"
+  />
 
-  <target name="test-help" description="Test runner help">
-    <subant buildpath="lucene" target="test-help" inheritall="false" failonerror="true"/>
-  </target>
+  <!-- ================================================================== -->
+  <!-- Prepares the build directory                                       -->
+  <!-- ================================================================== -->
 
-  <target name="precommit" description="Run basic checks before committing"
-          depends="check-working-copy,validate,documentation-lint"/>
-
-  <target name="test" description="Test both Lucene and Solr" depends="resolve-groovy">
-    <mkdir dir="lucene/build" />
-    <tempfile property="tests.totals.tmpfile"
-          destdir="lucene/build"
-          prefix=".test-totals-"
-          suffix=".tmp"
-          deleteonexit="true"
-          createfile="true" />
-
-    <subant target="test" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset>
-        <propertyset refid="uptodate.and.compiled.properties"/>
-        <propertyref name="tests.totals.tmpfile" />
-      </propertyset>      
-    </subant>
-
-    <property name="tests.totals.toplevel" value="true" />
-    <antcall target="-check-totals" />
-  </target>
-
-  <target name="jacoco" depends="resolve-groovy" description="Generates JaCoCo code coverage reports">
-    <subant target="jacoco" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
+  <target name="test-core" description="Runs unit tests for the core Lucene code">
+    <ant dir="${common.dir}/core" target="test" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
+    </ant>
   </target>
 
-  <target name="pitest" depends="resolve-groovy" description="Run PITest on both Lucene and Solr">
-    <subant target="pitest" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
+  <!-- "-clover.load" is *not* a useless dependency. do not remove -->
+  <target name="test" depends="-clover.load, -init-totals, test-core, test-test-framework, test-modules, -check-totals"
+          description="Runs all unit tests (core, modules and back-compat)"
+  />
+  <target name="test-nocompile">
+    <fail message="Target 'test-nocompile' will not run recursively.  First change directory to the module you want to test."/>
   </target>
+
+
+  <target name="pitest" depends="pitest-modules"
+          description="Runs pitests (core, modules and back-compat)"
+  />
 
   <target name="beast">
     <fail message="The Beast only works inside of individual modules"/>
   </target>
 
-  <target name="documentation" depends="resolve-markdown" description="Generate Lucene and Solr Documentation">
-    <subant target="documentation" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
+  <target name="compile-core" depends="compile-lucene-core"/>
+
+  <!-- lucene/test-framework is excluded from compilation -->
+  <target name="compile" depends="init,compile-lucene-core,compile-codecs"
+          description="Compiles core, codecs, and all modules">
+    <modules-crawl target="compile-core"/>
+  </target>
+
+  <!-- Validation (license/notice/api checks). -->
+  <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
+
+  <!-- Validation here depends on compile-tools: but we want to compile modules' tools too -->
+  <target name="compile-tools" depends="common.compile-tools">
+    <modules-crawl target="compile-tools"/>
+  </target>
+
+  <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
+    <property name="skipRegexChecksum" value=""/>
+    <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses">
+      <additional-filters>
+        <replaceregex pattern="^jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
+        <replaceregex pattern="javax\.servlet([^/]+)$" replace="javax.servlet" flags="gi" />
+        <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
+      </additional-filters>
+    </license-check-macro>
+  </target>
+
+  <target name="check-lib-versions" depends="compile-tools,resolve,load-custom-tasks"
+          description="Verify that the '/org/name' keys in ivy-versions.properties are sorted lexically and are neither duplicates nor orphans, and that all dependencies in all ivy.xml files use rev=&quot;$${/org/name}&quot; format.">
+    <lib-versions-check-macro dir="${common.dir}/.."
+                              centralized.versions.file="${common.dir}/ivy-versions.properties"
+                              top.level.ivy.settings.file="${common.dir}/top-level-ivy-settings.xml"
+                              ivy.resolution-cache.dir="${ivy.resolution-cache.dir}"
+                              ivy.lock-strategy="${ivy.lock-strategy}"
+                              common.build.dir="${common.build.dir}"
+                              ignore.conflicts.file="${common.dir}/ivy-ignore-conflicts.properties"/>
+  </target>
+
+  <!-- -install-forbidden-apis is *not* a useless dependency. do not remove -->
+  <target name="check-forbidden-apis" depends="-install-forbidden-apis" description="Check forbidden API calls in compiled class files">
+    <subant target="check-forbidden-apis" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+      <fileset dir="tools" includes="build.xml"/>
     </subant>
+    <modules-crawl target="check-forbidden-apis"/>
   </target>
 
-  <target name="documentation-lint" depends="resolve-markdown,-ecj-javadoc-lint-unsupported,-ecj-resolve" description="Validates the generated documentation (HTML errors, broken links,...)">
-    <subant target="documentation-lint" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="check-forbidden-apis" depends="-install-forbidden-apis" description="Check forbidden API calls in compiled class files.">
-    <subant target="check-forbidden-apis" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="validate" description="Validate dependencies, licenses, etc." depends="validate-source-patterns,resolve-groovy,rat-sources-typedef,-install-forbidden-apis">
-    <subant target="validate" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-    <subant buildpath="lucene" target="check-lib-versions" inheritall="false" failonerror="true">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-  
-  <target name="validate-source-patterns" description="Validate source code (invalid code patterns,...)" unless="disable.source-patterns" depends="resolve-groovy,rat-sources-typedef">
-    <groovy taskname="source-patterns" classpathref="rat.classpath" src="${common.dir}/tools/src/groovy/check-source-patterns.groovy"/>
-  </target>
-  
-  <target name="rat-sources" description="Runs rat across all sources and tests" depends="common.rat-sources">
-    <subant target="rat-sources" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="resolve" description="Resolves all dependencies">
-    <subant target="resolve" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <!-- lucene/test-framework and solr/test-framework are excluded from compilation -->
-  <target name="compile" description="Compile Lucene and Solr">
-    <subant target="compile" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="compile-core" description="Compile Lucene Core">
-    <subant target="compile-core" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="compile-test" description="Compile Lucene and Solr tests and test-frameworks">
-    <subant target="compile-test" inheritAll="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="jar" description="Build Lucene and Solr Jar files">
-    <subant target="jar" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml"/>
-      <fileset dir="solr" includes="build.xml"/>
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="jar-src" description="Build Lucene and Solr Source Jar files">
-    <subant target="jar-src" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml"/>
-      <fileset dir="solr" includes="build.xml"/>
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="get-maven-poms" depends="resolve" 
-          description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
-    <ant dir="lucene" target="-get-maven-poms" inheritall="false"/>
-  </target>
-
-  <target name="clean-maven-build"
-          description="Clean up Maven POMs in working copy">
-    <delete failonerror="true" dir="${maven-build-dir}/"/>
-  </target>
-
-  <target name="generate-maven-artifacts" depends="resolve,resolve-groovy,resolve-markdown,install-maven-tasks"
-          description="Generate Maven Artifacts for Lucene and Solr">
-    <property name="maven.dist.dir"  location="dist/maven" />
-    <mkdir dir="${maven.dist.dir}" />
-    <ant dir="lucene" inheritall="false">
-      <target name="-unpack-lucene-tgz"/>
-      <target name="-filter-pom-templates"/>
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <ant dir="solr" target="-unpack-solr-tgz" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <subant target="-dist-maven" inheritall="false" failonerror="true">
-      <property name="maven.dist.dir"  location="${maven.dist.dir}" />
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="-install-maven-artifacts" depends="resolve,resolve-groovy,resolve-markdown,install-maven-tasks">
-    <ant dir="lucene" inheritall="false">
-      <target name="-unpack-lucene-tgz"/>
-      <target name="-filter-pom-templates"/>
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <ant dir="solr" target="-unpack-solr-tgz" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-    <subant target="-install-to-maven-local-repo" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="validate-maven-dependencies" depends="-install-maven-artifacts"
-          description="Validates maven dependencies, licenses, etc.">
-    <subant target="-validate-maven-dependencies" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml"/>
-      <fileset dir="solr" includes="build.xml"/>
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-  
-  <target name="run-maven-build" depends="get-maven-poms,install-maven-tasks,resolve-groovy" description="Runs the Maven build using automatically generated POMs">
-    <groovy src="${common.dir}/tools/src/groovy/run-maven-build.groovy"/>
-  </target>
-  
-  <target name="remove-maven-artifacts" description="Removes all Lucene/Solr Maven artifacts from the local repository">
-    <echo message="Removing all Lucene/Solr Maven artifacts from '${user.home}/.m2/repository'..."/>
-    <delete includeemptydirs="true">
-      <fileset dir="${user.home}/.m2/repository" erroronmissingdir="false">
-        <include name="org/apache/lucene/**"/>
-        <include name="org/apache/solr/**"/>
-      </fileset>
-    </delete>
-  </target>
-
-  <target name="netbeans" depends="resolve" description="Setup Netbeans configuration">
-    <pathconvert property="netbeans.fileset.sourcefolders" pathsep="|" dirsep="/">
-      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/examples, **/src/test, **/src/resources" 
-              excludes="tools/**, build/**" />
-      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/examples, **/src/test, **/src/resources" 
-              excludes="build/**" />
-      <map from="${basedir}/" to=""/>
-    </pathconvert>
-    <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
-    <pathconvert property="netbeans.path.libs" pathsep=":" dirsep="/">
-      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" 
-               excludes="**/*servlet-api*.jar, tools/**, build/**"/>
-      <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" 
-               excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**, server/solr-webapp/**" />
-      <map from="${basedir}/" to=""/>
-    </pathconvert>
-    <mkdir dir="nbproject"/>
-    <copy todir="nbproject" overwrite="true">
-      <fileset dir="dev-tools/netbeans/nbproject"/>
-    </copy>
-    <xslt in="${ant.file}" out="nbproject/project.xml" style="dev-tools/netbeans/nb-project.xsl" force="true">
-      <outputproperty name="indent" value="yes"/>
-      <param name="netbeans.fileset.sourcefolders" expression="${netbeans.fileset.sourcefolders}"/>
-      <param name="netbeans.path.libs" expression="${netbeans.path.libs}"/>
-      <param name="netbeans.source-level" expression="1.7"/>
-    </xslt>
-  </target>
-
-  <target name="clean-netbeans" description="Removes all Netbeans configuration files">
-    <delete dir="nbproject" failonerror="true"/>
-    <delete dir="nb-build" failonerror="true"/>
-  </target>
-
-  <target name="eclipse" depends="resolve" description="Setup Eclipse configuration">
-    <basename file="${basedir}" property="eclipseprojectname"/>
-    <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false" encoding="UTF-8">
-      <filterset>
-        <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
-      </filterset>
-    </copy>
-    <copy overwrite="false" todir="eclipse-build" encoding="UTF-8">
-      <fileset dir="dev-tools/eclipse" includes="*.launch"/>
-      <filterset>
-        <filter token="ECLIPSEPROJECTNAME" value="${eclipseprojectname}"/>
-      </filterset>
-    </copy>
-    <mkdir dir=".settings"/>
-    <copy todir=".settings/" overwrite="true">
-      <fileset dir="dev-tools/eclipse/dot.settings" includes="*.prefs" />
-    </copy>
-
-    <pathconvert property="eclipse.fileset.sourcefolders" pathsep="|" dirsep="/">
-      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/resources, **/src/test, **/src/test-files, **/src/examples" excludes="tools/**, build/**" />
-      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/resources, **/src/test, **/src/test-files, **/src/examples" excludes="build/**" />
-      <map from="${basedir}/" to=""/>
-    </pathconvert>
-    <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
-    <pathconvert property="eclipse.fileset.libs" pathsep="|" dirsep="/">
-      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" excludes="**/*servlet-api*.jar, tools/**, build/**"/>
-      <fileset dir="${basedir}/solr" includes="**/test-lib/*.jar,**/lib/*.jar" excludes="core/test-lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/lib/junit*, test-framework/lib/ant*, test-framework/lib/randomizedtesting*, build/**, dist/**, package/**" />
-      <map from="${basedir}/" to=""/>
-    </pathconvert>
-    <pathconvert property="eclipse.fileset.webfolders" pathsep="|" dirsep="/">
-      <dirset dir="${basedir}/solr/server/contexts" excludes="**/*" />
-      <dirset dir="${basedir}/solr/server/etc" excludes="**/*" />
-      <dirset dir="${basedir}/solr/server/modules" excludes="**/*" />
-      <dirset dir="${basedir}/solr/server/solr" excludes="**/*" />
-      <dirset dir="${basedir}/solr/webapp/web" excludes="**/*" />
-      <map from="${basedir}/" to=""/>
-    </pathconvert>
-    <xslt in="${ant.file}" out=".classpath" style="dev-tools/eclipse/dot.classpath.xsl" force="true">
-      <outputproperty name="indent" value="yes"/>
-      <param name="eclipse.fileset.libs" expression="${eclipse.fileset.libs}"/>
-      <param name="eclipse.fileset.sourcefolders" expression="${eclipse.fileset.sourcefolders}"/>
-      <param name="eclipse.fileset.webfolders" expression="${eclipse.fileset.webfolders}"/>
-    </xslt>
-
-    <echo>
-      SUCCESS: You must right-click your project and choose Refresh.
-               Your project must use a Java 11 JRE.
-    </echo>
-  </target>
-
-  <target name="clean-eclipse" description="Removes all Eclipse configuration files">
-    <delete dir=".settings" failonerror="true"/>
-    <delete failonerror="true">
-      <fileset dir="." includes=".classpath,.project"/>
-    </delete>
-    <delete dir="eclipse-build" failonerror="true"/>
-  </target>
-
-  <target name="idea" depends="resolve" description="Setup IntelliJ IDEA configuration">
-    <condition property="idea.jdk.is.set">
-      <isset property="idea.jdk"/>
-    </condition>
-    <!-- Define ${idea.jdk} if it's not yet defined - otherwise literal "${idea.jdk}" is substituted -->
-    <property name="idea.jdk" value=""/>
-    <!-- delete those files first, so they are regenerated by the filtering below
-      (add more files with dynamic properties like versions here): -->
-    <delete dir=".idea" includes="misc.xml workspace.xml"/>
-    <!-- Copy files with filtering: -->
-    <copy todir="." overwrite="false" encoding="UTF-8">
-      <fileset dir="dev-tools/idea"/>
-      <filterset begintoken="subst.=&quot;" endtoken="&quot;">
-        <filter token="idea.jdk" value="${idea.jdk}"/>
-      </filterset>
-      <filterset>
-        <filter token="version" value="${version}"/>
-        <filter token="version.base" value="${version.base}"/>
-      </filterset>
-    </copy>
-    <antcall target="-post-idea-instructions"/>
-  </target>
-  
-  <target name="-post-idea-instructions" unless="idea.jdk.is.set">
-    <echo>
-To complete IntelliJ IDEA setup, you must manually configure
-File | Project Structure | Project | Project SDK.
-      
-You won't have to do this in the future if you define property
-$${idea.jdk}, e.g. in ~/lucene.build.properties, ~/build.properties
-or lucene/build.properties, with a value consisting of the
-following two XML attributes/values (adjust values according to
-JDKs you have defined locally - see 
-File | Project Structure | Platform Settings | SDKs):
-
-    idea.jdk = project-jdk-name="11" project-jdk-type="JavaSDK"
-    </echo>
-  </target>
-
-  <target name="clean-idea"
-          description="Removes all IntelliJ IDEA configuration files">
-    <delete dir=".idea" failonerror="true"/>
-    <delete failonerror="true">
-      <fileset dir="." includes="*.iml,*.ipr,*.iws"/>
-      <fileset dir="solr" includes="**/*.iml"/>
-      <fileset dir="lucene" includes="**/*.iml"/>
-    </delete>
-    <delete dir="idea-build" failonerror="true"/>
-  </target>
-
-  <target name="clean" description="Clean Lucene and Solr build dirs">
-    <delete dir="dist" />
-    <delete dir="${tests.heap-dump-dir}" />
-    <subant target="clean" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="clean-jars" description="Remove all JAR files from lib folders in the checkout">
-    <delete failonerror="true">
-      <fileset dir=".">
-        <include name="**/*.jar"/>
-        <exclude name="*/build/**"/>
-        <exclude name="*/dist/**"/>
-        <exclude name="*/package/**"/>
-        <exclude name="*/example/exampledocs/**"/>
-        <exclude name="gradle/**" />
-      </fileset>
-    </delete>
-  </target>
-
-  <target name="jar-checksums" description="Recompute SHA1 checksums for all JAR files.">
-    <subant target="jar-checksums" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-
-  <target name="-nightly-smoke-java12params" if="smokeTestRelease.java12">
-    <!-- convert path to UNIX style, so windows backslashes don't hurt escaping: -->
-    <pathconvert targetos="unix" property="-smokeTestRelease.java12params">
-      <regexpmapper from="^(.*)$" to="--test-java12 '\1'"/>
-      <path location="${smokeTestRelease.java12}"/>
-    </pathconvert>
-  </target>
-  
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it  (pass '-DsmokeTestRelease.java12=/path/to/jdk-12' to additionally test with Java 12 or later)"
-    depends="clean,resolve-groovy,resolve-markdown,install-maven-tasks,-nightly-smoke-java12params">
-    <fail message="To run nightly smoke, the JDK must be exactly Java 11, was: ${java.specification.version}">
-      <condition>
-        <not><equals arg1="${java.specification.version}" arg2="11"/></not>
-      </condition>
-    </fail>
-    <property name="-smokeTestRelease.java12params" value=""/><!-- (if not yet defined) -->
-    <exec executable="${python3.exe}" failonerror="true" taskname="python3">
-      <arg value="-V"/>
-    </exec>
-    <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->
-      <property name="version" value="${version.base}" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-   </subant>
-    <mkdir dir="${smokeTestRelease.dir}"/>
-    <copy todir="${smokeTestRelease.dir}/lucene">
-      <fileset dir="lucene/dist"/>
-    </copy>
-    <copy todir="${smokeTestRelease.dir}/solr">
-      <fileset dir="solr/package"/>
-    </copy>
-    <local name="url"/>
-    <makeurl file="${smokeTestRelease.dir}" validate="false" property="url"/>
-    <exec executable="${python3.exe}" failonerror="true" taskname="smoker">
-      <arg value="-u"/>
-      <!-- Tell Python not to write any bytecode cache into the filesystem: -->
-      <arg value="-B"/>
-      <arg file="dev-tools/scripts/smokeTestRelease.py"/>
-      <arg line="${-smokeTestRelease.java12params}"/>
-      <arg value="--revision"/>
-      <arg value="skip"/>
-      <!-- pass ${version.base} here to emulate a real release, without appendix like "-SNAPSHOT": -->
-      <arg value="--version"/>
-      <arg value="${version.base}"/>
-      <arg value="--tmp-dir"/>
-      <arg file="${smokeTestRelease.tmp}"/>
-      <arg value="--not-signed"/>
-      <arg value="${url}"/>
-      <arg value="${smokeTestRelease.testArgs}"/>
-    </exec>
-    <delete dir="${smokeTestRelease.dir}"/>
-    <delete dir="${smokeTestRelease.tmp}"/>
-  </target>
-  
-  <macrodef xmlns:ivy="antlib:org.apache.ivy.ant" name="wc-checker">
-    <attribute name="failonmodifications"/><!-- fail if modifications were found, otherwise it only fails on unversioned files -->
+  <target name="resolve">
     <sequential>
-      <local name="wc.unversioned.files"/>
-      <local name="wc.modified.files"/>
-      <ivy:cachepath xmlns:ivy="antlib:org.apache.ivy.ant" transitive="true" resolveId="jgit" pathid="jgit.classpath">
-        <ivy:dependency org="org.eclipse.jgit" name="org.eclipse.jgit" rev="${jgit-version}" conf="default" />
-        <ivy:dependency org="org.slf4j" name="slf4j-nop" rev="1.7.2" conf="default" />
-      </ivy:cachepath>
-      <groovy taskname="wc-checker" classpathref="jgit.classpath" src="${common.dir}/tools/src/groovy/check-working-copy.groovy"/>
-      <fail if="wc.unversioned.files"
-        message="Source checkout is dirty (unversioned/missing files) after running tests!!! Offending files:${line.separator}${wc.unversioned.files}"/>
-      <fail message="Source checkout is modified!!! Offending files:${line.separator}${wc.modified.files}">
-        <condition>
-          <and>
-             <istrue value="@{failonmodifications}"/>
-             <isset property="wc.modified.files"/>
-          </and>
-        </condition>
-      </fail>
+      <ant dir="test-framework" target="resolve" inheritall="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <ant dir="${common.dir}/tools" target="resolve" inheritAll="false">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <modules-crawl target="resolve"/>
     </sequential>
-  </macrodef>
-  
-  <target name="check-working-copy" description="Checks working copy for unversioned changes" depends="resolve-groovy">
-    <wc-checker failonmodifications="${is.jenkins.build}"/>
   </target>
 
-  <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_OPTS=-Xmx2G&quot; as environment)" depends="clean">
-    <antcall inheritAll="false">
-      <param name="run.clover" value="true"/>
-      <!-- must be 1, as clover does not like parallel test runs: -->
-      <param name="tests.jvms.override" value="1"/>
-      <!-- Also override some other props to be fast: -->
-      <param name="tests.multiplier" value="1"/>
-      <param name="tests.nightly" value="false"/>
-      <param name="tests.weekly" value="false"/>
-      <param name="tests.badapples" value="true"/>
-      <!-- The idea behind Clover is to determine test coverage, so be immune to failing tests: -->
-      <param name="tests.haltonfailure" value="false"/>
-      
-      <target name="clover"/>
-      <target name="test"/>
-      <target name="-generate-clover-reports"/>
-      
+  <target name="documentation" description="Generate all documentation"
+    depends="javadocs,changes-to-html,process-webpages"/>
+  <target name="javadoc" depends="javadocs"/>
+  <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
+
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint-unsupported" if="documentation-lint.supported"
+          description="Validates the generated documentation (HTML errors, broken links,...)">
+    <!-- we use antcall here, otherwise ANT will run all dependent targets: -->
+    <antcall target="-documentation-lint"/>
+  </target>
+
+  <!-- we check for broken links across all documentation -->
+  <target name="-documentation-lint" depends="documentation">
+    <echo message="Checking for broken links..."/>
+    <check-broken-links dir="build/docs"/>
+    <echo message="Checking for missing docs..."/>
+    <!-- TODO: change this level=method -->
+    <check-missing-javadocs dir="build/docs" level="class"/>
+    <!-- too many classes to fix overall to just enable
+         the above to be level="method" right now, but we
+         can prevent the modules that don't have problems
+         from getting any worse -->
+    <!-- analyzers-common: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-icu" level="method"/>
+    <!-- analyzers-kuromoji: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="method"/>
+    <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
+    <!-- analyzers-smartcn: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
+    <!-- benchmark: problems -->
+    <check-missing-javadocs dir="build/docs/classification" level="method"/>
+    <!-- codecs: problems -->
+    <!-- core: problems -->
+    <check-missing-javadocs dir="build/docs/demo" level="method"/>
+    <check-missing-javadocs dir="build/docs/expressions" level="method"/>
+    <check-missing-javadocs dir="build/docs/facet" level="method"/>
+    <!-- grouping: problems -->
+    <!-- highlighter: problems -->
+    <check-missing-javadocs dir="build/docs/join" level="method"/>
+    <check-missing-javadocs dir="build/docs/memory" level="method"/>
+    <!-- misc: problems -->
+    <!-- queries: problems -->
+    <!-- queryparser: problems -->
+    <!-- sandbox: problems -->
+    <!-- spatial-extras: problems -->
+    <check-missing-javadocs dir="build/docs/suggest" level="method"/>
+    <!-- test-framework: problems -->
+
+    <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/util/automaton" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/index" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
+
+    <check-missing-javadocs dir="build/docs/spatial3d" level="method"/>
+  </target>
+  
+  <target name="-ecj-javadoc-lint" depends="compile,compile-test,-ecj-javadoc-lint-unsupported,-ecj-resolve" if="ecj-javadoc-lint.supported">
+    <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="-ecj-javadoc-lint"/>
+  </target>
+
+  <target name="process-webpages" depends="resolve-markdown">
+    <makeurl property="process-webpages.buildfiles" separator="|">
+      <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,site/**"/>
+    </makeurl>
+    <property name="Codec.java" location="core/src/java/org/apache/lucene/codecs/Codec.java"/>
+    <loadfile srcfile="${Codec.java}" property="defaultCodec" encoding="UTF-8">
+      <filterchain>
+        <!--  private static Codec defaultCodec   =   LOADER    .   lookup    (   "LuceneXXX"                 )   ; -->
+        <containsregex pattern="^.*defaultCodec\s*=\s*LOADER\s*\.\s*lookup\s*\(\s*&quot;([^&quot;]+)&quot;\s*\)\s*;.*$" replace="\1"/>
+        <fixcrlf eol="unix" eof="remove" />
+        <deletecharacters chars="\n"/>
+      </filterchain>
+    </loadfile>
+
+    <!--
+      The XSL input file is ignored completely, but XSL expects one to be given,
+      so we pass ourself (${ant.file}) here. The list of module build.xmls is given
+      via string parameter, that must be splitted by the XSL at '|'.
+    --> 
+    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/xsl/index.xsl" force="true">
+      <outputproperty name="method" value="html"/>
+      <outputproperty name="version" value="4.0"/>
+      <outputproperty name="encoding" value="UTF-8"/>
+      <outputproperty name="indent" value="yes"/>
+      <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
+      <param name="version" expression="${version}"/>
+      <param name="defaultCodec" expression="${defaultCodec}"/>
+    </xslt>
+    
+    <markdown todir="${javadoc.dir}">
+      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt,SYSTEM_REQUIREMENTS.txt"/>
+      <globmapper from="*.txt" to="*.html"/>
+    </markdown>
+
+    <copy todir="${javadoc.dir}">
+      <fileset dir="site/html"/>
+    </copy>
+  </target>
+  
+  <target name="javadocs-modules" description="Generate javadoc for modules classes">
+    <modules-crawl target="javadocs"/>
+  </target>
+
+  <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
+  <target name="rat-sources" depends="rat-sources-typedef,common.rat-sources">
+    <subant target="rat-sources" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+      <fileset dir="tools" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="rat-sources"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- D I S T R I B U T I O N                                            -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package" depends="jar-core, jar-test-framework, build-modules, init-dist, documentation"/>
+
+  <target name="nightly" depends="test, package-tgz">
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the distribution with zip                                 -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-zip" depends="package"
+    description="--> Generates the Lucene distribution as .zip">
+
+    <delete file="${dist.dir}/lucene-${version}.zip"/>
+    <zip destfile="${dist.dir}/lucene-${version}.zip">
+      <zipfileset prefix="lucene-${version}" dir=".">
+        <patternset refid="binary.root.dist.patterns"/>
+      </zipfileset>
+      <zipfileset prefix="lucene-${version}" dir="${build.dir}">
+        <patternset refid="binary.build.dist.patterns"/>
+      </zipfileset>
+      <zipfileset prefix="lucene-${version}" dir="${build.dir}" includes="**/*.sh,**/*.bat" filemode="755"/>
+    </zip>
+    <make-checksums file="${dist.dir}/lucene-${version}.zip"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- packages the distribution with tar-gzip                            -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+
+  <!-- TODO: fix this stuff to not be a duplicate of the zip logic above! -->
+  <target name="package-tgz" depends="package"
+    description="--> Generates the lucene distribution as .tgz">
+
+    <delete file="${dist.dir}/lucene-${version}.tgz"/>
+    <tar tarfile="${dist.dir}/lucene-${version}.tgz"
+      longfile="gnu" compression="gzip">
+      <tarfileset prefix="lucene-${version}" dir=".">
+        <patternset refid="binary.root.dist.patterns"/>
+      </tarfileset>
+      <tarfileset prefix="lucene-${version}" dir="${build.dir}">
+        <patternset refid="binary.build.dist.patterns"/>
+      </tarfileset>
+      <tarfileset prefix="lucene-${version}" dir="${build.dir}" includes="**/*.sh,**/*.bat" filemode="755"/>
+    </tar>
+    <make-checksums file="${dist.dir}/lucene-${version}.tgz"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- packages the distribution with zip and tar-gzip                    -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="package-all-binary" depends="package-zip, package-tgz"
+    description="--> Generates the .tgz and .zip distributions"/>
+
+  <!-- ================================================================== -->
+  <!-- same as package-all. it is just here for compatibility.            -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="dist" depends="package-all-binary"/>
+
+  <!-- ================================================================== -->
+  <!-- S O U R C E  D I S T R I B U T I O N                               -->
+  <!-- ================================================================== -->
+    <target name="init-dist" >
+
+        <!-- Package is not called first if packaging src standalone, so the dist.dir may not exist -->
+        <mkdir dir="${build.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${maven.dist.dir}"/>
+    </target>
+
+  <!-- ================================================================== -->
+  <!-- Packages the sources with tar-gzip               -->
+  <!-- ================================================================== -->
+  <target name="package-tgz-src" depends="init-dist"
+          description="--> Generates the Lucene source distribution as .tgz">
+    <property name="source.package.file"
+              location="${dist.dir}/lucene-${version}-src.tgz"/>
+    <delete file="${source.package.file}"/>
+    <export-source source.dir="."/>
+
+    <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
+    <delete dir="${src.export.dir}/tools/javadoc/java8"/>
+
+    <!-- because we only package the "lucene/" folder, we have to adjust dir to work on: -->
+    <property name="local.src.export.dir" location="${src.export.dir}/lucene"/>
+    
+    <build-changes changes.src.file="${local.src.export.dir}/CHANGES.txt"
+                   changes.target.dir="${local.src.export.dir}/docs/changes"
+                   changes.product="lucene"/>
+    <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset prefix="lucene-${version}" dir="${local.src.export.dir}"/>
+    </tar>
+    <make-checksums file="${source.package.file}"/>
+  </target>
+
+
+  <!-- ================================================================== -->
+  <!-- Packages the sources from local working copy with tar-gzip     -->
+  <!-- ================================================================== -->
+  <target name="package-local-src-tgz" depends="init-dist"
+    description="--> Packages the Lucene source from the local working copy">
+    <mkdir dir="${common.dir}/build"/>
+    <property name="source.package.file"
+              value="${common.dir}/build/lucene-${version}-src.tgz"/>
+    <delete file="${source.package.file}"/>
+    <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
+      <tarfileset prefix="lucene-${version}" dir=".">
+        <patternset refid="lucene.local.src.package.patterns"/>
+      </tarfileset>
+    </tar>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- same as package-tgz-src. it is just here for compatibility.        -->
+  <!-- ================================================================== -->
+  <target name="dist-src" depends="package-tgz-src"/>
+
+  <target name="dist-all" depends="dist, dist-src, -dist-changes"/>
+
+  <!-- copy changes/ to the release folder -->
+  <target name="-dist-changes">
+   <copy todir="${dist.dir}/changes">
+     <fileset dir="${build.dir}/docs/changes"/>
+   </copy>
+  </target>
+
+  <target name="prepare-release-no-sign" depends="clean, dist-all, generate-maven-artifacts"/>
+  <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
+
+  <target name="-dist-maven" depends="install-maven-tasks">
+    <sequential>
+      <m2-deploy pom.xml="${filtered.pom.templates.dir}/pom.xml"/>        <!-- Lucene/Solr grandparent POM -->
+      <m2-deploy pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/> <!-- Lucene parent POM -->
+      <subant target="-dist-maven" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${common.dir}/core" includes="build.xml"/>
+        <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
+      </subant>
+      <modules-crawl target="-dist-maven"/>
+    </sequential>
+  </target>
+
+  <target name="-install-to-maven-local-repo" depends="install-maven-tasks">
+    <sequential>
+      <m2-install pom.xml="${filtered.pom.templates.dir}/pom.xml"/>        <!-- Lucene/Solr grandparent POM -->
+      <m2-install pom.xml="${filtered.pom.templates.dir}/lucene/pom.xml"/> <!-- Lucene parent POM -->
+      <subant target="-install-to-maven-local-repo" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${common.dir}/core" includes="build.xml"/>
+        <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
+      </subant>
+      <modules-crawl target="-install-to-maven-local-repo"/>
+    </sequential>
+  </target>
+
+  <target name="generate-maven-artifacts" depends="-unpack-lucene-tgz">
+    <ant dir=".." target="resolve" inheritall="false"/>
+    <antcall target="-filter-pom-templates" inheritall="false"/>
+    <antcall target="-dist-maven" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </antcall>
+  </target>
+  
+  <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">
+    <sequential>
+      <subant target="-validate-maven-dependencies" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${common.dir}/core" includes="build.xml"/>
+        <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
+      </subant>
+      
+      <modules-crawl target="-validate-maven-dependencies"/>
+    </sequential>
+  </target>
+  
+  <!-- ================================================================== -->
+  <!-- support for signing the artifacts using gpg                        -->
+  <!-- ================================================================== -->
+  <target name="sign-artifacts">
+    <sign-artifacts-macro artifacts.dir="${dist.dir}"/>
+  </target>
+
+  <target name="build-modules" depends="compile-test"
+          description="Builds all additional modules and their tests">
+    <modules-crawl target="build-artifacts-and-tests"/>
+  </target>
+
+  <target name="compile-test" description="Builds core, codecs, test-framework, and modules tests">
+    <sequential>
+      <ant dir="core" target="compile-test" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <ant dir="test-framework" target="compile-test" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+      <modules-crawl target="compile-test"/>
+    </sequential>
+  </target>
+
+  <target name="test-test-framework">
+      <ant dir="test-framework" target="test" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+      </ant>
+  </target>
+  
+  <target name="test-modules">
+    <modules-crawl target="test"/>
+  </target>
+
+  <target name="changes-to-html">
+    <build-changes changes.product="lucene"/>
+  </target>
+
+  <target name="pitest-modules" depends="compile-test">
+    <modules-crawl target="pitest" failonerror="false"/>
+  </target>
+
+  <target name="jacoco" description="Generates JaCoCo code coverage reports" depends="-jacoco-install">
+    <!-- run jacoco for each module -->
+    <ant dir="${common.dir}/core" target="jacoco" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <ant dir="${common.dir}/test-framework" target="jacoco" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <modules-crawl target="jacoco"/>
+
+    <!-- produce aggregate report -->
+    <property name="jacoco.output.dir" location="${jacoco.report.dir}/lucene-all"/>
+    <!-- try to clean output dir to prevent any confusion -->
+    <delete dir="${jacoco.output.dir}" failonerror="false"/>
+    <mkdir dir="${jacoco.output.dir}"/>
+
+    <jacoco:report>
+      <executiondata>
+        <fileset dir="${common.dir}/build" includes="**/jacoco.db"/>
+      </executiondata>
+      <structure name="${Name} aggregate JaCoCo coverage report">
+        <classfiles>
+          <fileset dir="${common.dir}/build">
+             <include name="**/classes/java/**/*.class"/>
+             <exclude name="tools/**"/>
+          </fileset>
+        </classfiles>
+        <!-- TODO: trying to specify source files could maybe work, but would
+             double the size of the reports -->
+      </structure>
+      <html destdir="${jacoco.output.dir}" footer="Copyright ${year} Apache Software Foundation.  All Rights Reserved."/>
+    </jacoco:report>
   </target>
 
   <!--
-   Run after Junit tests.
-   
-   This target is in a separate file, as it needs to include common-build.xml,
-   but must run from top-level!
+   Committer helpers
    -->
-  <target name="-generate-clover-reports" depends="clover">
-    <fail unless="run.clover">Clover not enabled!</fail>
-    <mkdir dir="${clover.report.dir}"/>
-    <fileset dir="." id="clover.test.result.files">
-      <include name="*/build/**/test/TEST-*.xml"/>
-    </fileset>
-    <fileset dir="." id="clover.test.src.files">
-      <include name="**/src/test/**/*.java"/>
-      <!-- test framework source files are all test code: -->
-      <include name="*/test-framework/src/**/*.java"/>
-    </fileset>
-    <clover-report projectName="Apache Lucene/Solr">
-      <current outfile="${clover.report.dir}" title="Apache Lucene/Solr ${version}" numThreads="0">
-        <format type="html" filter="assert"/>
-        <testresults refid="clover.test.result.files"/>
-        <testsources refid="clover.test.src.files"/>
-      </current>
-      <current outfile="${clover.report.dir}/clover.xml" title="Apache Lucene/Solr ${version}">
-        <format type="xml" filter="assert"/>
-        <testresults refid="clover.test.result.files"/>
-        <testsources refid="clover.test.src.files"/>
-      </current>
-    </clover-report>
-    <echo>You can find the merged Lucene/Solr Clover report in '${clover.report.dir}'.</echo>
+
+  <property name="patch.file" value="${basedir}/../patches/${patch.name}"/>
+  <!-- Apply a patch.  Assumes  patch can be applied in the basedir.
+  -Dpatch.name assumes the patch is located in ${basedir}/../patches/${patch.name}
+  -Dpatch.file means the patch can be located anywhere on the file system
+  -->
+  <target name="apply-patch" depends="clean" description="Apply a patch file.  Set -Dpatch.file, or -Dpatch.name when the patch is in the directory ../patches/">
+    <patch patchfile="${patch.file}" strip="0"/>
   </target>
 
-  <target name="test-with-heapdumps" depends="resolve-groovy,-test-with-heapdumps-enabled,-test-with-heapdumps-disabled" description="Runs tests with heap dumps on OOM enabled (if VM supports this)"/>
-  
-  <condition property="vm.supports.heapdumps">
-    <or>
-      <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
-      <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
-    </or>
-  </condition>
-
-  <target name="-test-with-heapdumps-enabled" if="vm.supports.heapdumps">
-    <echo level="info" message="${java.vm.name}: Enabling heap dumps on OutOfMemoryError to dir '${tests.heap-dump-dir}'."/>
-    <mkdir dir="${tests.heap-dump-dir}"/>
-    <delete includeEmptyDirs="true">
-      <fileset dir="${tests.heap-dump-dir}"  includes="**/*"/>
-    </delete>
-    <antcall inheritAll="false" target="test">
-      <param name="tests.heapdump.args" value="-XX:+HeapDumpOnOutOfMemoryError &quot;-XX:HeapDumpPath=${tests.heap-dump-dir}&quot;"/>
+  <target name="jar-test-framework">
+    <ant dir="${common.dir}/test-framework" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
-    </antcall>
-    <pathconvert property="heapdumps.list" setonempty="false" pathsep="${line.separator}">
-      <fileset dir="${tests.heap-dump-dir}"/>
-      <map from="${tests.heap-dump-dir}${file.separator}" to="* "/>
-    </pathconvert>
-    <fail if="heapdumps.list" message="Some of the tests produced a heap dump, but did not fail. Maybe a suppressed OutOfMemoryError? Dumps created:${line.separator}${heapdumps.list}"/>
-    <delete dir="${tests.heap-dump-dir}"/>
+    </ant>
   </target>
 
-  <target name="-test-with-heapdumps-disabled" unless="vm.supports.heapdumps">
-    <echo level="warning" message="WARN: The used JVM (${java.vm.name}) does not support HPROF heap dumps on OutOfMemoryError."/>
-    <antcall target="test">
+  <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
+  <target name="jar-core" depends="check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
+    <ant dir="${common.dir}/core" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
-    </antcall>
+    </ant>
+    <property name="core.compiled" value="true"/>
+    <property name="lucene-core.uptodate" value="true"/>
   </target>
 
-  <target name="regenerate" description="Runs all code regenerators">
-    <subant target="regenerate" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <!-- todo:
-      <fileset dir="solr" includes="build.xml" />-->
+  <target name="jar" depends="jar-core,jar-test-framework"
+          description="Jars core, codecs, test-framework, and all modules">
+    <modules-crawl target="jar-core"/>
+  </target>
+
+  <target name="jar-src" description="create source jars for all modules">
+    <ant dir="${common.dir}/core" target="jar-src" inheritAll="false" />
+    <ant dir="${common.dir}/test-framework" target="jar-src" inheritAll="false" />
+    <modules-crawl target="jar-src"/>
+  </target>
+
+  <target name="get-jenkins-line-docs" unless="enwiki.exists">
+    <sequential>
+      <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
+      <get src="http://home.apache.org/~mikemccand/enwiki.random.lines.txt.bz2"
+           dest="enwiki.random.lines.txt.bz2"/>
+      <bunzip2 src="enwiki.random.lines.txt.bz2" dest="enwiki.random.lines.txt"/>
+    </sequential>
+  </target>
+
+  <target name="jar-checksums" depends="resolve">
+    <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
+  </target>
+
+  <target name="regenerate">
+    <subant target="regenerate" failonerror="true" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
     </subant>
+    <modules-crawl target="regenerate"/>
   </target>
 
-  <!-- should only be called by jenkins, not precommit! -->
-  <target name="-check-after-regeneration" depends="resolve-groovy">
-    <wc-checker failonmodifications="true"/>
+  <target name="-append-module-dependencies-properties">
+    <sequential>
+      <ant dir="core" target="common.-append-module-dependencies-properties" inheritall="false"/>
+      <ant dir="test-framework" target="common.-append-module-dependencies-properties" inheritall="false"/>
+      <modules-crawl target="-append-module-dependencies-properties"/>
+    </sequential>
   </target>
-
-  <!-- TODO: remove me when jenkins works -->
-  <target name="regenerateAndCheck" depends="regenerate,-check-after-regeneration"/>
-  
-  <target name="-append-all-modules-dependencies-properties">
-    <delete file="lucene/build/module.dependencies.properties"/>
-    <subant target="-append-module-dependencies-properties" inheritall="false" failonerror="true">
-      <fileset dir="lucene" includes="build.xml" />
-      <fileset dir="solr" includes="build.xml" />
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </subant>
-  </target>
-  
-  <!-- Jenkins tasks -->
-  <target name="-jenkins-base" depends="-print-java-info,clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-working-copy"/>
-  
-  <target name="-print-java-info">
-    <echo level="info" taskname="java-info">java version &quot;${java.version}&quot;
-${java.runtime.name} (${java.runtime.version}, ${java.vendor})
-${java.vm.name} (${java.vm.version}, ${java.vm.vendor})
-Test args: [${args}]</echo>
-  </target>
-  
-  <target name="jenkins-hourly">
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <param name="tests.haltonfailure" value="false"/>
-      <param name="tests.badapples" value="false"/>
-      <target name="-jenkins-base"/>
-    </antcall>
-  </target>
-  
-  <target name="jenkins-badapples">
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <param name="tests.haltonfailure" value="false"/>
-      <param name="tests.badapples" value="true"/>
-      <target name="-jenkins-base"/>
-    </antcall>
-  </target>
-  
-  <target name="jenkins-nightly">
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <param name="tests.haltonfailure" value="false"/>
-      <param name="tests.nightly" value="true"/>
-      <param name="tests.badapples" value="false"/>
-      <target name="-jenkins-base"/>
-    </antcall>
-  </target>
-
-  <target name="jenkins-nightly-badapples">
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <param name="tests.haltonfailure" value="false"/>
-      <param name="tests.nightly" value="true"/>
-      <param name="tests.badapples" value="true"/>
-      <target name="-jenkins-base"/>
-    </antcall>
-  </target>
-
-  <target name="jenkins-maven-nightly" depends="-print-java-info,clean,clean-maven-build,resolve-groovy,resolve-markdown,install-maven-tasks">
-    <!-- step 1: build, install, validate and publish ANT-generated maven artifacts: -->
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <target name="remove-maven-artifacts"/>
-      <target name="validate-maven-dependencies"/>
-      <target name="generate-maven-artifacts"/>
-    </antcall>
-    <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <target name="remove-maven-artifacts"/>
-      <target name="run-maven-build"/>
-    </antcall>
-  </target>
-  
-  <target name="jenkins-clover" depends="-print-java-info">
-    <antcall>
-      <param name="is.jenkins.build" value="true"/>
-      <target name="run-clover"/>
-    </antcall>
-  </target>
-
-  <!-- useless targets (override common-build.xml): -->
-  <target name="generate-test-reports"/>
 </project>

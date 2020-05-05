@@ -1,4 +1,4 @@
-= Lucene Project Docs
+= Lucene Developer Docs
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,6 +16,4 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This directory includes information for the Lucene project overall.
-
-Also look in `lucene/dev-docs` for Lucene developer information and `solr/dev-docs` for Solr developer information.
+This directory includes information for Lucene developers.
