@@ -18,8 +18,6 @@
 allprojects {
   apply plugin: 'base'
 
-  group "org.apache"
-
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()

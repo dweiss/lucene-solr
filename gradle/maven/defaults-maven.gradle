@@ -56,17 +56,6 @@ configure(rootProject) {
         ":lucene:spatial3d",
         ":lucene:suggest",
         ":lucene:test-framework",
-
-        ":solr:core",
-        ":solr:solrj",
-        ":solr:contrib:analysis-extras",
-        ":solr:contrib:analytics",
-        ":solr:contrib:clustering",
-        ":solr:contrib:extraction",
-        ":solr:contrib:langid",
-        ":solr:contrib:jaegertracer-configurator",
-        ":solr:contrib:prometheus-exporter",
-        ":solr:test-framework",
     ]
   }
 
