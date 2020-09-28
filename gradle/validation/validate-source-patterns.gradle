@@ -95,13 +95,6 @@ configure(project(':lucene:benchmark')) {
   }
 }
 
-configure(project(':solr:core')) {
-  project.tasks.withType(ValidateSourcePatternsTask) {
-    sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
-    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
-  }
-}
-
 configure(rootProject) {
   task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'

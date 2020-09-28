@@ -87,40 +87,6 @@ configure(project(':lucene')) {
   }
 }
 
-configure(project(':solr')) {
-  markdownToHtml {
-    from('site') {
-      include '**/*.md'
-      exclude '**/*.template.md'
-    }
-  }
-  
-  task createDocumentationIndex(type: MarkdownTemplateTask) {
-    dependsOn copyDocumentationAssets,markdownToHtml
-  
-    outputFile = file("${project.docroot}/index.html")
-    templateFile = file('site/index.template.md')
-    
-    // list all properties used by the template here to allow uptodate checks to be correct:
-    inputs.property('version', project.version)
-    inputs.property('solrRefguideUrl', project.solrRefguideUrl)
-    inputs.property('luceneDocUrl', project.luceneDocUrl)
-    
-    withProjectList()
-  }
-  
-  task createOnlineDocumentationIndex(type: MarkdownTemplateTask) {
-    dependsOn copyOnlineDocumentationAssets
-  
-    outputFile = file("${project.docrootOnline}/index.html")
-    templateFile = file('site/online-link.template.md')
-
-    // list all properties used by the template here to allow uptodate checks to be correct:
-    inputs.property('version', project.version)
-    inputs.property('solrDocUrl', project.solrDocUrl)
-  }
-}
-
 // filter that can be used with the "copy" task of Gradle that transforms Markdown files
 // from source location to HTML (adding HTML header, styling,...)
 class MarkdownFilter extends FilterReader {

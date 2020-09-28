@@ -136,7 +136,6 @@ apply from: file('gradle/validation/jar-checks.gradle')
 apply from: file('gradle/validation/git-status.gradle')
 apply from: file('gradle/validation/versions-props-sorted.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
-apply from: file('gradle/validation/config-file-sanity.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
@@ -166,7 +165,7 @@ apply from: file('gradle/help.gradle')
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
-apply from: file('gradle/ant-compat/post-jar.gradle')
+
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 
@@ -176,9 +175,6 @@ apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/gradle-archives.gradle')
-apply from: file('gradle/hacks/findbugs.gradle')
+
 apply from: file('gradle/hacks/gradle.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
-
-apply from: file('gradle/solr/packaging.gradle')
-apply from: file('gradle/solr/solr-forbidden-apis.gradle')

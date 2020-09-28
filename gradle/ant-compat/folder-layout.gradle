@@ -34,10 +34,3 @@ allprojects {
     processTestResources.dependsOn copyTestResources
   }
 }
-
-// Adapt to custom 'web' folder location.
-configure(project(":solr:webapp")) {
-  plugins.withType(WarPlugin) {
-    webAppDirName = "web"
-  }
-}
