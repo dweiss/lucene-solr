@@ -19,10 +19,9 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.nio.file.Path;
 
-/**
- * Tests RAFDirectory
- */
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+/** Tests RAFDirectory */
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
+// machines occasionally
 public class TestRAFDirectory extends BaseDirectoryTestCase {
 
   @Override

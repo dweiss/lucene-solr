@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.facet.taxonomy.writercache;
 
 import org.apache.lucene.facet.FacetTestCase;
@@ -46,5 +45,4 @@ public class TestLruTaxonomyWriterCache extends FacetTestCase {
     assertEquals(cache.get(a), 0);
     assertEquals(cache.get(b), 1);
   }
-
 }

@@ -14,14 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.search.grouping;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -29,9 +27,7 @@ import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
-/**
- * A GroupSelector implementation that groups via SortedDocValues
- */
+/** A GroupSelector implementation that groups via SortedDocValues */
 public class TermGroupSelector extends GroupSelector<BytesRef> {
 
   private final String field;
@@ -46,6 +42,7 @@ public class TermGroupSelector extends GroupSelector<BytesRef> {
 
   /**
    * Create a new TermGroupSelector
+   *
    * @param field the SortedDocValues field to use for grouping
    */
   public TermGroupSelector(String field) {
@@ -60,13 +57,12 @@ public class TermGroupSelector extends GroupSelector<BytesRef> {
     for (int i = 0; i < values.size(); i++) {
       values.get(i, scratch);
       int ord = this.docValues.lookupTerm(scratch);
-      if (ord >= 0)
-        ordsToGroupIds.put(ord, i);
+      if (ord >= 0) ordsToGroupIds.put(ord, i);
     }
   }
 
   @Override
-  public void setScorer(Scorable scorer) throws IOException { }
+  public void setScorer(Scorable scorer) throws IOException {}
 
   @Override
   public State advanceTo(int doc) throws IOException {
@@ -79,8 +75,7 @@ public class TermGroupSelector extends GroupSelector<BytesRef> {
       groupId = ordsToGroupIds.get(ord);
       return State.ACCEPT;
     }
-    if (secondPass)
-      return State.SKIP;
+    if (secondPass) return State.SKIP;
     groupId = values.add(docValues.binaryValue());
     ordsToGroupIds.put(ord, groupId);
     return State.ACCEPT;
@@ -90,16 +85,14 @@ public class TermGroupSelector extends GroupSelector<BytesRef> {
 
   @Override
   public BytesRef currentValue() {
-    if (groupId == -1)
-      return null;
+    if (groupId == -1) return null;
     values.get(groupId, scratch);
     return scratch;
   }
 
   @Override
   public BytesRef copyValue() {
-    if (groupId == -1)
-      return null;
+    if (groupId == -1) return null;
     return BytesRef.deepCopyOf(currentValue());
   }
 
@@ -108,10 +101,8 @@ public class TermGroupSelector extends GroupSelector<BytesRef> {
     this.values.clear();
     this.values.reinit();
     for (SearchGroup<BytesRef> sg : searchGroups) {
-      if (sg.groupValue == null)
-        includeEmpty = true;
-      else
-        this.values.add(sg.groupValue);
+      if (sg.groupValue == null) includeEmpty = true;
+      else this.values.add(sg.groupValue);
     }
     this.secondPass = true;
   }

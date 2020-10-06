@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.util.fst;
 
+import static org.apache.lucene.util.fst.FSTTester.getRandomString;
+import static org.apache.lucene.util.fst.FSTTester.toIntsRef;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -31,9 +33,6 @@ import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.fst.UpToTwoPositiveIntOutputs.TwoLongs;
-
-import static org.apache.lucene.util.fst.FSTTester.getRandomString;
-import static org.apache.lucene.util.fst.FSTTester.toIntsRef;
 
 public class TestFSTsMisc extends LuceneTestCase {
 
@@ -54,20 +53,20 @@ public class TestFSTsMisc extends LuceneTestCase {
 
   public void testRandomWords() throws IOException {
     testRandomWords(1000, LuceneTestCase.atLeast(random(), 2));
-    //testRandomWords(100, 1);
+    // testRandomWords(100, 1);
   }
 
   private void testRandomWords(int maxNumWords, int numIter) throws IOException {
     Random random = new Random(random().nextLong());
-    for(int iter=0;iter<numIter;iter++) {
+    for (int iter = 0; iter < numIter; iter++) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter " + iter);
       }
-      for(int inputMode=0;inputMode<2;inputMode++) {
-        final int numWords = random.nextInt(maxNumWords+1);
+      for (int inputMode = 0; inputMode < 2; inputMode++) {
+        final int numWords = random.nextInt(maxNumWords + 1);
         Set<IntsRef> termsSet = new HashSet<>();
         IntsRef[] terms = new IntsRef[numWords];
-        while(termsSet.size() < numWords) {
+        while (termsSet.size() < numWords) {
           final String term = getRandomString(random);
           termsSet.add(toIntsRef(term, inputMode));
         }
@@ -88,16 +87,16 @@ public class TestFSTsMisc extends LuceneTestCase {
       final UpToTwoPositiveIntOutputs outputs = UpToTwoPositiveIntOutputs.getSingleton(true);
       final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<>(terms.length);
       long lastOutput = 0;
-      for(int idx=0;idx<terms.length;idx++) {
+      for (int idx = 0; idx < terms.length; idx++) {
         // Sometimes go backwards
         long value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
-        while(value < 0) {
+        while (value < 0) {
           value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
         }
         final Object output;
         if (random().nextInt(5) == 3) {
           long value2 = lastOutput + TestUtil.nextInt(random(), -100, 1000);
-          while(value2 < 0) {
+          while (value2 < 0) {
             value2 = lastOutput + TestUtil.nextInt(random(), -100, 1000);
           }
           List<Long> values = new ArrayList<>();
@@ -134,14 +133,14 @@ public class TestFSTsMisc extends LuceneTestCase {
       final ListOfOutputs<Long> outputs = new ListOfOutputs<>(_outputs);
       final List<FSTTester.InputOutput<Object>> pairs = new ArrayList<>(terms.length);
       long lastOutput = 0;
-      for(int idx=0;idx<terms.length;idx++) {
-        
+      for (int idx = 0; idx < terms.length; idx++) {
+
         int outputCount = TestUtil.nextInt(random(), 1, 7);
         List<Long> values = new ArrayList<>();
-        for(int i=0;i<outputCount;i++) {
+        for (int i = 0; i < outputCount; i++) {
           // Sometimes go backwards
           long value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
-          while(value < 0) {
+          while (value < 0) {
             value = lastOutput + TestUtil.nextInt(random(), -100, 1000);
           }
           values.add(value);
@@ -205,7 +204,7 @@ public class TestFSTsMisc extends LuceneTestCase {
     fstCompiler.add(Util.toIntsRef(new BytesRef("a"), scratch), 3L);
     fstCompiler.add(Util.toIntsRef(new BytesRef("a"), scratch), 0L);
     fstCompiler.add(Util.toIntsRef(new BytesRef("b"), scratch), 0L);
-    
+
     final FST<Object> fst = fstCompiler.compile();
 
     Object output = Util.get(fst, new BytesRef(""));
@@ -232,5 +231,3 @@ public class TestFSTsMisc extends LuceneTestCase {
     assertEquals(0L, outputList.get(0).longValue());
   }
 }
-
-

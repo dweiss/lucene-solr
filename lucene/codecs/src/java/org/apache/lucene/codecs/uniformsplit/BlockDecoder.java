@@ -14,19 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Decodes the raw bytes of a block when the index is read, according to the
- * {@link BlockEncoder} used during the writing of the index.
- * <p>
- * For example, implementations may decompress or decrypt.
+ * Decodes the raw bytes of a block when the index is read, according to the {@link BlockEncoder}
+ * used during the writing of the index.
+ *
+ * <p>For example, implementations may decompress or decrypt.
  *
  * @see BlockEncoder
  * @lucene.experimental
@@ -35,6 +33,7 @@ public interface BlockDecoder {
 
   /**
    * Decodes all the bytes of one block in a single operation. The decoding is per block.
+   *
    * @param blockBytes The input block bytes to read.
    * @param length The number of bytes to read from the input.
    * @return The decoded block bytes.

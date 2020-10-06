@@ -14,21 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Matches;
 
-/**
- * Query wrapper that forces its wrapped Query to use the default doc-by-doc
- * BulkScorer.
- */
+/** Query wrapper that forces its wrapped Query to use the default doc-by-doc BulkScorer. */
 class ForceNoBulkScoringQuery extends Query {
 
   private final Query inner;
@@ -40,8 +35,7 @@ class ForceNoBulkScoringQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query rewritten = inner.rewrite(reader);
-    if (rewritten != inner)
-      return new ForceNoBulkScoringQuery(rewritten);
+    if (rewritten != inner) return new ForceNoBulkScoringQuery(rewritten);
     return super.rewrite(reader);
   }
 
@@ -68,7 +62,8 @@ class ForceNoBulkScoringQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
 
     final Weight innerWeight = inner.createWeight(searcher, scoreMode, boost);
 

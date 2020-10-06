@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.document.Document;
@@ -42,8 +41,8 @@ public class LongRangeGroupSelectorTest extends BaseGroupSelectorTestCase<LongRa
 
   @Override
   protected GroupSelector<LongRange> getGroupSelector() {
-    return new LongRangeGroupSelector(LongValuesSource.fromLongField("long"),
-        new LongRangeFactory(100, 100, 900));
+    return new LongRangeGroupSelector(
+        LongValuesSource.fromLongField("long"), new LongRangeFactory(100, 100, 900));
   }
 
   @Override

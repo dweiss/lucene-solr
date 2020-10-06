@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -34,7 +32,7 @@ final class LegacyBinaryDocValuesWrapper extends BinaryDocValues {
   private final LegacyBinaryDocValues values;
   private final int maxDoc;
   private int docID = -1;
-  
+
   public LegacyBinaryDocValuesWrapper(Bits docsWithField, LegacyBinaryDocValues values) {
     this.docsWithField = docsWithField;
     this.values = values;
@@ -62,12 +60,13 @@ final class LegacyBinaryDocValuesWrapper extends BinaryDocValues {
   @Override
   public int advance(int target) {
     if (target < docID) {
-      throw new IllegalArgumentException("cannot advance backwards: docID=" + docID + " target=" + target);
+      throw new IllegalArgumentException(
+          "cannot advance backwards: docID=" + docID + " target=" + target);
     }
     if (target == NO_MORE_DOCS) {
       this.docID = NO_MORE_DOCS;
     } else {
-      this.docID = target-1;
+      this.docID = target - 1;
       nextDoc();
     }
     return docID;

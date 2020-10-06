@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.DoublePointMultiRangeBuilder;
@@ -52,7 +50,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null);
     DoublePointMultiRangeBuilder builder = new DoublePointMultiRangeBuilder("point", numDims);
-    for (int j = 0;j < numVals; j++) {
+    for (int j = 0; j < numVals; j++) {
       double[] lowerBound = new double[numDims];
       double[] upperBound = new double[numDims];
       for (int i = 0; i < numDims; ++i) {
@@ -87,7 +85,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     iw.commit();
 
     // One range matches
-    double[] firstLowerRange= {111.3, 294.2, 502.8};
+    double[] firstLowerRange = {111.3, 294.2, 502.8};
     double[] firstUpperRange = {117.3, 301.4, 514.5};
 
     double[] secondLowerRange = {15.3, 4.5, 415.7};
@@ -107,7 +105,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     assertEquals(searcher.count(query), 1);
 
     // Both ranges match
-    double[] firstMatchingLowerRange= {111.3, 294.2, 502.4};
+    double[] firstMatchingLowerRange = {111.3, 294.2, 502.4};
     double[] firstMatchingUpperRange = {117.6, 301.8, 514.2};
 
     double[] secondMatchingLowerRange = {212.4, 512.3, 415.7};
@@ -138,7 +136,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     assertEquals(searcher.count(query), 0);
 
     // Lower point is equal to a point
-    double[] firstEqualLowerRange= {112.4, 296.2, 512.7};
+    double[] firstEqualLowerRange = {112.4, 296.2, 512.7};
     double[] firstEqualUpperRange = {117.6, 301.8, 514.2};
 
     double[] secondEqualLowerRange = {219.3, 514.7, 624.2};
@@ -173,7 +171,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null);
     LongPointMultiRangeBuilder builder = new LongPointMultiRangeBuilder("point", numDims);
-    for (int j = 0;j < numVals; j++) {
+    for (int j = 0; j < numVals; j++) {
       long[] lowerBound = new long[numDims];
       long[] upperBound = new long[numDims];
       for (int i = 0; i < numDims; ++i) {
@@ -208,7 +206,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     iw.commit();
 
     // One range matches
-    long[] firstLowerRange= {111, 294, 502};
+    long[] firstLowerRange = {111, 294, 502};
     long[] firstUpperRange = {117, 301, 514};
 
     long[] secondLowerRange = {15, 4, 415};
@@ -228,12 +226,11 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     assertEquals(searcher.count(query), 1);
 
     // Both ranges match
-    long[] firstMatchingLowerRange= {111, 294, 502};
+    long[] firstMatchingLowerRange = {111, 294, 502};
     long[] firstMatchingUpperRange = {117, 301, 514};
 
     long[] secondMatchingLowerRange = {212, 512, 415};
     long[] secondMatchingUpperRange = {228, 538, 647};
-
 
     LongPointMultiRangeBuilder builder2 = new LongPointMultiRangeBuilder("point", 3);
 
@@ -260,7 +257,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     assertEquals(searcher.count(query), 0);
 
     // Lower point is equal to a point
-    long[] firstEqualsLowerPoint= {112, 296, 512};
+    long[] firstEqualsLowerPoint = {112, 296, 512};
     long[] firstEqualsUpperPoint = {219, 514, 624};
 
     long[] secondEqualsLowerPoint = {11246, 19388, 21248};
@@ -295,7 +292,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null);
     FloatPointMultiRangeBuilder builder = new FloatPointMultiRangeBuilder("point", numDims);
-    for (int j = 0;j < numVals; j++) {
+    for (int j = 0; j < numVals; j++) {
       float[] lowerBound = new float[numDims];
       float[] upperBound = new float[numDims];
       for (int i = 0; i < numDims; ++i) {
@@ -330,7 +327,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     iw.commit();
 
     // One range matches
-    float[] firstLowerRange= {111.3f, 294.7f, 502.1f};
+    float[] firstLowerRange = {111.3f, 294.7f, 502.1f};
     float[] firstUpperRange = {117.2f, 301.6f, 514.3f};
 
     float[] secondLowerRange = {15.2f, 4.3f, 415.2f};
@@ -350,7 +347,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     assertEquals(searcher.count(query), 1);
 
     // Both ranges match
-    float[] firstMatchingLowerRange= {111f, 294f, 502f};
+    float[] firstMatchingLowerRange = {111f, 294f, 502f};
     float[] firstMatchingUpperRange = {117f, 301f, 514f};
 
     float[] secondMatchingLowerRange = {212f, 512f, 415f};
@@ -381,7 +378,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     assertEquals(searcher.count(query), 0);
 
     // Lower point is equal to a point
-    float[] firstEqualsLowerPoint= {112.4f, 296.3f, 512.1f};
+    float[] firstEqualsLowerPoint = {112.4f, 296.3f, 512.1f};
     float[] firstEqualsUpperPoint = {117.3f, 299.4f, 519.3f};
 
     float[] secondEqualsLowerPoint = {219.7f, 514.2f, 624.6f};
@@ -416,7 +413,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setQueryCache(null);
     IntPointMultiRangeBuilder builder = new IntPointMultiRangeBuilder("point", numDims);
-    for (int j = 0;j < numVals; j++) {
+    for (int j = 0; j < numVals; j++) {
       int[] lowerBound = new int[numDims];
       int[] upperBound = new int[numDims];
       for (int i = 0; i < numDims; ++i) {
@@ -451,7 +448,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     iw.commit();
 
     // One range matches
-    int[] firstLowerRange= {111, 294, 502};
+    int[] firstLowerRange = {111, 294, 502};
     int[] firstUpperRange = {117, 301, 514};
 
     int[] secondLowerRange = {15, 4, 415};
@@ -471,12 +468,11 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     assertEquals(searcher.count(query), 1);
 
     // Both ranges match
-    int[] firstMatchingLowerRange= {111, 294, 502};
+    int[] firstMatchingLowerRange = {111, 294, 502};
     int[] firstMatchingUpperRange = {117, 301, 514};
 
     int[] secondMatchingLowerRange = {212, 512, 415};
     int[] secondMatchingUpperRange = {228, 538, 647};
-
 
     IntPointMultiRangeBuilder builder2 = new IntPointMultiRangeBuilder("point", 3);
 
@@ -503,7 +499,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
     assertEquals(searcher.count(query), 0);
 
     // None match
-    int[] firstEqualsPointLower= {112, 296, 512};
+    int[] firstEqualsPointLower = {112, 296, 512};
     int[] firstEqualsPointUpper = {117, 299, 517};
 
     int[] secondEqualsPointLower = {219, 514, 624};
@@ -523,7 +519,7 @@ public class TestMultiRangeQueries extends LuceneTestCase {
   }
 
   public void testToString() {
-    double[] firstDoubleLowerRange= {111, 294.3, 502.4};
+    double[] firstDoubleLowerRange = {111, 294.3, 502.4};
     double[] firstDoubleUpperRange = {117.3, 301.8, 514.3};
 
     double[] secondDoubleLowerRange = {15.3, 412.8, 415.1};
@@ -536,10 +532,11 @@ public class TestMultiRangeQueries extends LuceneTestCase {
 
     Query query = stringTestbuilder.build();
 
-    assertEquals("point:{[111.0 TO 117.3],[294.3 TO 301.8],[502.4 TO 514.3]},{[15.3 TO 200.4],[412.8 TO 567.4],[415.1 TO 642.2]}",
+    assertEquals(
+        "point:{[111.0 TO 117.3],[294.3 TO 301.8],[502.4 TO 514.3]},{[15.3 TO 200.4],[412.8 TO 567.4],[415.1 TO 642.2]}",
         query.toString());
 
-    long[] firstLongLowerRange= {111, 294, 502};
+    long[] firstLongLowerRange = {111, 294, 502};
     long[] firstLongUpperRange = {117, 301, 514};
 
     long[] secondLongLowerRange = {15, 412, 415};
@@ -552,26 +549,29 @@ public class TestMultiRangeQueries extends LuceneTestCase {
 
     query = stringLongTestbuilder.build();
 
-    assertEquals("point:{[111 TO 117],[294 TO 301],[502 TO 514]},{[15 TO 200],[412 TO 567],[415 TO 642]}",
+    assertEquals(
+        "point:{[111 TO 117],[294 TO 301],[502 TO 514]},{[15 TO 200],[412 TO 567],[415 TO 642]}",
         query.toString());
 
-    float[] firstFloatLowerRange= {111.3f, 294.4f, 502.2f};
+    float[] firstFloatLowerRange = {111.3f, 294.4f, 502.2f};
     float[] firstFloatUpperRange = {117.7f, 301.2f, 514.4f};
 
     float[] secondFloatLowerRange = {15.3f, 412.2f, 415.9f};
     float[] secondFloatUpperRange = {200.2f, 567.4f, 642.3f};
 
-    FloatPointMultiRangeBuilder stringFloatTestbuilder = new FloatPointMultiRangeBuilder("point", 3);
+    FloatPointMultiRangeBuilder stringFloatTestbuilder =
+        new FloatPointMultiRangeBuilder("point", 3);
 
     stringFloatTestbuilder.add(firstFloatLowerRange, firstFloatUpperRange);
     stringFloatTestbuilder.add(secondFloatLowerRange, secondFloatUpperRange);
 
     query = stringFloatTestbuilder.build();
 
-    assertEquals("point:{[111.3 TO 117.7],[294.4 TO 301.2],[502.2 TO 514.4]},{[15.3 TO 200.2],[412.2 TO 567.4],[415.9 TO 642.3]}",
+    assertEquals(
+        "point:{[111.3 TO 117.7],[294.4 TO 301.2],[502.2 TO 514.4]},{[15.3 TO 200.2],[412.2 TO 567.4],[415.9 TO 642.3]}",
         query.toString());
 
-    int[] firstIntLowerRange= {111, 294, 502};
+    int[] firstIntLowerRange = {111, 294, 502};
     int[] firstIntUpperRange = {117, 301, 514};
 
     int[] secondIntLowerRange = {15, 412, 415};
@@ -584,7 +584,8 @@ public class TestMultiRangeQueries extends LuceneTestCase {
 
     query = stringIntTestbuilder.build();
 
-    assertEquals("point:{[111 TO 117],[294 TO 301],[502 TO 514]},{[15 TO 200],[412 TO 567],[415 TO 642]}",
+    assertEquals(
+        "point:{[111 TO 117],[294 TO 301],[502 TO 514]},{[15 TO 200],[412 TO 567],[415 TO 642]}",
         query.toString());
   }
 }

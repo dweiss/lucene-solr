@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 /** A {@link Collector} which computes statistics for a DocValues field. */
@@ -25,7 +24,9 @@ public class DocValuesStatsCollector implements Collector {
 
   private final DocValuesStats<?> stats;
 
-  /** Creates a collector to compute statistics for a DocValues field using the given {@code stats}. */
+  /**
+   * Creates a collector to compute statistics for a DocValues field using the given {@code stats}.
+   */
   public DocValuesStatsCollector(DocValuesStats<?> stats) {
     this.stats = stats;
   }
@@ -34,9 +35,11 @@ public class DocValuesStatsCollector implements Collector {
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     boolean shouldProcess = stats.init(context);
     if (!shouldProcess) {
-      // Stats cannot be computed for this segment, therefore consider all matching documents as a 'miss'. 
+      // Stats cannot be computed for this segment, therefore consider all matching documents as a
+      // 'miss'.
       return new LeafCollector() {
-        @Override public void setScorer(Scorable scorer) throws IOException {}
+        @Override
+        public void setScorer(Scorable scorer) throws IOException {}
 
         @Override
         public void collect(int doc) throws IOException {
@@ -47,7 +50,8 @@ public class DocValuesStatsCollector implements Collector {
     }
 
     return new LeafCollector() {
-      @Override public void setScorer(Scorable scorer) throws IOException {}
+      @Override
+      public void setScorer(Scorable scorer) throws IOException {}
 
       @Override
       public void collect(int doc) throws IOException {
@@ -60,5 +64,4 @@ public class DocValuesStatsCollector implements Collector {
   public ScoreMode scoreMode() {
     return ScoreMode.COMPLETE_NO_SCORES;
   }
-
 }

@@ -14,13 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.util;
 
-/**
- * Tracks dynamic allocations/deallocations of memory for transient objects
- */
+/** Tracks dynamic allocations/deallocations of memory for transient objects */
 public interface MemoryTracker {
   void updateBytes(long bytes);
+
   long getBytes();
 }

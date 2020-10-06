@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
+
+import static org.hamcrest.core.Is.is;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -23,31 +24,30 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.NamedThreadFactory;
-
-import static org.hamcrest.core.Is.is;
 
 public class TestCachePurging extends MonitorTestBase {
 
   public void testQueryCacheCanBePurged() throws IOException {
 
     final AtomicInteger purgeCount = new AtomicInteger();
-    MonitorUpdateListener listener = new MonitorUpdateListener() {
-      @Override
-      public void onPurge() {
-        purgeCount.incrementAndGet();
-      }
-    };
+    MonitorUpdateListener listener =
+        new MonitorUpdateListener() {
+          @Override
+          public void onPurge() {
+            purgeCount.incrementAndGet();
+          }
+        };
 
     try (Monitor monitor = new Monitor(ANALYZER)) {
-      MonitorQuery[] queries = new MonitorQuery[]{
-          new MonitorQuery("1", parse("test1 test4")),
-          new MonitorQuery("2", parse("test2")),
-          new MonitorQuery("3", parse("test3"))
-      };
+      MonitorQuery[] queries =
+          new MonitorQuery[] {
+            new MonitorQuery("1", parse("test1 test4")),
+            new MonitorQuery("2", parse("test2")),
+            new MonitorQuery("3", parse("test3"))
+          };
       monitor.addQueryIndexUpdateListener(listener);
       monitor.register(queries);
       assertThat(monitor.getQueryCount(), is(3));
@@ -85,19 +85,21 @@ public class TestCachePurging extends MonitorTestBase {
     final CountDownLatch finishUpdating = new CountDownLatch(1);
 
     try (final Monitor monitor = new Monitor(ANALYZER)) {
-      Runnable updaterThread = () -> {
-        try {
-          startUpdating.await();
-          for (int i = 200; i < 400; i++) {
-            monitor.register(newMonitorQuery(i));
-          }
-          finishUpdating.countDown();
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      };
+      Runnable updaterThread =
+          () -> {
+            try {
+              startUpdating.await();
+              for (int i = 200; i < 400; i++) {
+                monitor.register(newMonitorQuery(i));
+              }
+              finishUpdating.countDown();
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          };
 
-      ExecutorService executor = Executors.newFixedThreadPool(1, new NamedThreadFactory("updaters"));
+      ExecutorService executor =
+          Executors.newFixedThreadPool(1, new NamedThreadFactory("updaters"));
       try {
         executor.submit(updaterThread);
 
@@ -132,7 +134,8 @@ public class TestCachePurging extends MonitorTestBase {
 
   public void testBackgroundPurges() throws IOException, InterruptedException {
 
-    MonitorConfiguration config = new MonitorConfiguration().setPurgeFrequency(50, TimeUnit.MILLISECONDS);
+    MonitorConfiguration config =
+        new MonitorConfiguration().setPurgeFrequency(50, TimeUnit.MILLISECONDS);
     try (Monitor monitor = new Monitor(ANALYZER, Presearcher.NO_FILTERING, config)) {
 
       assertEquals(-1, monitor.getQueryCacheStats().lastPurged);
@@ -146,14 +149,14 @@ public class TestCachePurging extends MonitorTestBase {
       assertEquals(99, monitor.getQueryCacheStats().queries);
 
       CountDownLatch latch = new CountDownLatch(1);
-      monitor.addQueryIndexUpdateListener(new MonitorUpdateListener() {
-        @Override
-        public void onPurge() {
-          // It can sometimes take a couple of purge runs to get everything in sync
-          if (monitor.getQueryCacheStats().cachedQueries == 99)
-            latch.countDown();
-        }
-      });
+      monitor.addQueryIndexUpdateListener(
+          new MonitorUpdateListener() {
+            @Override
+            public void onPurge() {
+              // It can sometimes take a couple of purge runs to get everything in sync
+              if (monitor.getQueryCacheStats().cachedQueries == 99) latch.countDown();
+            }
+          });
 
       assertTrue(latch.await(5, TimeUnit.SECONDS));
       assertEquals(99, monitor.getQueryCacheStats().queries);

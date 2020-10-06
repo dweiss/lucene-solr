@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 public class TestMatchAllPresearcher extends PresearcherTestBase {
@@ -23,5 +22,4 @@ public class TestMatchAllPresearcher extends PresearcherTestBase {
   protected Presearcher createPresearcher() {
     return Presearcher.NO_FILTERING;
   }
-
 }

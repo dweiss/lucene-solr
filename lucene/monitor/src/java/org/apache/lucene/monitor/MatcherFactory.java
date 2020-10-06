@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 import org.apache.lucene.search.IndexSearcher;
@@ -27,9 +26,8 @@ import org.apache.lucene.search.IndexSearcher;
 public interface MatcherFactory<T extends QueryMatch> {
 
   /**
-   * Create a new {@link CandidateMatcher} object, to select
-   * queries to match against the passed-in IndexSearcher
+   * Create a new {@link CandidateMatcher} object, to select queries to match against the passed-in
+   * IndexSearcher
    */
   CandidateMatcher<T> createMatcher(IndexSearcher searcher);
-
 }

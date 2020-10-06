@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.document.Document;
@@ -35,7 +34,7 @@ public class TermGroupSelectorTest extends BaseGroupSelectorTestCase<BytesRef> {
   @Override
   protected void addGroupField(Document document, int id) {
     if (rarely()) {
-      return;   // missing value
+      return; // missing value
     }
     String groupValue = "group" + random().nextInt(10);
     document.add(new SortedDocValuesField("groupField", new BytesRef(groupValue)));

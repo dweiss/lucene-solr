@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 public class TestConcurrentQueryLoader extends MonitorTestBase {
@@ -31,5 +30,4 @@ public class TestConcurrentQueryLoader extends MonitorTestBase {
       assertEquals(numQueries, monitor.getQueryCount());
     }
   }
-
 }

@@ -14,12 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.search.grouping;
 
-/**
- * Groups double values into ranges
- */
+/** Groups double values into ranges */
 public class DoubleRangeFactory {
 
   private final double min;
@@ -28,11 +25,12 @@ public class DoubleRangeFactory {
 
   /**
    * Creates a new DoubleRangeFactory
-   * @param min     a minimum value; all doubles below this value are grouped into a single range
-   * @param width   a standard width; all ranges between {@code min} and {@code max} are this wide,
-   *                with the exception of the final range which may be up to this width.  Ranges
-   *                are inclusive at the lower end, and exclusive at the upper end.
-   * @param max     a maximum value; all doubles above this value are grouped into a single range
+   *
+   * @param min a minimum value; all doubles below this value are grouped into a single range
+   * @param width a standard width; all ranges between {@code min} and {@code max} are this wide,
+   *     with the exception of the final range which may be up to this width. Ranges are inclusive
+   *     at the lower end, and exclusive at the upper end.
+   * @param max a maximum value; all doubles above this value are grouped into a single range
    */
   public DoubleRangeFactory(double min, double width, double max) {
     this.min = min;
@@ -42,12 +40,12 @@ public class DoubleRangeFactory {
 
   /**
    * Finds the DoubleRange that a value should be grouped into
+   *
    * @param value the value to group
    * @param reuse an existing DoubleRange object to reuse
    */
   public DoubleRange getRange(double value, DoubleRange reuse) {
-    if (reuse == null)
-      reuse = new DoubleRange(Double.MIN_VALUE, Double.MAX_VALUE);
+    if (reuse == null) reuse = new DoubleRange(Double.MIN_VALUE, Double.MAX_VALUE);
     if (value < min) {
       reuse.max = min;
       reuse.min = Double.MIN_VALUE;
@@ -63,5 +61,4 @@ public class DoubleRangeFactory {
     reuse.max = reuse.min + width;
     return reuse;
   }
-
 }

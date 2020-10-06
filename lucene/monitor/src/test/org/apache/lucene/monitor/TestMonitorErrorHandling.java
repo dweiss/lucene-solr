@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -46,12 +44,14 @@ public class TestMonitorErrorHandling extends MonitorTestBase {
   }
 
   public void testMonitorQueryNullValues() {
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
-      Map<String, String> metadata2 = new HashMap<>();
-      metadata2.put("key", null);
-      new MonitorQuery("id", new MatchAllDocsQuery(), null, metadata2);
-    });
+    IllegalArgumentException e =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              Map<String, String> metadata2 = new HashMap<>();
+              metadata2.put("key", null);
+              new MonitorQuery("id", new MatchAllDocsQuery(), null, metadata2);
+            });
     assertEquals("Null value for key key in metadata map", e.getMessage());
   }
-
 }

@@ -14,22 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.uniformsplit.TestUniformSplitPostingFormat;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTermsWriter;
 
-/**
- * Tests {@link STUniformSplitPostingsFormat} with block encoding using ROT13 cypher.
- */
+/** Tests {@link STUniformSplitPostingsFormat} with block encoding using ROT13 cypher. */
 public class TestSTUniformSplitPostingFormat extends TestUniformSplitPostingFormat {
 
   @Override
   protected PostingsFormat getPostingsFormat() {
-    return checkEncoding ? new STUniformSplitRot13PostingsFormat()
-        : new STUniformSplitPostingsFormat(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
-        null, null, random().nextBoolean());
+    return checkEncoding
+        ? new STUniformSplitRot13PostingsFormat()
+        : new STUniformSplitPostingsFormat(
+            UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES,
+            UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+            null,
+            null,
+            random().nextBoolean());
   }
 }

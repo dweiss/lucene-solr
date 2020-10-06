@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.document;
-
-import org.apache.lucene.search.MultiRangeQuery;
 
 import static org.apache.lucene.document.IntPoint.decodeDimension;
 import static org.apache.lucene.document.IntPoint.pack;
+
+import org.apache.lucene.search.MultiRangeQuery;
 
 /** Builder for multi range queries for IntPoints */
 public class IntPointMultiRangeBuilder extends MultiRangeQuery.Builder {
@@ -40,12 +39,14 @@ public class IntPointMultiRangeBuilder extends MultiRangeQuery.Builder {
 
   public void add(int[] lowerValue, int[] upperValue) {
     if (upperValue.length != numDims || lowerValue.length != numDims) {
-      throw new IllegalArgumentException("Passed in range does not conform to specified dimensions");
+      throw new IllegalArgumentException(
+          "Passed in range does not conform to specified dimensions");
     }
 
     for (int i = 0; i < numDims; i++) {
       if (upperValue[i] < lowerValue[i]) {
-        throw new IllegalArgumentException("Upper value of range should be greater than lower value of range");
+        throw new IllegalArgumentException(
+            "Upper value of range should be greater than lower value of range");
       }
     }
     add(pack(lowerValue).bytes, pack(upperValue).bytes);

@@ -14,15 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
-import java.io.IOException;
+import static org.hamcrest.CoreMatchers.containsString;
 
+import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
-import static org.hamcrest.CoreMatchers.containsString;
 
 public class TestPresearcherMatchCollector extends MonitorTestBase {
 
@@ -57,5 +55,4 @@ public class TestPresearcherMatchCollector extends MonitorTestBase {
       assertNull(matches.match("4", 0));
     }
   }
-
 }

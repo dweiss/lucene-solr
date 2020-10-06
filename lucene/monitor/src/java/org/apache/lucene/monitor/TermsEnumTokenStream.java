@@ -14,19 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
-/**
- * A TokenStream created from a {@link org.apache.lucene.index.TermsEnum}
- */
+/** A TokenStream created from a {@link org.apache.lucene.index.TermsEnum} */
 class TermsEnumTokenStream extends TokenStream {
 
   private final BytesRefIterator termsEnum;
@@ -45,8 +41,7 @@ class TermsEnumTokenStream extends TokenStream {
   public final boolean incrementToken() throws IOException {
     clearAttributes();
     BytesRef bytes = termsEnum.next();
-    if (bytes == null)
-      return false;
+    if (bytes == null) return false;
     charTerm.setEmpty();
     charTerm.append(bytes.utf8ToString());
     return true;

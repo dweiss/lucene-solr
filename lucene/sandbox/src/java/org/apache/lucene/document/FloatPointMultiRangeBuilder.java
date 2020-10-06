@@ -14,17 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.document;
-
-import org.apache.lucene.search.MultiRangeQuery;
 
 import static org.apache.lucene.document.FloatPoint.decodeDimension;
 import static org.apache.lucene.document.FloatPoint.pack;
 
-/**
- * Builder for multi range queries for FloatPoints
- */
+import org.apache.lucene.search.MultiRangeQuery;
+
+/** Builder for multi range queries for FloatPoints */
 public class FloatPointMultiRangeBuilder extends MultiRangeQuery.Builder {
   public FloatPointMultiRangeBuilder(String field, int numDims) {
     super(field, Float.BYTES, numDims);
@@ -42,12 +39,14 @@ public class FloatPointMultiRangeBuilder extends MultiRangeQuery.Builder {
 
   public void add(float[] lowerValue, float[] upperValue) {
     if (upperValue.length != numDims || lowerValue.length != numDims) {
-      throw new IllegalArgumentException("Passed in range does not conform to specified dimensions");
+      throw new IllegalArgumentException(
+          "Passed in range does not conform to specified dimensions");
     }
 
     for (int i = 0; i < numDims; i++) {
       if (upperValue[i] < lowerValue[i]) {
-        throw new IllegalArgumentException("Upper value of range should be greater than lower value of range");
+        throw new IllegalArgumentException(
+            "Upper value of range should be greater than lower value of range");
       }
     }
     add(pack(lowerValue).bytes, pack(upperValue).bytes);

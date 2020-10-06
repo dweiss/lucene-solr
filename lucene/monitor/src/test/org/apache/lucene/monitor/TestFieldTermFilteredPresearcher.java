@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 import java.util.Collections;
@@ -23,6 +22,7 @@ public class TestFieldTermFilteredPresearcher extends FieldFilterPresearcherComp
 
   @Override
   protected Presearcher createPresearcher() {
-    return new TermFilteredPresearcher(TermWeightor.DEFAULT, Collections.emptyList(), Collections.singleton("language"));
+    return new TermFilteredPresearcher(
+        TermWeightor.DEFAULT, Collections.emptyList(), Collections.singleton("language"));
   }
 }

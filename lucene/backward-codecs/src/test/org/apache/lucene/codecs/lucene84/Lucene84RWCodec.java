@@ -23,9 +23,7 @@ import org.apache.lucene.codecs.lucene50.Lucene50RWStoredFieldsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60RWPointsFormat;
 import org.apache.lucene.codecs.lucene70.Lucene70RWSegmentInfoFormat;
 
-/**
- * RW impersonation of {@link Lucene84Codec}.
- */
+/** RW impersonation of {@link Lucene84Codec}. */
 public class Lucene84RWCodec extends Lucene84Codec {
 
   @Override
@@ -42,5 +40,4 @@ public class Lucene84RWCodec extends Lucene84Codec {
   public StoredFieldsFormat storedFieldsFormat() {
     return new Lucene50RWStoredFieldsFormat();
   }
-
 }

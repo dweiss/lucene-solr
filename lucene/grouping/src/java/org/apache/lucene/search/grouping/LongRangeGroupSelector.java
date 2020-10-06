@@ -14,23 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.search.grouping;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.Scorable;
 
-/**
- * A GroupSelector implementation that groups documents by long values
- */
+/** A GroupSelector implementation that groups documents by long values */
 public class LongRangeGroupSelector extends GroupSelector<LongRange> {
 
   private final LongValuesSource source;
@@ -46,8 +42,10 @@ public class LongRangeGroupSelector extends GroupSelector<LongRange> {
 
   /**
    * Creates a new LongRangeGroupSelector
-   * @param source        a LongValuesSource to retrieve long values per document
-   * @param rangeFactory  a LongRangeFactory that defines how to group the long values into range buckets
+   *
+   * @param source a LongValuesSource to retrieve long values per document
+   * @param rangeFactory a LongRangeFactory that defines how to group the long values into range
+   *     buckets
    */
   public LongRangeGroupSelector(LongValuesSource source, LongRangeFactory rangeFactory) {
     this.source = source;
@@ -92,10 +90,8 @@ public class LongRangeGroupSelector extends GroupSelector<LongRange> {
     inSecondPass = new HashSet<>();
     includeEmpty = false;
     for (SearchGroup<LongRange> group : searchGroups) {
-      if (group.groupValue == null)
-        includeEmpty = true;
-      else
-        inSecondPass.add(group.groupValue);
+      if (group.groupValue == null) includeEmpty = true;
+      else inSecondPass.add(group.groupValue);
     }
   }
 }

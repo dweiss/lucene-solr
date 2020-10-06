@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -210,7 +209,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.finish();
 
     // System.out.println("DOT:\n" + q.toDot());
-    
+
     assertEquals(4, s.search(q, 1).totalHits.value);
 
     w.close();
@@ -245,14 +244,16 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
 
-    TokenStream ts = new CannedTokenStream(new Token[] {
-        token("fast", 1, 1),
-        token("speedy", 0, 1),
-        token("wi", 1, 1),
-        token("wifi", 0, 2),
-        token("fi", 1, 1),
-        token("network", 1, 1)
-      });
+    TokenStream ts =
+        new CannedTokenStream(
+            new Token[] {
+              token("fast", 1, 1),
+              token("speedy", 0, 1),
+              token("wi", 1, 1),
+              token("wifi", 0, 2),
+              token("fi", 1, 1),
+              token("network", 1, 1)
+            });
 
     TermAutomatonQuery q = new TokenStreamToTermAutomatonQuery().toQuery("field", ts);
     // System.out.println("DOT: " + q.toDot());
@@ -303,9 +304,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.setAccept(s2, true);
     q.addAnyTransition(s0, s1);
     q.addTransition(s1, s2, "b");
-    expectThrows(IllegalStateException.class, () -> {
-      q.finish();
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          q.finish();
+        });
   }
 
   public void testInvalidTrailWithAny() throws Exception {
@@ -316,11 +319,13 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.setAccept(s2, true);
     q.addTransition(s0, s1, "b");
     q.addAnyTransition(s1, s2);
-    expectThrows(IllegalStateException.class, () -> {
-      q.finish();
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          q.finish();
+        });
   }
-  
+
   public void testAnyFromTokenStream() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -344,13 +349,15 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
 
-    TokenStream ts = new CannedTokenStream(new Token[] {
-        token("comes", 1, 1),
-        token("comes", 0, 2),
-        token("*", 1, 1),
-        token("sun", 1, 1),
-        token("moon", 0, 1)
-      });
+    TokenStream ts =
+        new CannedTokenStream(
+            new Token[] {
+              token("comes", 1, 1),
+              token("comes", 0, 2),
+              token("*", 1, 1),
+              token("sun", 1, 1),
+              token("moon", 0, 1)
+            });
 
     TermAutomatonQuery q = new TokenStreamToTermAutomatonQuery().toQuery("field", ts);
     // System.out.println("DOT: " + q.toDot());
@@ -371,7 +378,8 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
   private static class RandomSynonymFilter extends TokenFilter {
     private boolean synNext;
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    private final PositionIncrementAttribute posIncAtt =
+        addAttribute(PositionIncrementAttribute.class);
 
     public RandomSynonymFilter(TokenFilter in) {
       super(in);
@@ -384,7 +392,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
         clearAttributes();
         restoreState(state);
         posIncAtt.setPositionIncrement(0);
-        termAtt.append(""+((char) 97 + random().nextInt(3)));
+        termAtt.append("" + ((char) 97 + random().nextInt(3)));
         synNext = false;
         return true;
       }
@@ -411,32 +419,33 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     Directory dir = newDirectory();
 
     // Adds occasional random synonyms:
-    Analyzer analyzer = new Analyzer() {
-        @Override
-        public TokenStreamComponents createComponents(String fieldName) {
-          MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true, 100);
-          tokenizer.setEnableChecks(true);
-          TokenFilter filt = new MockTokenFilter(tokenizer, MockTokenFilter.EMPTY_STOPSET);
-          filt = new RandomSynonymFilter(filt);
-          return new TokenStreamComponents(tokenizer, filt);
-        }
-      };
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          public TokenStreamComponents createComponents(String fieldName) {
+            MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true, 100);
+            tokenizer.setEnableChecks(true);
+            TokenFilter filt = new MockTokenFilter(tokenizer, MockTokenFilter.EMPTY_STOPSET);
+            filt = new RandomSynonymFilter(filt);
+            return new TokenStreamComponents(tokenizer, filt);
+          }
+        };
 
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    for(int i=0;i<numDocs;i++) {
+    for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       int numTokens = atLeast(10);
 
       StringBuilder sb = new StringBuilder();
-      for(int j=0;j<numTokens;j++) {
+      for (int j = 0; j < numTokens; j++) {
         sb.append(' ');
         sb.append((char) (97 + random().nextInt(3)));
       }
       String contents = sb.toString();
       doc.add(newTextField("field", contents, Field.Store.NO));
-      doc.add(new StoredField("id", ""+i));
+      doc.add(new StoredField("id", "" + i));
       if (VERBOSE) {
         System.out.println("  doc " + i + " -> " + contents);
       }
@@ -448,11 +457,10 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
 
     // Used to match ANY using MultiPhraseQuery:
-    Term[] allTerms = new Term[] {new Term("field", "a"),
-                                  new Term("field", "b"),
-                                  new Term("field", "c")};
+    Term[] allTerms =
+        new Term[] {new Term("field", "a"), new Term("field", "b"), new Term("field", "c")};
     int numIters = atLeast(1000);
-    for(int iter=0;iter<numIters;iter++) {
+    for (int iter = 0; iter < numIters; iter++) {
 
       // Build the (finite, no any transitions) TermAutomatonQuery and
       // also the "equivalent" BooleanQuery and make sure they match the
@@ -460,11 +468,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       BooleanQuery.Builder bq = new BooleanQuery.Builder();
       int count = TestUtil.nextInt(random(), 1, 5);
       Set<BytesRef> strings = new HashSet<>();
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         StringBuilder sb = new StringBuilder();
         int numTokens = TestUtil.nextInt(random(), 1, 5);
-        for(int j=0;j<numTokens;j++) {
-          if (j > 0 && j < numTokens-1 && random().nextInt(5) == 3) {
+        for (int j = 0; j < numTokens; j++) {
+          if (j > 0 && j < numTokens - 1 && random().nextInt(5) == 3) {
             sb.append('*');
           } else {
             sb.append((char) (97 + random().nextInt(3)));
@@ -472,11 +480,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
         }
         String string = sb.toString();
         MultiPhraseQuery.Builder mpqb = new MultiPhraseQuery.Builder();
-        for(int j=0;j<string.length();j++) {
+        for (int j = 0; j < string.length(); j++) {
           if (string.charAt(j) == '*') {
             mpqb.add(allTerms);
           } else {
-            mpqb.add(new Term("field", ""+string.charAt(j)));
+            mpqb.add(new Term("field", "" + string.charAt(j)));
           }
         }
         bq.add(mpqb.build(), BooleanClause.Occur.SHOULD);
@@ -489,24 +497,24 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
       Automaton a = Automata.makeStringUnion(stringsList);
 
       // Translate automaton to query:
-    
+
       TermAutomatonQuery q = new TermAutomatonQuery("field");
       int numStates = a.getNumStates();
-      for(int i=0;i<numStates;i++) {
+      for (int i = 0; i < numStates; i++) {
         q.createState();
         q.setAccept(i, a.isAccept(i));
       }
 
       Transition t = new Transition();
-      for(int i=0;i<numStates;i++) {
+      for (int i = 0; i < numStates; i++) {
         int transCount = a.initTransition(i, t);
-        for(int j=0;j<transCount;j++) {
+        for (int j = 0; j < transCount; j++) {
           a.getNextTransition(t);
-          for(int label=t.min;label<=t.max;label++) {
+          for (int label = t.min; label <= t.max; label++) {
             if ((char) label == '*') {
               q.addAnyTransition(t.source, t.dest);
             } else {
-              q.addTransition(t.source, t.dest, ""+(char) label);
+              q.addTransition(t.source, t.dest, "" + (char) label);
             }
           }
         }
@@ -515,12 +523,12 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
       if (VERBOSE) {
         System.out.println("TEST: iter=" + iter);
-        for(BytesRef string : stringsList) {
+        for (BytesRef string : stringsList) {
           System.out.println("  string: " + string.utf8ToString());
         }
         System.out.println(q.toDot());
       }
-      
+
       Query q1 = q;
       Query q2 = bq.build();
       if (random().nextInt(5) == 1) {
@@ -528,14 +536,8 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
           System.out.println("  use random filter");
         }
         RandomQuery filter = new RandomQuery(random().nextLong(), random().nextFloat());
-        q1 = new BooleanQuery.Builder()
-            .add(q1, Occur.MUST)
-            .add(filter, Occur.FILTER)
-            .build();
-        q2 = new BooleanQuery.Builder()
-            .add(q2, Occur.MUST)
-            .add(filter, Occur.FILTER)
-            .build();
+        q1 = new BooleanQuery.Builder().add(q1, Occur.MUST).add(filter, Occur.FILTER).build();
+        q2 = new BooleanQuery.Builder().add(q2, Occur.MUST).add(filter, Occur.FILTER).build();
       }
 
       TopDocs hits1 = s.search(q1, numDocs);
@@ -548,14 +550,16 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
         assertEquals(hits2Docs, hits1Docs);
       } catch (AssertionError ae) {
         System.out.println("FAILED:");
-        for(String id : hits1Docs) {
+        for (String id : hits1Docs) {
           if (hits2Docs.contains(id) == false) {
-            System.out.println(String.format(Locale.ROOT, "  id=%3s matched but should not have", id));
+            System.out.println(
+                String.format(Locale.ROOT, "  id=%3s matched but should not have", id));
           }
         }
-        for(String id : hits2Docs) {
+        for (String id : hits2Docs) {
           if (hits1Docs.contains(id) == false) {
-            System.out.println(String.format(Locale.ROOT, "  id=%3s did not match but should have", id));
+            System.out.println(
+                String.format(Locale.ROOT, "  id=%3s did not match but should have", id));
           }
         }
         throw ae;
@@ -567,7 +571,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
   private Set<String> toDocIDs(IndexSearcher s, TopDocs hits) throws IOException {
     Set<String> result = new HashSet<>();
-    for(ScoreDoc hit : hits.scoreDocs) {
+    for (ScoreDoc hit : hits.scoreDocs) {
       result.add(s.doc(hit.doc).get("id"));
     }
     return result;
@@ -584,20 +588,22 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       return new ConstantScoreWeight(this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           int maxDoc = context.reader().maxDoc();
           FixedBitSet bits = new FixedBitSet(maxDoc);
           Random random = new Random(seed ^ context.docBase);
-          for(int docID=0;docID<maxDoc;docID++) {
+          for (int docID = 0; docID < maxDoc; docID++) {
             if (random.nextFloat() <= density) {
               bits.set(docID);
-              //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
+              // System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
             }
           }
-          return new ConstantScoreScorer(this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
+          return new ConstantScoreScorer(
+              this, score(), scoreMode, new BitSetIterator(bits, bits.approximateCardinality()));
         }
 
         @Override
@@ -608,9 +614,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-
-    }
+    public void visit(QueryVisitor visitor) {}
 
     @Override
     public String toString(String field) {
@@ -619,13 +623,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(RandomQuery other) {
-      return seed == other.seed &&  
-             density == other.density;
+      return seed == other.seed && density == other.density;
     }
 
     @Override
@@ -636,7 +638,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
   /** See if we can create a TAQ with cycles */
   public void testWithCycles1() throws Exception {
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -667,7 +669,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
 
   /** See if we can create a TAQ with cycles */
   public void testWithCycles2() throws Exception {
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -710,9 +712,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
 
-    TokenStream ts = new CannedTokenStream(new Token[] {
-        token("a", 1, 1),
-      });
+    TokenStream ts =
+        new CannedTokenStream(
+            new Token[] {
+              token("a", 1, 1),
+            });
 
     TermAutomatonQuery q = new TokenStreamToTermAutomatonQuery().toQuery("field", ts);
     // System.out.println("DOT: " + q.toDot());
@@ -733,10 +737,11 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
 
-    TokenStream ts = new CannedTokenStream(new Token[] {
-        token("a", 1, 1),
-        token("x", 1, 1),
-      });
+    TokenStream ts =
+        new CannedTokenStream(
+            new Token[] {
+              token("a", 1, 1), token("x", 1, 1),
+            });
 
     TermAutomatonQuery q = new TokenStreamToTermAutomatonQuery().toQuery("field", ts);
     // System.out.println("DOT: " + q.toDot());
@@ -756,7 +761,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     TermAutomatonQuery q = new TermAutomatonQuery("field");
     int initState = q.createState();
     q.finish();
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -775,7 +780,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.addTransition(initState, s1, "foo");
     q.setAccept(s1, true);
     q.finish();
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -798,7 +803,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.addTransition(s1, s2, "bar");
     q.setAccept(s2, true);
     q.finish();
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -815,7 +820,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     int[] positions = ((PhraseQuery) rewrite).getPositions();
     assertEquals(0, positions[0]);
     assertEquals(1, positions[1]);
-    
+
     IOUtils.close(w, r, dir);
   }
 
@@ -830,7 +835,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.addTransition(s2, s3, "bar");
     q.setAccept(s3, true);
     q.finish();
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -847,7 +852,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     int[] positions = ((PhraseQuery) rewrite).getPositions();
     assertEquals(0, positions[0]);
     assertEquals(2, positions[1]);
-    
+
     IOUtils.close(w, r, dir);
   }
 
@@ -859,7 +864,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.addTransition(initState, s1, "bar");
     q.setAccept(s1, true);
     q.finish();
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -878,7 +883,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     int[] positions = ((MultiPhraseQuery) rewrite).getPositions();
     assertEquals(1, positions.length);
     assertEquals(0, positions[0]);
-    
+
     IOUtils.close(w, r, dir);
   }
 
@@ -894,7 +899,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.addTransition(s2, s3, "baz");
     q.setAccept(s3, true);
     q.finish();
-    
+
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
@@ -916,10 +921,10 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     assertEquals(2, positions.length);
     assertEquals(0, positions[0]);
     assertEquals(2, positions[1]);
-    
+
     IOUtils.close(w, r, dir);
   }
-  
+
   // we query with sun|moon but moon doesn't exist
   public void testOneTermMissing() throws Exception {
     Directory dir = newDirectory();
@@ -949,7 +954,7 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     r.close();
     dir.close();
   }
-  
+
   // we query with sun|moon but no terms exist for the field
   public void testFieldMissing() throws Exception {
     Directory dir = newDirectory();

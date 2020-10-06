@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.facet.taxonomy.writercache;
 
 import java.util.HashMap;
@@ -22,7 +21,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.TestUtil;
@@ -52,7 +50,7 @@ public class TestUTF8TaxonomyWriterCache extends FacetTestCase {
     while (uniqueValuesSet.size() < numUniqueValues) {
       int numParts = TestUtil.nextInt(random(), 1, 5);
       StringBuilder b = new StringBuilder();
-      for (int i=0;i<numParts;i++) {
+      for (int i = 0; i < numParts; i++) {
         String part = null;
         while (true) {
           part = TestUtil.randomRealisticUnicodeString(random(), 16);
@@ -112,8 +110,8 @@ public class TestUTF8TaxonomyWriterCache extends FacetTestCase {
   private static class LabelToOrdinalMap extends LabelToOrdinal {
     private Map<FacetLabel, Integer> map = new HashMap<>();
 
-    LabelToOrdinalMap() { }
-    
+    LabelToOrdinalMap() {}
+
     @Override
     public void addLabel(FacetLabel label, int ordinal) {
       map.put(label, ordinal);

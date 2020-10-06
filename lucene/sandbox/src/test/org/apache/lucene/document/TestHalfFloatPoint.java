@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -38,7 +37,7 @@ public class TestHalfFloatPoint extends LuceneTestCase {
 
   public void testHalfFloatConversion() {
     assertEquals(0, HalfFloatPoint.halfFloatToShortBits(0f));
-    assertEquals((short)(1 << 15), HalfFloatPoint.halfFloatToShortBits(-0f));
+    assertEquals((short) (1 << 15), HalfFloatPoint.halfFloatToShortBits(-0f));
     assertEquals(0, HalfFloatPoint.halfFloatToShortBits(Float.MIN_VALUE)); // rounded to zero
 
     testHalfFloat("0011110000000000", 1);
@@ -46,7 +45,8 @@ public class TestHalfFloatPoint extends LuceneTestCase {
     testHalfFloat("1100000000000000", -2);
     testHalfFloat("0111101111111111", 65504); // max value
     testHalfFloat("0000010000000000", (float) Math.pow(2, -14)); // minimum positive normal
-    testHalfFloat("0000001111111111", (float) (Math.pow(2, -14) - Math.pow(2, -24))); // maximum subnormal
+    testHalfFloat(
+        "0000001111111111", (float) (Math.pow(2, -14) - Math.pow(2, -24))); // maximum subnormal
     testHalfFloat("0000000000000001", (float) Math.pow(2, -24)); // minimum positive subnormal
     testHalfFloat("0000000000000000", 0f);
     testHalfFloat("1000000000000000", -0f);
@@ -97,7 +97,9 @@ public class TestHalfFloatPoint extends LuceneTestCase {
         int floatBits = random().nextInt();
         f = Float.intBitsToFloat(floatBits);
       } else {
-        f =  (float) ((2 * random().nextFloat() - 1) * Math.pow(2, TestUtil.nextInt(random(), -16, 16)));
+        f =
+            (float)
+                ((2 * random().nextFloat() - 1) * Math.pow(2, TestUtil.nextInt(random(), -16, 16)));
       }
       float rounded = HalfFloatPoint.shortBitsToHalfFloat(HalfFloatPoint.halfFloatToShortBits(f));
       if (Float.isFinite(f) == false) {
@@ -120,7 +122,8 @@ public class TestHalfFloatPoint extends LuceneTestCase {
             if (f - values[index - 1] < closest - f) {
               closest = values[index - 1];
             } else if (f - values[index - 1] == closest - f
-                && Integer.numberOfTrailingZeros(Float.floatToIntBits(values[index - 1])) > Integer.numberOfTrailingZeros(Float.floatToIntBits(closest))) {
+                && Integer.numberOfTrailingZeros(Float.floatToIntBits(values[index - 1]))
+                    > Integer.numberOfTrailingZeros(Float.floatToIntBits(closest))) {
               // in case of tie, round to even
               closest = values[index - 1];
             }
@@ -160,7 +163,10 @@ public class TestHalfFloatPoint extends LuceneTestCase {
       HalfFloatPoint.shortToSortableBytes((short) (i - 1), previous, 0);
       byte[] current = new byte[HalfFloatPoint.BYTES];
       HalfFloatPoint.shortToSortableBytes((short) i, current, 0);
-      assertTrue(Arrays.compareUnsigned(previous, 0, HalfFloatPoint.BYTES, current, 0, HalfFloatPoint.BYTES) < 0);
+      assertTrue(
+          Arrays.compareUnsigned(
+                  previous, 0, HalfFloatPoint.BYTES, current, 0, HalfFloatPoint.BYTES)
+              < 0);
       assertEquals(i, HalfFloatPoint.sortableBytesToShort(current, 0));
     }
   }
@@ -207,12 +213,18 @@ public class TestHalfFloatPoint extends LuceneTestCase {
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.count(HalfFloatPoint.newRangeQuery("field",
-        new float[]{0, -5}, new float[]{1.25f, -1})));
-    assertEquals(0, searcher.count(HalfFloatPoint.newRangeQuery("field",
-        new float[]{0, 0}, new float[]{2, 2})));
-    assertEquals(0, searcher.count(HalfFloatPoint.newRangeQuery("field",
-        new float[]{-10, -10}, new float[]{1, 2})));
+    assertEquals(
+        1,
+        searcher.count(
+            HalfFloatPoint.newRangeQuery("field", new float[] {0, -5}, new float[] {1.25f, -1})));
+    assertEquals(
+        0,
+        searcher.count(
+            HalfFloatPoint.newRangeQuery("field", new float[] {0, 0}, new float[] {2, 2})));
+    assertEquals(
+        0,
+        searcher.count(
+            HalfFloatPoint.newRangeQuery("field", new float[] {-10, -10}, new float[] {1, 2})));
 
     reader.close();
     writer.close();
@@ -227,7 +239,8 @@ public class TestHalfFloatPoint extends LuceneTestCase {
     assertEquals(HalfFloatPoint.shortBitsToHalfFloat((short) 1), HalfFloatPoint.nextUp(0f), 0f);
     // values that cannot be exactly represented as a half float
     assertEquals(HalfFloatPoint.nextUp(0f), HalfFloatPoint.nextUp(Float.MIN_VALUE), 0f);
-    assertEquals(Float.floatToIntBits(-0f), Float.floatToIntBits(HalfFloatPoint.nextUp(-Float.MIN_VALUE)));
+    assertEquals(
+        Float.floatToIntBits(-0f), Float.floatToIntBits(HalfFloatPoint.nextUp(-Float.MIN_VALUE)));
     assertEquals(Float.floatToIntBits(0f), Float.floatToIntBits(HalfFloatPoint.nextUp(-0f)));
   }
 
@@ -237,7 +250,8 @@ public class TestHalfFloatPoint extends LuceneTestCase {
     assertEquals(65504, HalfFloatPoint.nextDown(Float.POSITIVE_INFINITY), 0f);
     assertEquals(Float.floatToIntBits(-0f), Float.floatToIntBits(HalfFloatPoint.nextDown(0f)));
     // values that cannot be exactly represented as a half float
-    assertEquals(Float.floatToIntBits(0f), Float.floatToIntBits(HalfFloatPoint.nextDown(Float.MIN_VALUE)));
+    assertEquals(
+        Float.floatToIntBits(0f), Float.floatToIntBits(HalfFloatPoint.nextDown(Float.MIN_VALUE)));
     assertEquals(HalfFloatPoint.nextDown(-0f), HalfFloatPoint.nextDown(-Float.MIN_VALUE), 0f);
     assertEquals(Float.floatToIntBits(-0f), Float.floatToIntBits(HalfFloatPoint.nextDown(+0f)));
   }

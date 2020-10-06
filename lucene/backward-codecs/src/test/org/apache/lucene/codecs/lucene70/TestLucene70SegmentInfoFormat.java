@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.codecs.lucene70;
 
 import org.apache.lucene.codecs.Codec;
@@ -26,7 +25,7 @@ public class TestLucene70SegmentInfoFormat extends BaseSegmentInfoFormatTestCase
 
   @Override
   protected Version[] getVersions() {
-    return new Version[] { Version.LUCENE_8_4_0 };
+    return new Version[] {Version.LUCENE_8_4_0};
   }
 
   @Override

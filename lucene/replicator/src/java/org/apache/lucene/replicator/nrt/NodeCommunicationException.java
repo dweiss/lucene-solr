@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.replicator.nrt;
 
 /**
- * Should be thrown by subclasses of {@link PrimaryNode} and {@link ReplicaNode} if a non-fatal exception
- * occurred while communicating between nodes.
+ * Should be thrown by subclasses of {@link PrimaryNode} and {@link ReplicaNode} if a non-fatal
+ * exception occurred while communicating between nodes.
  *
  * @lucene.experimental
  */

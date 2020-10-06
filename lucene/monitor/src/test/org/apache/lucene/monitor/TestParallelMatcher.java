@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 import java.util.concurrent.ExecutorService;
@@ -22,7 +21,8 @@ import java.util.concurrent.ExecutorService;
 public class TestParallelMatcher extends ConcurrentMatcherTestBase {
 
   @Override
-  protected <T extends QueryMatch> MatcherFactory<T> matcherFactory(ExecutorService executor, MatcherFactory<T> factory, int threads) {
+  protected <T extends QueryMatch> MatcherFactory<T> matcherFactory(
+      ExecutorService executor, MatcherFactory<T> factory, int threads) {
     return ParallelMatcher.factory(executor, factory, threads);
   }
 }

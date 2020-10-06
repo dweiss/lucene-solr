@@ -16,12 +16,13 @@
  */
 package org.apache.lucene.search;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -41,8 +42,6 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-
 // TODO
 //    - compare perf to PhraseQuery exact and sloppy
 //    - optimize: find terms that are in fact MUST (because all paths
@@ -50,32 +49,31 @@ import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZ
 //    - if we ever store posLength in the index, it would be easy[ish]
 //      to take it into account here
 
-/** A proximity query that lets you express an automaton, whose
- *  transitions are terms, to match documents.  This is a generalization
- *  of other proximity queries like  {@link PhraseQuery}, {@link
- *  MultiPhraseQuery} and {@link SpanNearQuery}.  It is likely
- *  slow, since it visits any document having any of the terms (i.e. it
- *  acts like a disjunction, not a conjunction like {@link
- *  PhraseQuery}), and then it must merge-sort all positions within each
- *  document to test whether/how many times the automaton matches.
+/**
+ * A proximity query that lets you express an automaton, whose transitions are terms, to match
+ * documents. This is a generalization of other proximity queries like {@link PhraseQuery}, {@link
+ * MultiPhraseQuery} and {@link SpanNearQuery}. It is likely slow, since it visits any document
+ * having any of the terms (i.e. it acts like a disjunction, not a conjunction like {@link
+ * PhraseQuery}), and then it must merge-sort all positions within each document to test whether/how
+ * many times the automaton matches.
  *
- *  <p>After creating the query, use {@link #createState}, {@link
- *  #setAccept}, {@link #addTransition} and {@link #addAnyTransition} to
- *  build up the automaton.  Once you are done, call {@link #finish} and
- *  then execute the query.
+ * <p>After creating the query, use {@link #createState}, {@link #setAccept}, {@link #addTransition}
+ * and {@link #addAnyTransition} to build up the automaton. Once you are done, call {@link #finish}
+ * and then execute the query.
  *
- *  <p>This code is very new and likely has exciting bugs!
+ * <p>This code is very new and likely has exciting bugs!
  *
- *  @lucene.experimental */
-
+ * @lucene.experimental
+ */
 public class TermAutomatonQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(TermAutomatonQuery.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(TermAutomatonQuery.class);
 
   private final String field;
   private final Automaton.Builder builder;
   Automaton det;
-  private final Map<BytesRef,Integer> termToID = new HashMap<>();
-  private final Map<Integer,BytesRef> idToTerm = new HashMap<>();
+  private final Map<BytesRef, Integer> termToID = new HashMap<>();
+  private final Map<Integer, BytesRef> idToTerm = new HashMap<>();
   private int anyTermID = -1;
 
   public TermAutomatonQuery(String field) {
@@ -118,9 +116,10 @@ public class TermAutomatonQuery extends Query implements Accountable {
 
   /**
    * Call this once you are done adding states/transitions.
-   * @param maxDeterminizedStates Maximum number of states created when
-   *   determinizing the automaton.  Higher numbers allow this operation to
-   *   consume more memory but allow more complex automatons.
+   *
+   * @param maxDeterminizedStates Maximum number of states created when determinizing the automaton.
+   *     Higher numbers allow this operation to consume more memory but allow more complex
+   *     automatons.
    */
   public void finish(int maxDeterminizedStates) {
     Automaton automaton = builder.finish();
@@ -138,7 +137,7 @@ public class TermAutomatonQuery extends Query implements Accountable {
 
       // Make sure there are no leading or trailing ANY:
       int count = automaton.initTransition(0, t);
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         automaton.getNextTransition(t);
         if (anyTermID >= t.min && anyTermID <= t.max) {
           throw new IllegalStateException("automaton cannot lead with an ANY transition");
@@ -146,9 +145,9 @@ public class TermAutomatonQuery extends Query implements Accountable {
       }
 
       int numStates = automaton.getNumStates();
-      for(int i=0;i<numStates;i++) {
+      for (int i = 0; i < numStates; i++) {
         count = automaton.initTransition(i, t);
-        for(int j=0;j<count;j++) {
+        for (int j = 0; j < count; j++) {
           automaton.getNextTransition(t);
           if (automaton.isAccept(t.dest) && anyTermID >= t.min && anyTermID <= t.max) {
             throw new IllegalStateException("automaton cannot end with an ANY transition");
@@ -161,20 +160,20 @@ public class TermAutomatonQuery extends Query implements Accountable {
       // We have to carefully translate these transitions so automaton
       // realizes they also match all other terms:
       Automaton newAutomaton = new Automaton();
-      for(int i=0;i<numStates;i++) {
+      for (int i = 0; i < numStates; i++) {
         newAutomaton.createState();
         newAutomaton.setAccept(i, automaton.isAccept(i));
       }
 
-      for(int i=0;i<numStates;i++) {
+      for (int i = 0; i < numStates; i++) {
         count = automaton.initTransition(i, t);
-        for(int j=0;j<count;j++) {
+        for (int j = 0; j < count; j++) {
           automaton.getNextTransition(t);
           int min, max;
           if (t.min <= anyTermID && anyTermID <= t.max) {
             // Match any term
             min = 0;
-            max = termCount-1;
+            max = termCount - 1;
           } else {
             min = t.min;
             max = t.max;
@@ -186,8 +185,7 @@ public class TermAutomatonQuery extends Query implements Accountable {
       automaton = newAutomaton;
     }
 
-    det = Operations.removeDeadStates(Operations.determinize(automaton,
-      maxDeterminizedStates));
+    det = Operations.removeDeadStates(Operations.determinize(automaton, maxDeterminizedStates));
 
     if (det.isAccept(0)) {
       throw new IllegalStateException("cannot accept the empty string");
@@ -195,13 +193,16 @@ public class TermAutomatonQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     IndexReaderContext context = searcher.getTopReaderContext();
-    Map<Integer,TermStates> termStates = new HashMap<>();
+    Map<Integer, TermStates> termStates = new HashMap<>();
 
-    for (Map.Entry<BytesRef,Integer> ent : termToID.entrySet()) {
+    for (Map.Entry<BytesRef, Integer> ent : termToID.entrySet()) {
       if (ent.getKey() != null) {
-        termStates.put(ent.getValue(), TermStates.build(context, new Term(field, ent.getKey()), scoreMode.needsScores()));
+        termStates.put(
+            ent.getValue(),
+            TermStates.build(context, new Term(field, ent.getKey()), scoreMode.needsScores()));
       }
     }
 
@@ -242,8 +243,7 @@ public class TermAutomatonQuery extends Query implements Accountable {
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private static boolean checkFinished(TermAutomatonQuery q) {
@@ -254,9 +254,7 @@ public class TermAutomatonQuery extends Query implements Accountable {
   }
 
   private boolean equalsTo(TermAutomatonQuery other) {
-    return checkFinished(this) &&
-           checkFinished(other) &&
-           other == this;
+    return checkFinished(this) && checkFinished(other) && other == this;
   }
 
   @Override
@@ -270,16 +268,18 @@ public class TermAutomatonQuery extends Query implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(builder) +
-        RamUsageEstimator.sizeOfObject(det) +
-        RamUsageEstimator.sizeOfObject(field) +
-        RamUsageEstimator.sizeOfObject(idToTerm) +
-        RamUsageEstimator.sizeOfObject(termToID);
+    return BASE_RAM_BYTES
+        + RamUsageEstimator.sizeOfObject(builder)
+        + RamUsageEstimator.sizeOfObject(det)
+        + RamUsageEstimator.sizeOfObject(field)
+        + RamUsageEstimator.sizeOfObject(idToTerm)
+        + RamUsageEstimator.sizeOfObject(termToID);
   }
 
-  /** Returns the dot (graphviz) representation of this automaton.
-   *  This is extremely useful for visualizing the automaton. */
+  /**
+   * Returns the dot (graphviz) representation of this automaton. This is extremely useful for
+   * visualizing the automaton.
+   */
   public String toDot() {
 
     // TODO: refactor & share with Automaton.toDot!
@@ -294,7 +294,7 @@ public class TermAutomatonQuery extends Query implements Accountable {
     }
 
     Transition t = new Transition();
-    for(int state=0;state<numStates;state++) {
+    for (int state = 0; state < numStates; state++) {
       b.append("  ");
       b.append(state);
       if (det.isAccept(state)) {
@@ -303,10 +303,10 @@ public class TermAutomatonQuery extends Query implements Accountable {
         b.append(" [shape=circle,label=\"").append(state).append("\"]\n");
       }
       int numTransitions = det.initTransition(state, t);
-      for(int i=0;i<numTransitions;i++) {
+      for (int i = 0; i < numTransitions; i++) {
         det.getNextTransition(t);
         assert t.max >= t.min;
-        for(int j=t.min;j<=t.max;j++) {
+        for (int j = t.min; j <= t.max; j++) {
           b.append("  ");
           b.append(state);
           b.append(" -> ");
@@ -347,22 +347,29 @@ public class TermAutomatonQuery extends Query implements Accountable {
 
   final class TermAutomatonWeight extends Weight {
     final Automaton automaton;
-    private final Map<Integer,TermStates> termStates;
+    private final Map<Integer, TermStates> termStates;
     private final Similarity.SimScorer stats;
     private final Similarity similarity;
 
-    public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermStates> termStates, float boost) throws IOException {
+    public TermAutomatonWeight(
+        Automaton automaton,
+        IndexSearcher searcher,
+        Map<Integer, TermStates> termStates,
+        float boost)
+        throws IOException {
       super(TermAutomatonQuery.this);
       this.automaton = automaton;
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity();
       List<TermStatistics> allTermStats = new ArrayList<>();
-      for(Map.Entry<Integer,BytesRef> ent : idToTerm.entrySet()) {
+      for (Map.Entry<Integer, BytesRef> ent : idToTerm.entrySet()) {
         Integer termID = ent.getKey();
         if (ent.getValue() != null) {
           TermStates ts = termStates.get(termID);
           if (ts.docFreq() > 0) {
-            allTermStats.add(searcher.termStatistics(new Term(field, ent.getValue()), ts.docFreq(), ts.totalTermFreq()));
+            allTermStats.add(
+                searcher.termStatistics(
+                    new Term(field, ent.getValue()), ts.docFreq(), ts.totalTermFreq()));
           }
         }
       }
@@ -370,8 +377,11 @@ public class TermAutomatonQuery extends Query implements Accountable {
       if (allTermStats.isEmpty()) {
         stats = null; // no terms matched at all, will not use sim
       } else {
-        stats = similarity.scorer(boost, searcher.collectionStatistics(field),
-                                         allTermStats.toArray(new TermStatistics[allTermStats.size()]));
+        stats =
+            similarity.scorer(
+                boost,
+                searcher.collectionStatistics(field),
+                allTermStats.toArray(new TermStatistics[allTermStats.size()]));
       }
     }
 
@@ -387,21 +397,29 @@ public class TermAutomatonQuery extends Query implements Accountable {
       EnumAndScorer[] enums = new EnumAndScorer[idToTerm.size()];
 
       boolean any = false;
-      for(Map.Entry<Integer,TermStates> ent : termStates.entrySet()) {
+      for (Map.Entry<Integer, TermStates> ent : termStates.entrySet()) {
         TermStates termStates = ent.getValue();
-        assert termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context)) : "The top-reader used to create Weight is not the same as the current reader's top-reader (" + ReaderUtil.getTopLevelContext(context);
+        assert termStates.wasBuiltFor(ReaderUtil.getTopLevelContext(context))
+            : "The top-reader used to create Weight is not the same as the current reader's top-reader ("
+                + ReaderUtil.getTopLevelContext(context);
         BytesRef term = idToTerm.get(ent.getKey());
         TermState state = termStates.get(context);
         if (state != null) {
           TermsEnum termsEnum = context.reader().terms(field).iterator();
           termsEnum.seekExact(term, state);
-          enums[ent.getKey()] = new EnumAndScorer(ent.getKey(), termsEnum.postings(null, PostingsEnum.POSITIONS));
+          enums[ent.getKey()] =
+              new EnumAndScorer(ent.getKey(), termsEnum.postings(null, PostingsEnum.POSITIONS));
           any = true;
         }
       }
 
       if (any) {
-        return new TermAutomatonScorer(this, enums, anyTermID, idToTerm, new LeafSimScorer(stats, context.reader(), field, true));
+        return new TermAutomatonScorer(
+            this,
+            enums,
+            anyTermID,
+            idToTerm,
+            new LeafSimScorer(stats, context.reader(), field, true));
       } else {
         return null;
       }
@@ -429,9 +447,11 @@ public class TermAutomatonQuery extends Query implements Accountable {
       return new TermQuery(new Term(field, idToTerm.get(single.ints[single.offset])));
     }
 
-    // TODO: can PhraseQuery really handle multiple terms at the same position?  If so, why do we even have MultiPhraseQuery?
-    
-    // Try for either PhraseQuery or MultiPhraseQuery, which only works when the automaton is a sausage:
+    // TODO: can PhraseQuery really handle multiple terms at the same position?  If so, why do we
+    // even have MultiPhraseQuery?
+
+    // Try for either PhraseQuery or MultiPhraseQuery, which only works when the automaton is a
+    // sausage:
     MultiPhraseQuery.Builder mpq = new MultiPhraseQuery.Builder();
     PhraseQuery.Builder pq = new PhraseQuery.Builder();
 
@@ -455,7 +475,7 @@ public class TermAutomatonQuery extends Query implements Accountable {
       int dest = -1;
       List<Term> terms = new ArrayList<>();
       boolean matchesAny = false;
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         det.getNextTransition(t);
         if (i == 0) {
           dest = t.dest;
@@ -468,7 +488,7 @@ public class TermAutomatonQuery extends Query implements Accountable {
         matchesAny |= anyTermID >= t.min && anyTermID <= t.max;
 
         if (matchesAny == false) {
-          for(int termID=t.min;termID<=t.max;termID++) {
+          for (int termID = t.min; termID <= t.max; termID++) {
             terms.add(new Term(field, idToTerm.get(termID)));
           }
         }
@@ -492,8 +512,9 @@ public class TermAutomatonQuery extends Query implements Accountable {
     } else if (mpq != null) {
       return mpq.build();
     }
-    
-    // TODO: we could maybe also rewrite to union of PhraseQuery (pull all finite strings) if it's "worth it"?
+
+    // TODO: we could maybe also rewrite to union of PhraseQuery (pull all finite strings) if it's
+    // "worth it"?
     return this;
   }
 

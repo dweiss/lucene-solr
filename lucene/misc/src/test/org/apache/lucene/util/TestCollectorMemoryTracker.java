@@ -14,29 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.util;
 
 import org.apache.lucene.misc.CollectorMemoryTracker;
 
 public class TestCollectorMemoryTracker extends LuceneTestCase {
   public void testAdditionsAndDeletions() {
-    long perCollectorMemoryLimit = 100; //100 Bytes
-    CollectorMemoryTracker collectorMemoryTracker = new CollectorMemoryTracker("testMemoryTracker",
-        perCollectorMemoryLimit);
+    long perCollectorMemoryLimit = 100; // 100 Bytes
+    CollectorMemoryTracker collectorMemoryTracker =
+        new CollectorMemoryTracker("testMemoryTracker", perCollectorMemoryLimit);
 
     collectorMemoryTracker.updateBytes(50);
     assertEquals(collectorMemoryTracker.getBytes(), 50);
     collectorMemoryTracker.updateBytes(-30);
     assertEquals(collectorMemoryTracker.getBytes(), 20);
-    expectThrows(IllegalStateException.class, () -> {
-      collectorMemoryTracker.updateBytes(130);
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          collectorMemoryTracker.updateBytes(130);
+        });
     collectorMemoryTracker.updateBytes(-110);
     assertEquals(collectorMemoryTracker.getBytes(), 40);
 
-    expectThrows(IllegalStateException.class, () -> {
-      collectorMemoryTracker.updateBytes(-90);
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          collectorMemoryTracker.updateBytes(-90);
+        });
   }
 }

@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.Explanation;
@@ -28,7 +26,8 @@ public class TestExplainingMatcher extends MonitorTestBase {
   public void testExplainingMatcher() throws IOException {
 
     try (Monitor monitor = newMonitor()) {
-      monitor.register(new MonitorQuery("1", parse("test")), new MonitorQuery("2", parse("wibble")));
+      monitor.register(
+          new MonitorQuery("1", parse("test")), new MonitorQuery("2", parse("wibble")));
 
       Document doc = new Document();
       doc.add(newTextField("field", "test", Field.Store.NO));

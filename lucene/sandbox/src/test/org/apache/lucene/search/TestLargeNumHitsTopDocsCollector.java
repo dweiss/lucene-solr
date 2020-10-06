@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -30,10 +28,11 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;
-  private final Query testQuery = new BooleanQuery.Builder()
-      .add(new TermQuery(new Term("field", "5")), BooleanClause.Occur.SHOULD)
-      .add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD)
-      .build();
+  private final Query testQuery =
+      new BooleanQuery.Builder()
+          .add(new TermQuery(new Term("field", "5")), BooleanClause.Occur.SHOULD)
+          .add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD)
+          .build();
 
   @Override
   public void setUp() throws Exception {
@@ -57,6 +56,7 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
     dir = null;
     super.tearDown();
   }
+
   public void testRequestMoreHitsThanCollected() throws Exception {
     runNumHits(150);
   }
@@ -72,16 +72,20 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   public void testIllegalArguments() throws IOException {
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(15);
-    TopScoreDocCollector regularCollector = TopScoreDocCollector.create(15, null, Integer.MAX_VALUE);
+    TopScoreDocCollector regularCollector =
+        TopScoreDocCollector.create(15, null, Integer.MAX_VALUE);
 
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
 
     assertEquals(largeCollector.totalHits, regularCollector.totalHits);
 
-    IllegalArgumentException expected  = expectThrows(IllegalArgumentException.class, () -> {
-      largeCollector.topDocs(350_000);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              largeCollector.topDocs(350_000);
+            });
 
     assertTrue(expected.getMessage().contains("Incorrect number of hits requested"));
   }
@@ -89,7 +93,8 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   public void testNoPQBuild() throws IOException {
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(250_000);
-    TopScoreDocCollector regularCollector = TopScoreDocCollector.create(250_000, null, Integer.MAX_VALUE);
+    TopScoreDocCollector regularCollector =
+        TopScoreDocCollector.create(250_000, null, Integer.MAX_VALUE);
 
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
@@ -103,7 +108,8 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   public void testPQBuild() throws IOException {
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(50);
-    TopScoreDocCollector regularCollector = TopScoreDocCollector.create(50, null, Integer.MAX_VALUE);
+    TopScoreDocCollector regularCollector =
+        TopScoreDocCollector.create(50, null, Integer.MAX_VALUE);
 
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
@@ -117,7 +123,8 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   public void testNoPQHitsOrder() throws IOException {
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(250_000);
-    TopScoreDocCollector regularCollector = TopScoreDocCollector.create(250_000, null, Integer.MAX_VALUE);
+    TopScoreDocCollector regularCollector =
+        TopScoreDocCollector.create(250_000, null, Integer.MAX_VALUE);
 
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);
@@ -141,7 +148,8 @@ public class TestLargeNumHitsTopDocsCollector extends LuceneTestCase {
   private void runNumHits(int numHits) throws IOException {
     IndexSearcher searcher = newSearcher(reader);
     LargeNumHitsTopDocsCollector largeCollector = new LargeNumHitsTopDocsCollector(numHits);
-    TopScoreDocCollector regularCollector = TopScoreDocCollector.create(numHits, null, Integer.MAX_VALUE);
+    TopScoreDocCollector regularCollector =
+        TopScoreDocCollector.create(numHits, null, Integer.MAX_VALUE);
 
     searcher.search(testQuery, largeCollector);
     searcher.search(testQuery, regularCollector);

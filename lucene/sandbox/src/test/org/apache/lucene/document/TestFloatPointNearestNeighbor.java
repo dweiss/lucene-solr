@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -49,15 +48,18 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     IndexSearcher s = newSearcher(r, false);
-    FieldDoc hit = (FieldDoc)FloatPointNearestNeighbor.nearest(s, "point", 1, 40.0f, 50.0f).scoreDocs[0];
+    FieldDoc hit =
+        (FieldDoc) FloatPointNearestNeighbor.nearest(s, "point", 1, 40.0f, 50.0f).scoreDocs[0];
     assertEquals("0", r.document(hit.doc).getField("id").stringValue());
     r.close();
 
     w.deleteDocuments(new Term("id", "0"));
     r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     s = newSearcher(r, false);
     hit = (FieldDoc) LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
     assertEquals("1", r.document(hit.doc).getField("id").stringValue());
@@ -79,18 +81,22 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     IndexSearcher s = newSearcher(r, false);
-    FieldDoc hit = (FieldDoc)FloatPointNearestNeighbor.nearest(s, "point", 1, 40.0f, 50.0f).scoreDocs[0];
+    FieldDoc hit =
+        (FieldDoc) FloatPointNearestNeighbor.nearest(s, "point", 1, 40.0f, 50.0f).scoreDocs[0];
     assertEquals("0", r.document(hit.doc).getField("id").stringValue());
     r.close();
 
     w.deleteDocuments(new Term("id", "0"));
     w.deleteDocuments(new Term("id", "1"));
     r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     s = newSearcher(r, false);
-    assertEquals(0, FloatPointNearestNeighbor.nearest(s, "point", 1, 40.0f, 50.0f).scoreDocs.length);
+    assertEquals(
+        0, FloatPointNearestNeighbor.nearest(s, "point", 1, 40.0f, 50.0f).scoreDocs.length);
     r.close();
     w.close();
     dir.close();
@@ -109,8 +115,11 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = DirectoryReader.open(w);
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
-    ScoreDoc[] hits = FloatPointNearestNeighbor.nearest(newSearcher(r, false), "point", 2, 45.0f, 50.0f).scoreDocs;
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
+    ScoreDoc[] hits =
+        FloatPointNearestNeighbor.nearest(newSearcher(r, false), "point", 2, 45.0f, 50.0f)
+            .scoreDocs;
     assertEquals("0", r.document(hits[0].doc).getField("id").stringValue());
     assertEquals("1", r.document(hits[1].doc).getField("id").stringValue());
 
@@ -123,8 +132,13 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, getIndexWriterConfig());
     DirectoryReader r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
-    assertEquals(0, FloatPointNearestNeighbor.nearest(newSearcher(r, false), "point", 1, 40.0f, 50.0f).scoreDocs.length);
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
+    assertEquals(
+        0,
+        FloatPointNearestNeighbor.nearest(newSearcher(r, false), "point", 1, 40.0f, 50.0f)
+            .scoreDocs
+            .length);
     r.close();
     w.close();
     dir.close();
@@ -145,8 +159,8 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
 
     int dims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
     float[][] values = new float[numPoints][dims];
-    for (int id = 0 ; id < numPoints ; ++id) {
-      for (int dim = 0 ; dim < dims ; ++dim) {
+    for (int id = 0; id < numPoints; ++id) {
+      for (int dim = 0; dim < dims; ++dim) {
         Float f = Float.NaN;
         while (f.isNaN()) {
           f = Float.intBitsToFloat(random().nextInt());
@@ -167,15 +181,16 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: reader=" + r);
     }
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     IndexSearcher s = newSearcher(r, false);
     int iters = atLeast(100);
-    for (int iter = 0 ; iter < iters ; ++iter) {
+    for (int iter = 0; iter < iters; ++iter) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
       }
       float[] origin = new float[dims];
-      for (int dim = 0 ; dim < dims ; ++dim) {
+      for (int dim = 0; dim < dims; ++dim) {
         Float f = Float.NaN;
         while (f.isNaN()) {
           f = Float.intBitsToFloat(random().nextInt());
@@ -184,18 +199,21 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
       }
 
       // dumb brute force search to get the expected result:
-      FloatPointNearestNeighbor.NearestHit[] expectedHits = new FloatPointNearestNeighbor.NearestHit[numPoints];
-      for (int id = 0 ; id < numPoints ; ++id) {
+      FloatPointNearestNeighbor.NearestHit[] expectedHits =
+          new FloatPointNearestNeighbor.NearestHit[numPoints];
+      for (int id = 0; id < numPoints; ++id) {
         FloatPointNearestNeighbor.NearestHit hit = new FloatPointNearestNeighbor.NearestHit();
         hit.distanceSquared = euclideanDistanceSquared(origin, values[id]);
         hit.docID = id;
         expectedHits[id] = hit;
       }
 
-      Arrays.sort(expectedHits, (a, b) -> {
-        int cmp = Double.compare(a.distanceSquared, b.distanceSquared);
-        return cmp != 0 ? cmp : a.docID - b.docID; // tie break by smaller id
-      });
+      Arrays.sort(
+          expectedHits,
+          (a, b) -> {
+            int cmp = Double.compare(a.distanceSquared, b.distanceSquared);
+            return cmp != 0 ? cmp : a.docID - b.docID; // tie break by smaller id
+          });
 
       int topK = TestUtil.nextInt(random(), 1, numPoints);
 
@@ -207,22 +225,34 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
       assertEquals("fewer than expected hits: ", topK, hits.length);
 
       if (VERBOSE) {
-        for (int i = 0 ; i < topK ; ++i) {
+        for (int i = 0; i < topK; ++i) {
           FloatPointNearestNeighbor.NearestHit expected = expectedHits[i];
-          FieldDoc actual = (FieldDoc)hits[i];
+          FieldDoc actual = (FieldDoc) hits[i];
           Document actualDoc = r.document(actual.doc);
           System.out.println("hit " + i);
-          System.out.println("  expected id=" + expected.docID + "  " + Arrays.toString(values[expected.docID])
-              + "  distance=" + (float)Math.sqrt(expected.distanceSquared) + "  distanceSquared=" + expected.distanceSquared);
-          System.out.println("  actual id=" + actualDoc.getField("id") + " distance=" + actual.fields[0]);
+          System.out.println(
+              "  expected id="
+                  + expected.docID
+                  + "  "
+                  + Arrays.toString(values[expected.docID])
+                  + "  distance="
+                  + (float) Math.sqrt(expected.distanceSquared)
+                  + "  distanceSquared="
+                  + expected.distanceSquared);
+          System.out.println(
+              "  actual id=" + actualDoc.getField("id") + " distance=" + actual.fields[0]);
         }
       }
 
-      for (int i = 0 ; i < topK ; ++i) {
+      for (int i = 0; i < topK; ++i) {
         FloatPointNearestNeighbor.NearestHit expected = expectedHits[i];
-        FieldDoc actual = (FieldDoc)hits[i];
+        FieldDoc actual = (FieldDoc) hits[i];
         assertEquals("hit " + i + ":", expected.docID, actual.doc);
-        assertEquals("hit " + i + ":", (float)Math.sqrt(expected.distanceSquared), (Float)actual.fields[0], 0.000001);
+        assertEquals(
+            "hit " + i + ":",
+            (float) Math.sqrt(expected.distanceSquared),
+            (Float) actual.fields[0],
+            0.000001);
       }
     }
 
@@ -233,8 +263,8 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
 
   private static double euclideanDistanceSquared(float[] a, float[] b) {
     double sumOfSquaredDifferences = 0.0d;
-    for (int d = 0 ; d < a.length ; ++d) {
-      double diff = (double)a[d] - (double)b[d];
+    for (int d = 0; d < a.length; ++d) {
+      double diff = (double) a[d] - (double) b[d];
       sumOfSquaredDifferences += diff * diff;
     }
     return sumOfSquaredDifferences;

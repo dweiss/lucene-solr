@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 
@@ -33,7 +31,7 @@ final class LegacySortedSetDocValuesWrapper extends SortedSetDocValues {
   private final int maxDoc;
   private int docID = -1;
   private long ord;
-  
+
   public LegacySortedSetDocValuesWrapper(LegacySortedSetDocValues values, int maxDoc) {
     this.values = values;
     this.maxDoc = maxDoc;
@@ -63,12 +61,13 @@ final class LegacySortedSetDocValuesWrapper extends SortedSetDocValues {
   @Override
   public int advance(int target) {
     if (target < docID) {
-      throw new IllegalArgumentException("cannot advance backwards: docID=" + docID + " target=" + target);
+      throw new IllegalArgumentException(
+          "cannot advance backwards: docID=" + docID + " target=" + target);
     }
     if (target >= maxDoc) {
       this.docID = NO_MORE_DOCS;
     } else {
-      this.docID = target-1;
+      this.docID = target - 1;
       nextDoc();
     }
     return docID;

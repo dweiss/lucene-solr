@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,7 +32,5 @@ public class TestLongRangeFactory extends LuceneTestCase {
     assertEquals(new LongRange(30, 40), factory.getRange(35, scratch));
     assertEquals(new LongRange(50, Long.MAX_VALUE), factory.getRange(50, scratch));
     assertEquals(new LongRange(50, Long.MAX_VALUE), factory.getRange(500, scratch));
-
   }
-
 }
