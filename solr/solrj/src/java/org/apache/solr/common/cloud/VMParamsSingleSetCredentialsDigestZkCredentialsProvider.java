@@ -20,22 +20,23 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.solr.common.StringUtils;
 
-public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider extends DefaultZkCredentialsProvider {
-  
+public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
+    extends DefaultZkCredentialsProvider {
+
   public static final String DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME = "zkDigestUsername";
   public static final String DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME = "zkDigestPassword";
-  
+
   final String zkDigestUsernameVMParamName;
   final String zkDigestPasswordVMParamName;
-  
+
   public VMParamsSingleSetCredentialsDigestZkCredentialsProvider() {
     this(DEFAULT_DIGEST_USERNAME_VM_PARAM_NAME, DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME);
   }
-  
-  public VMParamsSingleSetCredentialsDigestZkCredentialsProvider(String zkDigestUsernameVMParamName, String zkDigestPasswordVMParamName) {
+
+  public VMParamsSingleSetCredentialsDigestZkCredentialsProvider(
+      String zkDigestUsernameVMParamName, String zkDigestPasswordVMParamName) {
     this.zkDigestUsernameVMParamName = zkDigestUsernameVMParamName;
     this.zkDigestPasswordVMParamName = zkDigestPasswordVMParamName;
   }
@@ -46,11 +47,10 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider extends Def
     String digestUsername = System.getProperty(zkDigestUsernameVMParamName);
     String digestPassword = System.getProperty(zkDigestPasswordVMParamName);
     if (!StringUtils.isEmpty(digestUsername) && !StringUtils.isEmpty(digestPassword)) {
-      result.add(new ZkCredentials("digest",
-          (digestUsername + ":" + digestPassword).getBytes(StandardCharsets.UTF_8)));
+      result.add(
+          new ZkCredentials(
+              "digest", (digestUsername + ":" + digestPassword).getBytes(StandardCharsets.UTF_8)));
     }
     return result;
   }
-  
 }
-

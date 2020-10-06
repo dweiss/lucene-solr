@@ -22,46 +22,39 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 
-
 public class ZkCmdExecutor {
   private long retryDelay = 1500L; // 1 second would match timeout, so 500 ms over for padding
   private int retryCount;
   private double timeouts;
   private IsClosed isClosed;
-  
+
   public ZkCmdExecutor(int timeoutms) {
     this(timeoutms, null);
   }
-  
+
   /**
-   * TODO: At this point, this should probably take a SolrZkClient in
-   * its constructor.
-   * 
-   * @param timeoutms
-   *          the client timeout for the ZooKeeper clients that will be used
-   *          with this class.
+   * TODO: At this point, this should probably take a SolrZkClient in its constructor.
+   *
+   * @param timeoutms the client timeout for the ZooKeeper clients that will be used with this
+   *     class.
    */
   public ZkCmdExecutor(int timeoutms, IsClosed isClosed) {
     timeouts = timeoutms / 1000.0;
-    this.retryCount = Math.round(0.5f * ((float)Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f)) + 1;
+    this.retryCount = Math.round(0.5f * ((float) Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f)) + 1;
     this.isClosed = isClosed;
   }
-  
+
   public long getRetryDelay() {
     return retryDelay;
   }
-  
+
   public void setRetryDelay(long retryDelay) {
     this.retryDelay = retryDelay;
   }
-  
 
-  /**
-   * Perform the given operation, retrying if the connection fails
-   */
+  /** Perform the given operation, retrying if the connection fails */
   @SuppressWarnings("unchecked")
-  public <T> T retryOperation(ZkOperation operation)
-      throws KeeperException, InterruptedException {
+  public <T> T retryOperation(ZkOperation operation) throws KeeperException, InterruptedException {
     KeeperException exception = null;
     for (int i = 0; i < retryCount; i++) {
       try {
@@ -77,34 +70,42 @@ public class ZkCmdExecutor {
           Thread.currentThread().interrupt();
           throw new InterruptedException();
         }
-        if (i != retryCount -1) {
+        if (i != retryCount - 1) {
           retryDelay(i);
         }
       }
     }
     throw exception;
   }
-  
+
   private boolean isClosed() {
     return isClosed != null && isClosed.isClosed();
   }
 
-  public void ensureExists(String path, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
+  public void ensureExists(String path, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
     ensureExists(path, null, CreateMode.PERSISTENT, zkClient, 0);
   }
-  
-  
-  public void ensureExists(String path, final byte[] data, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
+
+  public void ensureExists(String path, final byte[] data, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
     ensureExists(path, data, CreateMode.PERSISTENT, zkClient, 0);
   }
-  
-  public void ensureExists(String path, final byte[] data, CreateMode createMode, final SolrZkClient zkClient) throws KeeperException, InterruptedException {
+
+  public void ensureExists(
+      String path, final byte[] data, CreateMode createMode, final SolrZkClient zkClient)
+      throws KeeperException, InterruptedException {
     ensureExists(path, data, createMode, zkClient, 0);
   }
-  
-  public void ensureExists(final String path, final byte[] data,
-      CreateMode createMode, final SolrZkClient zkClient, int skipPathParts) throws KeeperException, InterruptedException {
-    
+
+  public void ensureExists(
+      final String path,
+      final byte[] data,
+      CreateMode createMode,
+      final SolrZkClient zkClient,
+      int skipPathParts)
+      throws KeeperException, InterruptedException {
+
     if (zkClient.exists(path, true)) {
       return;
     }
@@ -113,17 +114,14 @@ public class ZkCmdExecutor {
     } catch (NodeExistsException e) {
       // it's okay if another beats us creating the node
     }
-    
   }
-  
+
   /**
    * Performs a retry delay if this is not the first attempt
-   * 
-   * @param attemptCount
-   *          the number of the attempts performed so far
+   *
+   * @param attemptCount the number of the attempts performed so far
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
     Thread.sleep((attemptCount + 1) * retryDelay);
   }
-
 }

@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -25,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.CustomContainerPlugins;
@@ -45,9 +46,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
-
-
 public class ContainerPluginsApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -63,7 +61,8 @@ public class ContainerPluginsApi {
   }
 
   public class Read {
-    @EndPoint(method = METHOD.GET,
+    @EndPoint(
+        method = METHOD.GET,
         path = "/cluster/plugin",
         permission = PermissionNameProvider.Name.COLL_READ_PERM)
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
@@ -71,7 +70,8 @@ public class ContainerPluginsApi {
     }
   }
 
-  @EndPoint(method = METHOD.POST,
+  @EndPoint(
+      method = METHOD.POST,
       path = "/cluster/plugin",
       permission = PermissionNameProvider.Name.COLL_EDIT_PERM)
   public class Edit {
@@ -80,26 +80,28 @@ public class ContainerPluginsApi {
     public void add(PayloadObj<PluginMeta> payload) throws IOException {
       PluginMeta info = payload.get();
       validateConfig(payload, info);
-      if(payload.hasError()) return;
-      persistPlugins(map -> {
-        if (map.containsKey(info.name)) {
-          payload.addError(info.name + " already exists");
-          return null;
-        }
-        map.put(info.name, info);
-        return map;
-      });
+      if (payload.hasError()) return;
+      persistPlugins(
+          map -> {
+            if (map.containsKey(info.name)) {
+              payload.addError(info.name + " already exists");
+              return null;
+            }
+            map.put(info.name, info);
+            return map;
+          });
     }
 
     @Command(name = "remove")
     public void remove(PayloadObj<String> payload) throws IOException {
-      persistPlugins(map -> {
-        if (map.remove(payload.get()) == null) {
-          payload.addError("No such plugin: " + payload.get());
-          return null;
-        }
-        return map;
-      });
+      persistPlugins(
+          map -> {
+            if (map.remove(payload.get()) == null) {
+              payload.addError("No such plugin: " + payload.get());
+              return null;
+            }
+            return map;
+          });
     }
 
     @Command(name = "update")
@@ -107,17 +109,18 @@ public class ContainerPluginsApi {
     public void update(PayloadObj<PluginMeta> payload) throws IOException {
       PluginMeta info = payload.get();
       validateConfig(payload, info);
-      if(payload.hasError()) return;
-      persistPlugins(map -> {
-        Map<String, Object> existing = (Map<String, Object>) map.get(info.name);
-        if (existing == null) {
-          payload.addError("No such plugin: " + info.name);
-          return null;
-        } else {
-          map.put(info.name, info);
-          return map;
-        }
-      });
+      if (payload.hasError()) return;
+      persistPlugins(
+          map -> {
+            Map<String, Object> existing = (Map<String, Object>) map.get(info.name);
+            if (existing == null) {
+              payload.addError("No such plugin: " + info.name);
+              return null;
+            } else {
+              map.put(info.name, info);
+              return map;
+            }
+          });
     }
   }
 
@@ -129,12 +132,13 @@ public class ContainerPluginsApi {
       }
     }
     List<String> errs = new ArrayList<>();
-    CustomContainerPlugins.ApiInfo apiInfo = coreContainer.getCustomContainerPlugins().createInfo(info, errs);
+    CustomContainerPlugins.ApiInfo apiInfo =
+        coreContainer.getCustomContainerPlugins().createInfo(info, errs);
     if (!errs.isEmpty()) {
       for (String err : errs) payload.addError(err);
       return;
     }
-    AnnotatedApi api = null ;
+    AnnotatedApi api = null;
     try {
       apiInfo.init();
     } catch (Exception e) {
@@ -147,11 +151,15 @@ public class ContainerPluginsApi {
   }
 
   @SuppressWarnings("unchecked")
-  public static Map<String, Object> plugins(Supplier<SolrZkClient> zkClientSupplier) throws IOException {
+  public static Map<String, Object> plugins(Supplier<SolrZkClient> zkClientSupplier)
+      throws IOException {
     SolrZkClient zkClient = zkClientSupplier.get();
     try {
-      Map<String, Object> clusterPropsJson = (Map<String, Object>) Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      return (Map<String, Object>) clusterPropsJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>());
+      Map<String, Object> clusterPropsJson =
+          (Map<String, Object>)
+              Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
+      return (Map<String, Object>)
+          clusterPropsJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>());
     } catch (KeeperException.NoNodeException e) {
       return new LinkedHashMap<>();
     } catch (KeeperException | InterruptedException e) {
@@ -160,20 +168,24 @@ public class ContainerPluginsApi {
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private void persistPlugins(Function<Map<String,Object>, Map<String,Object>> modifier) throws IOException {
+  private void persistPlugins(Function<Map<String, Object>, Map<String, Object>> modifier)
+      throws IOException {
     try {
-      zkClientSupplier.get().atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
-        Map rawJson = bytes == null ? new LinkedHashMap() :
-            (Map) Utils.fromJSON(bytes);
-        Map pluginsModified = modifier.apply((Map) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
-        if (pluginsModified == null) return null;
-        rawJson.put(PLUGIN, pluginsModified);
-        return Utils.toJSON(rawJson);
-      });
+      zkClientSupplier
+          .get()
+          .atomicUpdate(
+              ZkStateReader.CLUSTER_PROPS,
+              bytes -> {
+                Map rawJson = bytes == null ? new LinkedHashMap() : (Map) Utils.fromJSON(bytes);
+                Map pluginsModified =
+                    modifier.apply(
+                        (Map) rawJson.computeIfAbsent(PLUGIN, o -> new LinkedHashMap<>()));
+                if (pluginsModified == null) return null;
+                rawJson.put(PLUGIN, pluginsModified);
+                return Utils.toJSON(rawJson);
+              });
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading cluster property", SolrZkClient.checkInterrupted(e));
     }
   }
-
-
 }

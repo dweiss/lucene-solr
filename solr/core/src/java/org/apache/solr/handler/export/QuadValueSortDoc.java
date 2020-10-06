@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 class QuadValueSortDoc extends TripleValueSortDoc {
@@ -69,10 +68,10 @@ class QuadValueSortDoc extends TripleValueSortDoc {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
     this.docBase = sortDoc.docBase;
-    value1.setCurrentValue(((QuadValueSortDoc)sortDoc).value1);
-    value2.setCurrentValue(((QuadValueSortDoc)sortDoc).value2);
-    value3.setCurrentValue(((QuadValueSortDoc)sortDoc).value3);
-    value4.setCurrentValue(((QuadValueSortDoc)sortDoc).value4);
+    value1.setCurrentValue(((QuadValueSortDoc) sortDoc).value1);
+    value2.setCurrentValue(((QuadValueSortDoc) sortDoc).value2);
+    value3.setCurrentValue(((QuadValueSortDoc) sortDoc).value3);
+    value4.setCurrentValue(((QuadValueSortDoc) sortDoc).value4);
   }
 
   public QuadValueSortDoc(SortValue value1, SortValue value2, SortValue value3, SortValue value4) {
@@ -86,32 +85,32 @@ class QuadValueSortDoc extends TripleValueSortDoc {
 
   public boolean lessThan(Object o) {
 
-    QuadValueSortDoc sd = (QuadValueSortDoc)o;
+    QuadValueSortDoc sd = (QuadValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == -1) {
+    if (comp == -1) {
       return true;
     } else if (comp == 1) {
       return false;
     } else {
       comp = value2.compareTo(sd.value2);
-      if(comp == -1) {
+      if (comp == -1) {
         return true;
       } else if (comp == 1) {
         return false;
       } else {
         comp = value3.compareTo(sd.value3);
-        if(comp == -1) {
+        if (comp == -1) {
           return true;
         } else if (comp == 1) {
           return false;
         } else {
           comp = value4.compareTo(sd.value4);
-          if(comp == -1) {
+          if (comp == -1) {
             return true;
           } else if (comp == 1) {
             return false;
           } else {
-            return docId+docBase > sd.docId+sd.docBase;
+            return docId + docBase > sd.docId + sd.docBase;
           }
         }
       }
@@ -119,13 +118,13 @@ class QuadValueSortDoc extends TripleValueSortDoc {
   }
 
   public int compareTo(Object o) {
-    QuadValueSortDoc sd = (QuadValueSortDoc)o;
+    QuadValueSortDoc sd = (QuadValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == 0) {
+    if (comp == 0) {
       comp = value2.compareTo(sd.value2);
-      if(comp == 0) {
+      if (comp == 0) {
         comp = value3.compareTo(sd.value3);
-        if(comp == 0) {
+        if (comp == 0) {
           return value4.compareTo(sd.value4);
         } else {
           return comp;

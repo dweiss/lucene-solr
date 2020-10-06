@@ -32,7 +32,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -47,10 +46,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
- * SolrStream will get fully exercised through these tests.
- **/
-
+ * All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses
+ * SolrStream so SolrStream will get fully exercised through these tests.
+ */
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
 public class JdbcTest extends SolrCloudTestCase {
@@ -64,7 +62,14 @@ public class JdbcTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig(
+            "conf",
+            getFile("solrj")
+                .toPath()
+                .resolve("solr")
+                .resolve("configsets")
+                .resolve("streaming")
+                .resolve("conf"))
         .configure();
 
     String collection;
@@ -74,14 +79,16 @@ public class JdbcTest extends SolrCloudTestCase {
     } else {
       collection = COLLECTIONORALIAS;
     }
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
-    
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+
     cluster.waitForActiveCollection(collection, 2, 2);
-    
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(),
-        false, true, DEFAULT_TIMEOUT);
+
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        collection, cluster.getSolrClient().getZkStateReader(), false, true, DEFAULT_TIMEOUT);
     if (useAlias) {
-      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+      CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
+          .process(cluster.getSolrClient());
     }
 
     new UpdateRequest()
@@ -105,9 +112,15 @@ public class JdbcTest extends SolrCloudTestCase {
 
     Properties props = new Properties();
 
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
+    try (Connection con =
+        DriverManager.getConnection(
+            "jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i desc limit 2")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select id, a_i, a_s, a_f from "
+                    + COLLECTIONORALIAS
+                    + " order by a_i desc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(14, rs.getLong("a_i"));
@@ -129,8 +142,12 @@ public class JdbcTest extends SolrCloudTestCase {
           assertFalse(rs.next());
         }
 
-        //Test statement reuse
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc limit 2")) {
+        // Test statement reuse
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select id, a_i, a_s, a_f from "
+                    + COLLECTIONORALIAS
+                    + " order by a_i asc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(0, rs.getLong("a_i"));
@@ -153,9 +170,13 @@ public class JdbcTest extends SolrCloudTestCase {
         }
       }
 
-      //Test connection reuse
+      // Test connection reuse
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i desc limit 2")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select id, a_i, a_s, a_f from "
+                    + COLLECTIONORALIAS
+                    + " order by a_i desc limit 2")) {
           assertTrue(rs.next());
 
           assertEquals(14, rs.getLong("a_i"));
@@ -169,9 +190,11 @@ public class JdbcTest extends SolrCloudTestCase {
           assertFalse(rs.next());
         }
 
-        //Test statement reuse
+        // Test statement reuse
         stmt.setMaxRows(2);
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc")) {
           assertTrue(rs.next());
 
           assertEquals(0, rs.getLong("a_i"));
@@ -185,8 +208,12 @@ public class JdbcTest extends SolrCloudTestCase {
           assertFalse(rs.next());
         }
 
-        //Test simple loop. Since limit is set it will override the statement maxRows.
-        try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from " + COLLECTIONORALIAS + " order by a_i asc    LIMIT   100")) {
+        // Test simple loop. Since limit is set it will override the statement maxRows.
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select id, a_i, a_s, a_f from "
+                    + COLLECTIONORALIAS
+                    + " order by a_i asc    LIMIT   100")) {
           int count = 0;
           while (rs.next()) {
             ++count;
@@ -195,94 +222,108 @@ public class JdbcTest extends SolrCloudTestCase {
         }
       }
     }
-
   }
 
   @Test
   public void testFacetAggregation() throws Exception {
 
-    //Test facet aggregation
+    // Test facet aggregation
     Properties props = new Properties();
     props.put("aggregationMode", "facet");
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
+    try (Connection con =
+        DriverManager.getConnection(
+            "jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
-            "order by sum(a_f) desc")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select a_s, sum(a_f) from "
+                    + COLLECTIONORALIAS
+                    + " group by a_s "
+                    + "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
 
           assertEquals("hello3", rs.getString("a_s"));
           assertEquals("hello3", rs.getString(1));
-          assertEquals(26, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(26, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(26, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello0", rs.getString("a_s"));
           assertEquals("hello0", rs.getString(1));
-          assertEquals(18, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(18, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(18, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello4", rs.getString("a_s"));
           assertEquals("hello4", rs.getString(1));
-          assertEquals(11, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(11, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(11, rs.getDouble(2), 0);
 
           assertFalse(rs.next());
         }
       }
     }
-
   }
 
   @Test
   public void testMapReduceAggregation() throws Exception {
 
-    //Test map / reduce aggregation
+    // Test map / reduce aggregation
     Properties props = new Properties();
     props.put("aggregationMode", "map_reduce");
     props.put("numWorkers", "2");
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
+    try (Connection con =
+        DriverManager.getConnection(
+            "jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
-            "order by sum(a_f) desc")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select a_s, sum(a_f) from "
+                    + COLLECTIONORALIAS
+                    + " group by a_s "
+                    + "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
 
           assertEquals("hello3", rs.getString("a_s"));
           assertEquals("hello3", rs.getString(1));
-          assertEquals(26, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(26, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(26, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello0", rs.getString("a_s"));
           assertEquals("hello0", rs.getString(1));
-          assertEquals(18, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(18, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(18, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello4", rs.getString("a_s"));
           assertEquals("hello4", rs.getString(1));
-          assertEquals(11, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(11, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(11, rs.getDouble(2), 0);
 
           assertFalse(rs.next());
         }
       }
     }
-
   }
 
   @Test
   public void testConnectionParams() throws Exception {
 
-    //Test params on the url
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost +
-        "?collection=" + COLLECTIONORALIAS + "&aggregationMode=map_reduce&numWorkers=2")) {
+    // Test params on the url
+    try (Connection con =
+        DriverManager.getConnection(
+            "jdbc:solr://"
+                + zkHost
+                + "?collection="
+                + COLLECTIONORALIAS
+                + "&aggregationMode=map_reduce&numWorkers=2")) {
 
       Properties p = ((ConnectionImpl) con).getProperties();
 
@@ -290,43 +331,51 @@ public class JdbcTest extends SolrCloudTestCase {
       assert (p.getProperty("numWorkers").equals("2"));
 
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
-            "order by sum(a_f) desc")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select a_s, sum(a_f) from "
+                    + COLLECTIONORALIAS
+                    + " group by a_s "
+                    + "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
 
           assertEquals("hello3", rs.getString("a_s"));
           assertEquals("hello3", rs.getString(1));
-          assertEquals(26, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(26, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(26, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello0", rs.getString("a_s"));
           assertEquals("hello0", rs.getString(1));
-          assertEquals(18, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(18, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(18, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello4", rs.getString("a_s"));
           assertEquals("hello4", rs.getString(1));
-          assertEquals(11, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(11, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(11, rs.getDouble(2), 0);
 
           assertFalse(rs.next());
         }
       }
     }
-
   }
 
   @Test
   public void testJDBCUrlParameters() throws Exception {
 
     // Test JDBC paramters in URL
-    try (Connection con = DriverManager.getConnection(
-        "jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS + "&username=&password=&testKey1=testValue&testKey2")) {
+    try (Connection con =
+        DriverManager.getConnection(
+            "jdbc:solr://"
+                + zkHost
+                + "?collection="
+                + COLLECTIONORALIAS
+                + "&username=&password=&testKey1=testValue&testKey2")) {
 
       Properties p = ((ConnectionImpl) con).getProperties();
       assertEquals("", p.getProperty("username"));
@@ -335,35 +384,38 @@ public class JdbcTest extends SolrCloudTestCase {
       assertEquals("", p.getProperty("testKey2"));
 
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
-            "order by sum(a_f) desc")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select a_s, sum(a_f) from "
+                    + COLLECTIONORALIAS
+                    + " group by a_s "
+                    + "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
 
           assertEquals("hello3", rs.getString("a_s"));
           assertEquals("hello3", rs.getString(1));
-          assertEquals(26, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(26, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(26, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello0", rs.getString("a_s"));
           assertEquals("hello0", rs.getString(1));
-          assertEquals(18, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(18, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(18, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello4", rs.getString("a_s"));
           assertEquals("hello4", rs.getString(1));
-          assertEquals(11, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(11, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(11, rs.getDouble(2), 0);
 
           assertFalse(rs.next());
         }
       }
     }
-
   }
 
   @Test
@@ -377,7 +429,8 @@ public class JdbcTest extends SolrCloudTestCase {
     providedProperties.put("testKey1", "testValue");
     providedProperties.put("testKey2", "");
 
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost, providedProperties)) {
+    try (Connection con =
+        DriverManager.getConnection("jdbc:solr://" + zkHost, providedProperties)) {
       Properties p = ((ConnectionImpl) con).getProperties();
       assert (p.getProperty("username").equals(""));
       assert (p.getProperty("password").equals(""));
@@ -385,28 +438,32 @@ public class JdbcTest extends SolrCloudTestCase {
       assert (p.getProperty("testKey2").equals(""));
 
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from " + COLLECTIONORALIAS + " group by a_s " +
-            "order by sum(a_f) desc")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select a_s, sum(a_f) from "
+                    + COLLECTIONORALIAS
+                    + " group by a_s "
+                    + "order by sum(a_f) desc")) {
 
           assertTrue(rs.next());
 
           assertEquals("hello3", rs.getString("a_s"));
           assertEquals("hello3", rs.getString(1));
-          assertEquals(26, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(26, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(26, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello0", rs.getString("a_s"));
           assertEquals("hello0", rs.getString(1));
-          assertEquals(18, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(18, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(18, rs.getDouble(2), 0);
 
           assertTrue(rs.next());
 
           assertEquals("hello4", rs.getString("a_s"));
           assertEquals("hello4", rs.getString(1));
-          assertEquals(11, rs.getDouble("EXPR$1"), 0); //sum(a_f)
+          assertEquals(11, rs.getDouble("EXPR$1"), 0); // sum(a_f)
           assertEquals(11, rs.getDouble(2), 0);
 
           assertFalse(rs.next());
@@ -419,16 +476,24 @@ public class JdbcTest extends SolrCloudTestCase {
   @Test
   @SuppressWarnings({"try"})
   public void testErrorPropagation() throws Exception {
-    //Test error propagation
+    // Test error propagation
     Properties props = new Properties();
     props.put("aggregationMode", "facet");
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
+    try (Connection con =
+        DriverManager.getConnection(
+            "jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS, props)) {
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select crap from " + COLLECTIONORALIAS + " group by a_s " +
-            "order by sum(a_f) desc")) {
+        try (ResultSet rs =
+            stmt.executeQuery(
+                "select crap from "
+                    + COLLECTIONORALIAS
+                    + " group by a_s "
+                    + "order by sum(a_f) desc")) {
         } catch (Exception e) {
           String errorMessage = e.getMessage();
-          assertTrue(errorMessage.contains("Group by queries must include at least one aggregate function"));
+          assertTrue(
+              errorMessage.contains(
+                  "Group by queries must include at least one aggregate function"));
         }
       }
     }
@@ -436,13 +501,13 @@ public class JdbcTest extends SolrCloudTestCase {
 
   @Test
   @SuppressWarnings({"try"})
-  public void testSQLExceptionThrownWhenQueryAndConnUseDiffCollections() throws Exception  {
+  public void testSQLExceptionThrownWhenQueryAndConnUseDiffCollections() throws Exception {
     String badCollection = COLLECTIONORALIAS + "bad";
     String connectionString = "jdbc:solr://" + zkHost + "?collection=" + badCollection;
     String sql = "select id, a_i, a_s, a_f from " + badCollection + " order by a_i desc limit 2";
 
-    //Bad connection string: wrong collection name
-    try(Connection connection = DriverManager.getConnection(connectionString)) {
+    // Bad connection string: wrong collection name
+    try (Connection connection = DriverManager.getConnection(connectionString)) {
       try (Statement statement = connection.createStatement()) {
         try (ResultSet ignored = statement.executeQuery(sql)) {
           fail("Expected query against wrong collection to throw a SQLException.");
@@ -456,11 +521,12 @@ public class JdbcTest extends SolrCloudTestCase {
   @Test
   public void testOneEqualZeroMetadata() throws Exception {
     // SOLR-8845 - Make sure that 1 = 1 (literal comparison literal) works
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost +
-        "?collection=" + COLLECTIONORALIAS)) {
+    try (Connection con =
+        DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=" + COLLECTIONORALIAS)) {
 
       try (Statement stmt = con.createStatement()) {
-        try (ResultSet rs = stmt.executeQuery("select a_s from " + COLLECTIONORALIAS + " where 1 = 0")) {
+        try (ResultSet rs =
+            stmt.executeQuery("select a_s from " + COLLECTIONORALIAS + " where 1 = 0")) {
           assertFalse(rs.next());
 
           ResultSetMetaData resultSetMetaData = rs.getMetaData();
@@ -476,30 +542,43 @@ public class JdbcTest extends SolrCloudTestCase {
   public void testDriverMetadata() throws Exception {
     String collection = COLLECTIONORALIAS;
 
-    String connectionString1 = "jdbc:solr://" + zkHost + "?collection=" + collection +
-        "&username=&password=&testKey1=testValue&testKey2";
+    String connectionString1 =
+        "jdbc:solr://"
+            + zkHost
+            + "?collection="
+            + collection
+            + "&username=&password=&testKey1=testValue&testKey2";
     Properties properties1 = new Properties();
 
-    String sql = "select id, a_i, a_s, a_f as my_float_col, testnull_i from " + collection +
-        " order by a_i desc";
+    String sql =
+        "select id, a_i, a_s, a_f as my_float_col, testnull_i from "
+            + collection
+            + " order by a_i desc";
 
-    String connectionString2 = "jdbc:solr://" + zkHost + "?collection=" + collection +
-        "&aggregationMode=map_reduce&numWorkers=2&username=&password=&testKey1=testValue&testKey2";
+    String connectionString2 =
+        "jdbc:solr://"
+            + zkHost
+            + "?collection="
+            + collection
+            + "&aggregationMode=map_reduce&numWorkers=2&username=&password=&testKey1=testValue&testKey2";
     Properties properties2 = new Properties();
 
     String sql2 = sql + " limit 2";
 
-    //testJDBCMethods(collection, connectionString1, properties1, sql);
-    //testJDBCMethods(collection, connectionString2, properties2, sql);
+    // testJDBCMethods(collection, connectionString1, properties1, sql);
+    // testJDBCMethods(collection, connectionString2, properties2, sql);
     testJDBCMethods(collection, connectionString1, properties1, sql2);
     testJDBCMethods(collection, connectionString2, properties2, sql2);
   }
 
-  private void testJDBCMethods(String collection, String connectionString, Properties properties, String sql) throws Exception {
+  private void testJDBCMethods(
+      String collection, String connectionString, Properties properties, String sql)
+      throws Exception {
     try (Connection con = DriverManager.getConnection(connectionString, properties)) {
       assertTrue(con.isValid(DEFAULT_CONNECTION_TIMEOUT));
-      assertTrue("connection should be valid when checked with timeout = 0 -> con.isValid(0)", con.isValid(0));
-
+      assertTrue(
+          "connection should be valid when checked with timeout = 0 -> con.isValid(0)",
+          con.isValid(0));
 
       assertEquals(zkHost, con.getCatalog());
       con.setCatalog(zkHost);
@@ -520,18 +599,22 @@ public class JdbcTest extends SolrCloudTestCase {
 
       assertEquals("Apache Solr", databaseMetaData.getDatabaseProductName());
 
-      // The following tests require package information that is not available when running via Maven
-//      assertEquals(this.getClass().getPackage().getSpecificationVersion(), databaseMetaData.getDatabaseProductVersion());
-//      assertEquals(0, databaseMetaData.getDatabaseMajorVersion());
-//      assertEquals(0, databaseMetaData.getDatabaseMinorVersion());
+      // The following tests require package information that is not available when running via
+      // Maven
+      //      assertEquals(this.getClass().getPackage().getSpecificationVersion(),
+      // databaseMetaData.getDatabaseProductVersion());
+      //      assertEquals(0, databaseMetaData.getDatabaseMajorVersion());
+      //      assertEquals(0, databaseMetaData.getDatabaseMinorVersion());
 
-//      assertEquals(this.getClass().getPackage().getSpecificationTitle(), databaseMetaData.getDriverName());
-//      assertEquals(this.getClass().getPackage().getSpecificationVersion(), databaseMetaData.getDriverVersion());
-//      assertEquals(0, databaseMetaData.getDriverMajorVersion());
-//      assertEquals(0, databaseMetaData.getDriverMinorVersion());
+      //      assertEquals(this.getClass().getPackage().getSpecificationTitle(),
+      // databaseMetaData.getDriverName());
+      //      assertEquals(this.getClass().getPackage().getSpecificationVersion(),
+      // databaseMetaData.getDriverVersion());
+      //      assertEquals(0, databaseMetaData.getDriverMajorVersion());
+      //      assertEquals(0, databaseMetaData.getDriverMinorVersion());
 
       List<String> tableSchemas = new ArrayList<>(Arrays.asList(zkHost, "metadata"));
-      try(ResultSet rs = databaseMetaData.getSchemas()) {
+      try (ResultSet rs = databaseMetaData.getSchemas()) {
         assertTrue(rs.next());
         assertTrue(tableSchemas.contains(rs.getString("tableSchem")));
         tableSchemas.remove(rs.getString("tableSchem"));
@@ -544,7 +627,7 @@ public class JdbcTest extends SolrCloudTestCase {
         assertTrue(tableSchemas.isEmpty());
       }
 
-      try(ResultSet rs = databaseMetaData.getCatalogs()) {
+      try (ResultSet rs = databaseMetaData.getCatalogs()) {
         assertTrue(rs.next());
         assertNull(rs.getString("tableCat"));
         assertFalse(rs.next());
@@ -560,8 +643,8 @@ public class JdbcTest extends SolrCloudTestCase {
       Aliases aliases = zkStateReader.getAliases();
       tables.addAll(aliases.getCollectionAliasListMap().keySet());
 
-      try(ResultSet rs = databaseMetaData.getTables(null, zkHost, "%", null)) {
-        for(String table : tables) {
+      try (ResultSet rs = databaseMetaData.getTables(null, zkHost, "%", null)) {
+        for (String table : tables) {
           assertTrue(rs.next());
           assertNull(rs.getString("tableCat"));
           assertEquals(zkHost, rs.getString("tableSchem"));
@@ -807,7 +890,6 @@ public class JdbcTest extends SolrCloudTestCase {
     assertFalse(rs.wasNull());
     assertEquals(10, rs.getByte(5), 0);
     assertFalse(rs.wasNull());
-
 
     assertTrue(rs.next());
 

@@ -36,7 +36,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     Polygon p;
     while (true) {
       // if we can't tessellate; then random polygon generator created a malformed shape
-      p = (Polygon)getShapeType().nextShape();
+      p = (Polygon) getShapeType().nextShape();
       try {
         Tessellator.tessellate(p);
         return p;
@@ -48,7 +48,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object polygon) {
-    return LatLonShape.createIndexableFields(field, (Polygon)polygon);
+    return LatLonShape.createIndexableFields(field, (Polygon) polygon);
   }
 
   @Override
@@ -62,8 +62,10 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Component2D rectangle2D = LatLonGeometry.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+    public boolean testBBoxQuery(
+        double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+      Component2D rectangle2D =
+          LatLonGeometry.create(new Rectangle(minLat, maxLat, minLon, maxLon));
       return testComponentQuery(rectangle2D, shape);
     }
 
@@ -71,7 +73,8 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object o) {
       Polygon polygon = (Polygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", polygon)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", polygon))
+            == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", polygon));
     }

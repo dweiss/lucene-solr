@@ -16,16 +16,14 @@
  */
 package org.apache.solr.common.util;
 
-
-import java.util.List;
-import java.util.Map;
-
-import org.apache.solr.SolrTestCaseJ4;
-
 import static org.apache.solr.common.util.Utils.toJSONString;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
-public class JsonValidatorTest extends SolrTestCaseJ4  {
+import java.util.List;
+import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
+
+public class JsonValidatorTest extends SolrTestCaseJ4 {
 
   public void testSchema() {
     checkSchema("collections.Commands");
@@ -41,13 +39,13 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     checkSchema("core.SchemaEdit");
   }
 
-
   public void testSchemaValidation() {
     ValidatingJsonMap spec = Utils.getSpec("collections.Commands").getSpec();
     @SuppressWarnings({"rawtypes"})
     Map createSchema = spec.getMap("commands", NOT_NULL).getMap("create-alias", NOT_NULL);
     JsonSchemaValidator validator = new JsonSchemaValidator(createSchema);
-    List<String> errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ c1 , c2]}"));
+    List<String> errs =
+        validator.validateJson(Utils.fromJSONString("{name : x, collections: [ c1 , c2]}"));
     assertNull(toJSONString(errs), errs);
     errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [c1] }"));
     assertNull(toJSONString(errs), errs);
@@ -62,12 +60,14 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ 1 , 2]}"));
     assertFalse(toJSONString(errs), errs.isEmpty());
     assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
-    validator = new JsonSchemaValidator("{" +
-        "  type:object," +
-        "  properties: {" +
-        "   age : {type: number}," +
-        "   adult : {type: boolean}," +
-        "   name: {type: string}}}");
+    validator =
+        new JsonSchemaValidator(
+            "{"
+                + "  type:object,"
+                + "  properties: {"
+                + "   age : {type: number},"
+                + "   adult : {type: boolean},"
+                + "   name: {type: string}}}");
     errs = validator.validateJson(Utils.fromJSONString("{name:x, age:21, adult:true}"));
     assertNull(errs);
     errs = validator.validateJson(Utils.fromJSONString("{name:x, age:'21', adult:'true'}"));
@@ -75,100 +75,111 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
 
     errs = validator.validateJson(Utils.fromJSONString("{name:x, age:'x21', adult:'true'}"));
     assertEquals(1, errs.size());
-    Exception e = expectThrows(Exception.class, () -> {
-      new JsonSchemaValidator("{" +
-          "  type:object," +
-          "  properties: {" +
-          "   age : {type: int}," +
-          "   adult : {type: Boolean}," +
-          "   name: {type: string}}}");
-    });
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              new JsonSchemaValidator(
+                  "{"
+                      + "  type:object,"
+                      + "  properties: {"
+                      + "   age : {type: int},"
+                      + "   adult : {type: Boolean},"
+                      + "   name: {type: string}}}");
+            });
     assertTrue(e.getMessage().contains("Unknown type"));
 
-    e = expectThrows(Exception.class, () -> {
-      new JsonSchemaValidator("{" +
-          "  type:object," +
-          "   x : y," +
-          "  properties: {" +
-          "   age : {type: number}," +
-          "   adult : {type: boolean}," +
-          "   name: {type: string}}}");
-    });
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              new JsonSchemaValidator(
+                  "{"
+                      + "  type:object,"
+                      + "   x : y,"
+                      + "  properties: {"
+                      + "   age : {type: number},"
+                      + "   adult : {type: boolean},"
+                      + "   name: {type: string}}}");
+            });
     assertTrue(e.getMessage().contains("Unknown key"));
 
-    e = expectThrows(Exception.class, () -> {
-      new JsonSchemaValidator("{" +
-          "  type:object," +
-          "  propertes: {" +
-          "   age : {type: number}," +
-          "   adult : {type: boolean}," +
-          "   name: {type: string}}}");
-    });
+    e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              new JsonSchemaValidator(
+                  "{"
+                      + "  type:object,"
+                      + "  propertes: {"
+                      + "   age : {type: number},"
+                      + "   adult : {type: boolean},"
+                      + "   name: {type: string}}}");
+            });
     assertTrue(e.getMessage().contains("Unknown key : propertes"));
 
-    validator = new JsonSchemaValidator("{" +
-        "  type:object," +
-        "  properties: {" +
-        "   age : {type: number}," +
-        "   sex: {type: string, enum:[M, F]}," +
-        "   adult : {type: boolean}," +
-        "   name: {type: string}}}");
+    validator =
+        new JsonSchemaValidator(
+            "{"
+                + "  type:object,"
+                + "  properties: {"
+                + "   age : {type: number},"
+                + "   sex: {type: string, enum:[M, F]},"
+                + "   adult : {type: boolean},"
+                + "   name: {type: string}}}");
     errs = validator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:M}"));
     assertNull("errs are " + errs, errs);
     errs = validator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:m}"));
     assertEquals(1, errs.size());
     assertTrue(errs.get(0).contains("Value of enum"));
 
-    String schema = "{\n" +
-        "  'type': 'object',\n" +
-        "  'properties': {\n" +
-        "    'links': {\n" +
-        "      'type': 'array',\n" +
-        "      'items':{" +
-        "          'type': 'object',\n" +
-        "          'properties': {\n" +
-        "            'rel': {\n" +
-        "              'type': 'string'\n" +
-        "            },\n" +
-        "            'href': {\n" +
-        "              'type': 'string'\n" +
-        "            }\n" +
-        "          }\n" +
-        "        }\n" +
-        "    }\n" +
-        "\n" +
-        "  }\n" +
-        "}";
+    String schema =
+        "{\n"
+            + "  'type': 'object',\n"
+            + "  'properties': {\n"
+            + "    'links': {\n"
+            + "      'type': 'array',\n"
+            + "      'items':{"
+            + "          'type': 'object',\n"
+            + "          'properties': {\n"
+            + "            'rel': {\n"
+            + "              'type': 'string'\n"
+            + "            },\n"
+            + "            'href': {\n"
+            + "              'type': 'string'\n"
+            + "            }\n"
+            + "          }\n"
+            + "        }\n"
+            + "    }\n"
+            + "\n"
+            + "  }\n"
+            + "}";
     validator = new JsonSchemaValidator(schema);
-    validator.validateJson(Utils.fromJSONString("{\n" +
-        "  'links': [\n" +
-        "    {\n" +
-        "        'rel': 'x',\n" +
-        "        'href': 'x'\n" +
-        "    },\n" +
-        "    {\n" +
-        "        'rel': 'x',\n" +
-        "        'href': 'x'\n" +
-        "    },\n" +
-        "    {\n" +
-        "        'rel': 'x',\n" +
-        "        'href': 'x'\n" +
-        "    }\n" +
-        "  ]\n" +
-        "}"));
+    validator.validateJson(
+        Utils.fromJSONString(
+            "{\n"
+                + "  'links': [\n"
+                + "    {\n"
+                + "        'rel': 'x',\n"
+                + "        'href': 'x'\n"
+                + "    },\n"
+                + "    {\n"
+                + "        'rel': 'x',\n"
+                + "        'href': 'x'\n"
+                + "    },\n"
+                + "    {\n"
+                + "        'rel': 'x',\n"
+                + "        'href': 'x'\n"
+                + "    }\n"
+                + "  ]\n"
+                + "}"));
 
-    schema = "{\n" +
-        "'type' : 'object',\n" +
-        "'oneOf' : ['a', 'b']\n" +
-        "}";
+    schema = "{\n" + "'type' : 'object',\n" + "'oneOf' : ['a', 'b']\n" + "}";
     validator = new JsonSchemaValidator(schema);
-    errs = validator.validateJson(Utils.fromJSONString("" +
-        "{'c':'val'}"));
+    errs = validator.validateJson(Utils.fromJSONString("" + "{'c':'val'}"));
     assertNotNull(errs);
-    errs = validator.validateJson(Utils.fromJSONString("" +
-        "{'a':'val'}"));
+    errs = validator.validateJson(Utils.fromJSONString("" + "{'a':'val'}"));
     assertNull(errs);
-
   }
 
   private void checkSchema(String name) {
@@ -185,5 +196,4 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
       }
     }
   }
-
 }

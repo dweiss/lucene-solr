@@ -16,6 +16,13 @@
  */
 package org.apache.solr.common.cloud;
 
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.util.Utils.toJSONString;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -28,15 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
-
 import org.noggit.JSONWriter;
-
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
@@ -64,19 +63,28 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer numPullReplicas;
   private final Boolean readOnly;
 
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
+  public DocCollection(
+      String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, Integer.MAX_VALUE);
   }
 
   /**
-   * @param name  The name of the collection
-   * @param slices The logical shards of the collection.  This is used directly and a copy is not made.
-   * @param props  The properties of the slice.  This is used directly and a copy is not made.
-   * @param zkVersion The version of the Collection node in Zookeeper (used for conditional updates).
+   * @param name The name of the collection
+   * @param slices The logical shards of the collection. This is used directly and a copy is not
+   *     made.
+   * @param props The properties of the slice. This is used directly and a copy is not made.
+   * @param zkVersion The version of the Collection node in Zookeeper (used for conditional
+   *     updates).
    */
-  public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
-    super(props==null ? props = new HashMap<>() : props);
-    // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
+  public DocCollection(
+      String name,
+      Map<String, Slice> slices,
+      Map<String, Object> props,
+      DocRouter router,
+      int zkVersion) {
+    super(props == null ? props = new HashMap<>() : props);
+    // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental
+    // overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
 
@@ -90,7 +98,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.numPullReplicas = (Integer) verifyProp(props, PULL_REPLICAS, 0);
     Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
-    
+
     verifyProp(props, RULE);
     verifyProp(props, SNITCH);
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
@@ -126,7 +134,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       leaderReplicas.add(replica);
     }
   }
-  
+
   public static Object verifyProp(Map<String, Object> props, String propName) {
     return verifyProp(props, propName, null);
   }
@@ -148,20 +156,20 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       default:
         return o;
     }
-
-  }
-
-  /**Use this to make an exact copy of DocCollection with a new set of Slices and every other property as is
-   * @param slices the new set of Slices
-   * @return the resulting DocCollection
-   */
-  public DocCollection copyWithSlices(Map<String, Slice> slices){
-    return new DocCollection(getName(), slices, propMap, router, znodeVersion);
   }
 
   /**
-   * Return collection name.
+   * Use this to make an exact copy of DocCollection with a new set of Slices and every other
+   * property as is
+   *
+   * @param slices the new set of Slices
+   * @return the resulting DocCollection
    */
+  public DocCollection copyWithSlices(Map<String, Slice> slices) {
+    return new DocCollection(getName(), slices, propMap, router, znodeVersion);
+  }
+
+  /** Return collection name. */
   public String getName() {
     return name;
   }
@@ -170,75 +178,57 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return slices.get(sliceName);
   }
 
-  /**
-   * @param consumer consume shardName vs. replica
-   */
+  /** @param consumer consume shardName vs. replica */
   public void forEachReplica(BiConsumer<String, Replica> consumer) {
-    slices.forEach((shard, slice) -> slice.getReplicasMap().forEach((s, replica) -> consumer.accept(shard, replica)));
+    slices.forEach(
+        (shard, slice) ->
+            slice.getReplicasMap().forEach((s, replica) -> consumer.accept(shard, replica)));
   }
 
-  /**
-   * Gets the list of all slices for this collection.
-   */
+  /** Gets the list of all slices for this collection. */
   public Collection<Slice> getSlices() {
     return slices.values();
   }
 
-
-  /**
-   * Return the list of active slices for this collection.
-   */
+  /** Return the list of active slices for this collection. */
   public Collection<Slice> getActiveSlices() {
     return activeSlices.values();
   }
 
-  /**
-   * Return array of active slices for this collection (performance optimization).
-   */
+  /** Return array of active slices for this collection (performance optimization). */
   public Slice[] getActiveSlicesArr() {
     return activeSlicesArr;
   }
 
-  /**
-   * Get the map of all slices (sliceName-&gt;Slice) for this collection.
-   */
+  /** Get the map of all slices (sliceName-&gt;Slice) for this collection. */
   public Map<String, Slice> getSlicesMap() {
     return slices;
   }
 
-  /**
-   * Get the map of active slices (sliceName-&gt;Slice) for this collection.
-   */
+  /** Get the map of active slices (sliceName-&gt;Slice) for this collection. */
   public Map<String, Slice> getActiveSlicesMap() {
     return activeSlices;
   }
 
-  /**
-   * Get the list of replicas hosted on the given node or <code>null</code> if none.
-   */
+  /** Get the list of replicas hosted on the given node or <code>null</code> if none. */
   public List<Replica> getReplicas(String nodeName) {
     return nodeNameReplicas.get(nodeName);
   }
 
-  /**
-   * Get the list of all leaders hosted on the given node or <code>null</code> if none.
-   */
+  /** Get the list of all leaders hosted on the given node or <code>null</code> if none. */
   public List<Replica> getLeaderReplicas(String nodeName) {
     return nodeNameLeaderReplicas.get(nodeName);
   }
 
-  public int getZNodeVersion(){
+  public int getZNodeVersion() {
     return znodeVersion;
   }
 
-  /**
-   * @return replication factor for this collection or null if no
-   *         replication factor exists.
-   */
+  /** @return replication factor for this collection or null if no replication factor exists. */
   public Integer getReplicationFactor() {
     return replicationFactor;
   }
-  
+
   public DocRouter getRouter() {
     return router;
   }
@@ -249,7 +239,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+"/" + znodeVersion + ")=" + toJSONString(this);
+    return "DocCollection(" + name + "/" + znodeVersion + ")=" + toJSONString(this);
   }
 
   @Override
@@ -279,21 +269,21 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *
    * @see CollectionStatePredicate
    */
-  public static boolean isFullyActive(Set<String> liveNodes, DocCollection collectionState,
-                                      int expectedShards, int expectedReplicas) {
+  public static boolean isFullyActive(
+      Set<String> liveNodes,
+      DocCollection collectionState,
+      int expectedShards,
+      int expectedReplicas) {
     Objects.requireNonNull(liveNodes);
-    if (collectionState == null)
-      return false;
+    if (collectionState == null) return false;
     int activeShards = 0;
     for (Slice slice : collectionState) {
       int activeReplicas = 0;
       for (Replica replica : slice) {
-        if (replica.isActive(liveNodes) == false)
-          return false;
+        if (replica.isActive(liveNodes) == false) return false;
         activeReplicas++;
       }
-      if (activeReplicas != expectedReplicas)
-        return false;
+      if (activeReplicas != expectedReplicas) return false;
       activeShards++;
     }
     return activeShards == expectedShards;
@@ -318,12 +308,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public Replica getReplica(BiPredicate<String, Replica> predicate) {
     final Replica[] result = new Replica[1];
-    forEachReplica((s, replica) -> {
-      if (result[0] != null) return;
-      if (predicate.test(s, replica)) {
-        result[0] = replica;
-      }
-    });
+    forEachReplica(
+        (s, replica) -> {
+          if (result[0] != null) return;
+          if (predicate.test(s, replica)) {
+            result[0] = replica;
+          }
+        });
     return result[0];
   }
 
@@ -335,14 +326,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return replicas;
   }
 
-  /**
-   * Get the shardId of a core on a specific node
-   */
+  /** Get the shardId of a core on a specific node */
   public String getShardId(String nodeName, String coreName) {
     for (Slice slice : this) {
       for (Replica replica : slice) {
-        if (Objects.equals(replica.getNodeName(), nodeName) && Objects.equals(replica.getCoreName(), coreName))
-          return slice.getName();
+        if (Objects.equals(replica.getNodeName(), nodeName)
+            && Objects.equals(replica.getCoreName(), coreName)) return slice.getName();
       }
     }
     return null;
@@ -350,10 +339,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public boolean equals(Object that) {
-    if (!(that instanceof DocCollection))
-      return false;
+    if (!(that instanceof DocCollection)) return false;
     DocCollection other = (DocCollection) that;
-    return super.equals(that) && Objects.equals(this.name, other.name) && this.znodeVersion == other.znodeVersion;
+    return super.equals(that)
+        && Objects.equals(this.name, other.name)
+        && this.znodeVersion == other.znodeVersion;
   }
 
   @Override
@@ -362,21 +352,24 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT} this collection was created with
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#NRT}
+   *     this collection was created with
    */
   public Integer getNumNrtReplicas() {
     return numNrtReplicas;
   }
 
   /**
-   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG} this collection was created with
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#TLOG}
+   *     this collection was created with
    */
   public Integer getNumTlogReplicas() {
     return numTlogReplicas;
   }
 
   /**
-   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL} this collection was created with
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#PULL}
+   *     this collection was created with
    */
   public Integer getNumPullReplicas() {
     return numPullReplicas;

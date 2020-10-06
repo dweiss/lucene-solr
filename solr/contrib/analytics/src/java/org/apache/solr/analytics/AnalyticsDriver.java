@@ -18,7 +18,6 @@ package org.apache.solr.analytics;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -41,20 +40,28 @@ public class AnalyticsDriver {
    * @param queryRequest used for the search request
    * @throws IOException if an error occurs while reading from Solr
    */
-  public static void drive(AnalyticsRequestManager manager, SolrIndexSearcher searcher, Filter filter, SolrQueryRequest queryRequest) throws IOException {
+  public static void drive(
+      AnalyticsRequestManager manager,
+      SolrIndexSearcher searcher,
+      Filter filter,
+      SolrQueryRequest queryRequest)
+      throws IOException {
     StreamingInfo streamingInfo = manager.getStreamingFacetInfo();
     Iterable<StreamingFacet> streamingFacets = streamingInfo.streamingFacets;
     ReductionCollectionManager collectionManager = streamingInfo.streamingCollectionManager;
 
-    Iterable<FacetValueQueryExecuter> facetExecuters = manager.getFacetExecuters(filter, queryRequest);
+    Iterable<FacetValueQueryExecuter> facetExecuters =
+        manager.getFacetExecuters(filter, queryRequest);
 
     // Streaming phase (Overall results & Value/Pivot Facets)
-    // Loop through all documents and collect reduction data for streaming facets and overall results
+    // Loop through all documents and collect reduction data for streaming facets and overall
+    // results
     if (collectionManager.needsCollection()) {
       List<LeafReaderContext> contexts = searcher.getTopReaderContext().leaves();
       for (int leafNum = 0; leafNum < contexts.size(); leafNum++) {
         LeafReaderContext context = contexts.get(leafNum);
-        DocIdSet dis = filter.getDocIdSet(context, null); // solr docsets already exclude any deleted docs
+        DocIdSet dis =
+            filter.getDocIdSet(context, null); // solr docsets already exclude any deleted docs
         if (dis == null) {
           continue;
         }
@@ -62,10 +69,10 @@ public class AnalyticsDriver {
         if (disi != null) {
           collectionManager.doSetNextReader(context);
           int doc = disi.nextDoc();
-          while( doc != DocIdSetIterator.NO_MORE_DOCS){
+          while (doc != DocIdSetIterator.NO_MORE_DOCS) {
             // Add a document to the statistics being generated
             collectionManager.collect(doc);
-            streamingFacets.forEach( facet -> facet.addFacetValueCollectionTargets() );
+            streamingFacets.forEach(facet -> facet.addFacetValueCollectionTargets());
             collectionManager.apply();
             doc = disi.nextDoc();
           }

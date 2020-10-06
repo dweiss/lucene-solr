@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
@@ -42,17 +41,27 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     for (Meta meta : Meta.values()) {
       for (CollectionOperation op : CollectionOperation.values()) {
         if (op.action == meta.action) {
-          result.put(meta, new ApiCommand() {
-            @Override
-            public CommandMeta meta() {
-              return meta;
-            }
+          result.put(
+              meta,
+              new ApiCommand() {
+                @Override
+                public CommandMeta meta() {
+                  return meta;
+                }
 
-            @Override
-            public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
-              ((CollectionHandlerApi) apiHandler).handler.invokeAction(req, rsp, ((CollectionHandlerApi) apiHandler).handler.coreContainer, op.action, op);
-            }
-          });
+                @Override
+                public void invoke(
+                    SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler)
+                    throws Exception {
+                  ((CollectionHandlerApi) apiHandler)
+                      .handler.invokeAction(
+                          req,
+                          rsp,
+                          ((CollectionHandlerApi) apiHandler).handler.coreContainer,
+                          op.action,
+                          op);
+                }
+              });
         }
       }
     }
@@ -73,5 +82,4 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
   protected List<V2EndPoint> getEndPoints() {
     return Arrays.asList(CollectionApiMapping.EndPoint.values());
   }
-
 }

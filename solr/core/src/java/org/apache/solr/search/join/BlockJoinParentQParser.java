@@ -18,7 +18,6 @@ package org.apache.solr.search.join;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
@@ -43,7 +42,7 @@ import org.apache.solr.search.SyntaxError;
 
 public class BlockJoinParentQParser extends FiltersQParser {
   /** implementation detail subject to change */
-  public static final String CACHE_NAME="perSegFilter";
+  public static final String CACHE_NAME = "perSegFilter";
 
   protected String getParentFilterLocalParamName() {
     return "which";
@@ -54,7 +53,8 @@ public class BlockJoinParentQParser extends FiltersQParser {
     return "filters";
   }
 
-  BlockJoinParentQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  BlockJoinParentQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
 
@@ -77,15 +77,18 @@ public class BlockJoinParentQParser extends FiltersQParser {
     return new BitSetProducerQuery(getBitSetProducer(parseParentFilter()));
   }
 
-  protected Query createQuery(final Query parentList, Query query, String scoreMode) throws SyntaxError {
-    return new AllParentsAware(query, getBitSetProducer(parentList), ScoreModeParser.parse(scoreMode), parentList);
+  protected Query createQuery(final Query parentList, Query query, String scoreMode)
+      throws SyntaxError {
+    return new AllParentsAware(
+        query, getBitSetProducer(parentList), ScoreModeParser.parse(scoreMode), parentList);
   }
 
   BitSetProducer getBitSetProducer(Query query) {
     return getCachedBitSetProducer(req, query);
   }
 
-  public static BitSetProducer getCachedBitSetProducer(final SolrQueryRequest request, Query query) {
+  public static BitSetProducer getCachedBitSetProducer(
+      final SolrQueryRequest request, Query query) {
     @SuppressWarnings("unchecked")
     SolrCache<Query, BitSetProducer> parentCache = request.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
@@ -98,14 +101,14 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
   static final class AllParentsAware extends ToParentBlockJoinQuery {
     private final Query parentQuery;
-    
-    private AllParentsAware(Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode,
-        Query parentList) {
+
+    private AllParentsAware(
+        Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode, Query parentList) {
       super(childQuery, parentsFilter, scoreMode);
       parentQuery = parentList;
     }
 
-    public Query getParentQuery(){
+    public Query getParentQuery() {
       return parentQuery;
     }
   }
@@ -127,7 +130,8 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) && Objects.equals(bitSetProducer, getClass().cast(other).bitSetProducer);
+      return sameClassAs(other)
+          && Objects.equals(bitSetProducer, getClass().cast(other).bitSetProducer);
     }
 
     @Override
@@ -141,7 +145,9 @@ public class BlockJoinParentQParser extends FiltersQParser {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(
+        IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost)
+        throws IOException {
       return new ConstantScoreWeight(BitSetProducerQuery.this, boost) {
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -160,5 +166,4 @@ public class BlockJoinParentQParser extends FiltersQParser {
       };
     }
   }
-
 }

@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.lucene87;
 
 import java.util.Objects;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -43,14 +42,12 @@ import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 8.6 index format, with configurable per-field postings
- * and docvalues formats.
- * <p>
- * If you want to reuse functionality of this codec in another codec, extend
- * {@link FilterCodec}.
+ * Implements the Lucene 8.6 index format, with configurable per-field postings and docvalues
+ * formats.
+ *
+ * <p>If you want to reuse functionality of this codec in another codec, extend {@link FilterCodec}.
  *
  * @see org.apache.lucene.codecs.lucene86 package documentation for file format details.
- *
  * @lucene.experimental
  */
 public class Lucene87Codec extends Codec {
@@ -62,34 +59,33 @@ public class Lucene87Codec extends Codec {
   private final PointsFormat pointsFormat = new Lucene86PointsFormat();
   private final PostingsFormat defaultFormat;
 
-  private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return Lucene87Codec.this.getPostingsFormatForField(field);
-    }
-  };
+  private final PostingsFormat postingsFormat =
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return Lucene87Codec.this.getPostingsFormatForField(field);
+        }
+      };
 
-  private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
-    @Override
-    public DocValuesFormat getDocValuesFormatForField(String field) {
-      return Lucene87Codec.this.getDocValuesFormatForField(field);
-    }
-  };
+  private final DocValuesFormat docValuesFormat =
+      new PerFieldDocValuesFormat() {
+        @Override
+        public DocValuesFormat getDocValuesFormatForField(String field) {
+          return Lucene87Codec.this.getDocValuesFormatForField(field);
+        }
+      };
 
   private final StoredFieldsFormat storedFieldsFormat;
 
-  /**
-   * Instantiates a new codec.
-   */
+  /** Instantiates a new codec. */
   public Lucene87Codec() {
     this(Lucene87StoredFieldsFormat.Mode.BEST_SPEED);
   }
 
   /**
-   * Instantiates a new codec, specifying the stored fields compression
-   * mode to use.
-   * @param mode stored fields compression mode to use for newly
-   *             flushed/merged segments.
+   * Instantiates a new codec, specifying the stored fields compression mode to use.
+   *
+   * @param mode stored fields compression mode to use for newly flushed/merged segments.
    */
   public Lucene87Codec(Lucene87StoredFieldsFormat.Mode mode) {
     super("Lucene87");
@@ -137,27 +133,26 @@ public class Lucene87Codec extends Codec {
     return pointsFormat;
   }
 
-  /** Returns the postings format that should be used for writing
-   *  new segments of <code>field</code>.
+  /**
+   * Returns the postings format that should be used for writing new segments of <code>field</code>.
    *
-   *  The default implementation always returns "Lucene84".
-   *  <p>
-   *  <b>WARNING:</b> if you subclass, you are responsible for index
-   *  backwards compatibility: future version of Lucene are only
-   *  guaranteed to be able to read the default implementation.
+   * <p>The default implementation always returns "Lucene84".
+   *
+   * <p><b>WARNING:</b> if you subclass, you are responsible for index backwards compatibility:
+   * future version of Lucene are only guaranteed to be able to read the default implementation.
    */
   public PostingsFormat getPostingsFormatForField(String field) {
     return defaultFormat;
   }
 
-  /** Returns the docvalues format that should be used for writing
-   *  new segments of <code>field</code>.
+  /**
+   * Returns the docvalues format that should be used for writing new segments of <code>field</code>
+   * .
    *
-   *  The default implementation always returns "Lucene80".
-   *  <p>
-   *  <b>WARNING:</b> if you subclass, you are responsible for index
-   *  backwards compatibility: future version of Lucene are only
-   *  guaranteed to be able to read the default implementation.
+   * <p>The default implementation always returns "Lucene80".
+   *
+   * <p><b>WARNING:</b> if you subclass, you are responsible for index backwards compatibility:
+   * future version of Lucene are only guaranteed to be able to read the default implementation.
    */
   public DocValuesFormat getDocValuesFormatForField(String field) {
     return defaultDVFormat;

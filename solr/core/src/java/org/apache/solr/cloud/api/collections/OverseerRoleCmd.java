@@ -17,13 +17,14 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -37,9 +38,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
-
 public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -47,9 +45,10 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
   private final CollectionAction operation;
   private final OverseerNodePrioritizer overseerPrioritizer;
 
-
-
-  public OverseerRoleCmd(OverseerCollectionMessageHandler ocmh, CollectionAction operation, OverseerNodePrioritizer prioritizer) {
+  public OverseerRoleCmd(
+      OverseerCollectionMessageHandler ocmh,
+      CollectionAction operation,
+      OverseerNodePrioritizer prioritizer) {
     this.ocmh = ocmh;
     this.operation = operation;
     this.overseerPrioritizer = prioritizer;
@@ -86,17 +85,17 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
     } else {
       zkClient.create(ZkStateReader.ROLES, Utils.toJSON(roles), CreateMode.PERSISTENT, true);
     }
-    //if there are too many nodes this command may time out. And most likely dedicated
-    // overseers are created when there are too many nodes  . So , do this operation in a separate thread
-    new Thread(() -> {
-      try {
-        overseerPrioritizer.prioritizeOverseerNodes(ocmh.myId);
-      } catch (Exception e) {
-        log.error("Error in prioritizing Overseer", e);
-      }
-
-    }).start();
-
+    // if there are too many nodes this command may time out. And most likely dedicated
+    // overseers are created when there are too many nodes  . So , do this operation in a separate
+    // thread
+    new Thread(
+            () -> {
+              try {
+                overseerPrioritizer.prioritizeOverseerNodes(ocmh.myId);
+              } catch (Exception e) {
+                log.error("Error in prioritizing Overseer", e);
+              }
+            })
+        .start();
   }
-
 }

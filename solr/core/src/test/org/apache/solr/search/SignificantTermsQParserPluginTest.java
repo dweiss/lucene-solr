@@ -23,13 +23,14 @@ import org.junit.Test;
 public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
 
   /**
-   * Test the backwards compatibility for a typo in the SignificantTermsQParserPlugin. It will fail if the backwards
-   * compatibility is broken.
+   * Test the backwards compatibility for a typo in the SignificantTermsQParserPlugin. It will fail
+   * if the backwards compatibility is broken.
    */
   @Test
   public void testQParserBackwardsCompatibility() {
     assertEquals("significantTerms", SignificantTermsQParserPlugin.NAME);
-    assertEquals(SignificantTermsQParserPlugin.class,
+    assertEquals(
+        SignificantTermsQParserPlugin.class,
         QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME).getClass());
   }
 }

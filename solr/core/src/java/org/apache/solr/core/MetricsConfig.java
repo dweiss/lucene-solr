@@ -19,9 +19,7 @@ package org.apache.solr.core;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- *
- */
+/** */
 public class MetricsConfig {
 
   private final PluginInfo[] metricReporters;
@@ -32,10 +30,14 @@ public class MetricsConfig {
   private final PluginInfo histogramSupplier;
   private final PluginInfo historyHandler;
 
-  private MetricsConfig(PluginInfo[] metricReporters, Set<String> hiddenSysProps,
-                        PluginInfo counterSupplier, PluginInfo meterSupplier,
-                        PluginInfo timerSupplier, PluginInfo histogramSupplier,
-                        PluginInfo historyHandler) {
+  private MetricsConfig(
+      PluginInfo[] metricReporters,
+      Set<String> hiddenSysProps,
+      PluginInfo counterSupplier,
+      PluginInfo meterSupplier,
+      PluginInfo timerSupplier,
+      PluginInfo histogramSupplier,
+      PluginInfo historyHandler) {
     this.metricReporters = metricReporters;
     this.hiddenSysProps = hiddenSysProps;
     this.counterSupplier = counterSupplier;
@@ -82,9 +84,7 @@ public class MetricsConfig {
     private PluginInfo histogramSupplier;
     private PluginInfo historyHandler;
 
-    public MetricsConfigBuilder() {
-
-    }
+    public MetricsConfigBuilder() {}
 
     public MetricsConfigBuilder setHiddenSysProps(Set<String> hiddenSysProps) {
       if (hiddenSysProps != null && !hiddenSysProps.isEmpty()) {
@@ -95,7 +95,8 @@ public class MetricsConfig {
     }
 
     public MetricsConfigBuilder setMetricReporterPlugins(PluginInfo[] metricReporterPlugins) {
-      this.metricReporterPlugins = metricReporterPlugins != null ? metricReporterPlugins : new PluginInfo[0];
+      this.metricReporterPlugins =
+          metricReporterPlugins != null ? metricReporterPlugins : new PluginInfo[0];
       return this;
     }
 
@@ -125,10 +126,14 @@ public class MetricsConfig {
     }
 
     public MetricsConfig build() {
-      return new MetricsConfig(metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
-          timerSupplier, histogramSupplier, historyHandler);
+      return new MetricsConfig(
+          metricReporterPlugins,
+          hiddenSysProps,
+          counterSupplier,
+          meterSupplier,
+          timerSupplier,
+          histogramSupplier,
+          historyHandler);
     }
-
   }
-
 }

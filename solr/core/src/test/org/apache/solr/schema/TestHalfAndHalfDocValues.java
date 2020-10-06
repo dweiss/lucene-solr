@@ -30,9 +30,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 
-/**
- * Added in SOLR-10047
- */
+/** Added in SOLR-10047 */
 public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -45,14 +43,14 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
 
     // sanity check our schema meets our expectations
     final IndexSchema schema = h.getCore().getLatestSchema();
-    for (String f : new String[]{"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv", "booldv"}) {
+    for (String f :
+        new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv", "booldv"}) {
       final SchemaField sf = schema.getField(f);
-      assertFalse(f + " is multiValued, test is useless, who changed the schema?",
-          sf.multiValued());
-      assertFalse(f + " is indexed, test is useless, who changed the schema?",
-          sf.indexed());
-      assertTrue(f + " has no docValues, test is useless, who changed the schema?",
-          sf.hasDocValues());
+      assertFalse(
+          f + " is multiValued, test is useless, who changed the schema?", sf.multiValued());
+      assertFalse(f + " is indexed, test is useless, who changed the schema?", sf.indexed());
+      assertTrue(
+          f + " has no docValues, test is useless, who changed the schema?", sf.hasDocValues());
     }
   }
 
@@ -69,7 +67,6 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
     assertU(adoc("id", "1", fieldname, "a"));
     assertU(commit());
 
-
     try (SolrCore core = h.getCoreInc()) {
       assertFalse(core.getLatestSchema().getField(fieldname).hasDocValues());
       // Add docvalues to the field type
@@ -84,35 +81,35 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
       assertU(adoc("id", "2", fieldname, "b"));
       assertU(commit());
 
-
       // Check there are a mix of segments with and without docvalues
       final RefCounted<SolrIndexSearcher> searcherRef = core.openNewSearcher(true, true);
       final SolrIndexSearcher searcher = searcherRef.get();
       try {
         final DirectoryReader topReader = searcher.getRawReader();
 
-        //Assert no merges
+        // Assert no merges
 
         assertEquals(3, topReader.numDocs());
         assertEquals(3, topReader.leaves().size());
 
         final FieldInfos infos = FieldInfos.getMergedFieldInfos(topReader);
-        //The global field type should have docValues because a document with dvs was added
+        // The global field type should have docValues because a document with dvs was added
         assertEquals(DocValuesType.SORTED, infos.fieldInfo(fieldname).getDocValuesType());
 
         for (LeafReaderContext ctx : topReader.leaves()) {
           LeafReader r = ctx.reader();
-          //Make sure there were no merges
+          // Make sure there were no merges
           assertEquals(1, r.numDocs());
           Document doc = r.document(0);
           String id = doc.getField("id").stringValue();
 
           if (id.equals("1") || id.equals("3")) {
-            assertEquals(DocValuesType.NONE, r.getFieldInfos().fieldInfo(fieldname).getDocValuesType());
+            assertEquals(
+                DocValuesType.NONE, r.getFieldInfos().fieldInfo(fieldname).getDocValuesType());
           } else {
-            assertEquals(DocValuesType.SORTED, r.getFieldInfos().fieldInfo(fieldname).getDocValuesType());
+            assertEquals(
+                DocValuesType.SORTED, r.getFieldInfos().fieldInfo(fieldname).getDocValuesType());
           }
-
         }
       } finally {
         searcherRef.decref();
@@ -120,12 +117,11 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
     }
 
     // Assert sort order is correct
-    assertQ(req("q", "string_add_dv_later:*", "sort", "string_add_dv_later asc"),
+    assertQ(
+        req("q", "string_add_dv_later:*", "sort", "string_add_dv_later asc"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.=1]",
         "//result/doc[2]/str[@name='id'][.=2]",
-        "//result/doc[3]/str[@name='id'][.=3]"
-    );
+        "//result/doc[3]/str[@name='id'][.=3]");
   }
-
 }

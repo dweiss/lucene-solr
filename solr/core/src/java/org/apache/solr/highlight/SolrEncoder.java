@@ -24,17 +24,18 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public interface SolrEncoder extends SolrInfoBean, NamedListInitializedPlugin {
 
-  /** <code>init</code> will be called just once, immediately after creation.
-   * <p>The args are user-level initialization parameters that
-   * may be specified when declaring a request handler in
-   * solrconfig.xml
+  /**
+   * <code>init</code> will be called just once, immediately after creation.
+   *
+   * <p>The args are user-level initialization parameters that may be specified when declaring a
+   * request handler in solrconfig.xml
    */
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args);
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args);
 
   /**
    * Return an {@link org.apache.lucene.search.highlight.Encoder} appropriate for this field.
-   * 
+   *
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.highlight.Encoder}

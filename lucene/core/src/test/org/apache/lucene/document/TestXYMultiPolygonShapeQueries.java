@@ -18,16 +18,18 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
-import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.util.LuceneTestCase;
 
-/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYPolygon} types */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random indexed arrays of
+ * cartesian {@link XYPolygon} types
+ */
 @LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
   @Override
@@ -39,22 +41,22 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
   protected XYPolygon[] nextShape() {
     int n = random().nextInt(4) + 1;
     XYPolygon[] polygons = new XYPolygon[n];
-    for (int i =0; i < n; i++) {
-      int  repetitions =0;
+    for (int i = 0; i < n; i++) {
+      int repetitions = 0;
       while (true) {
         // if we can't tessellate; then random polygon generator created a malformed shape
         XYPolygon p = (XYPolygon) getShapeType().nextShape();
         try {
           Tessellator.tessellate(p);
-          //polygons are disjoint so CONTAINS works. Note that if we intersect
-          //any shape then contains return false.
+          // polygons are disjoint so CONTAINS works. Note that if we intersect
+          // any shape then contains return false.
           if (isDisjoint(polygons, p, i)) {
             polygons[i] = p;
             break;
           }
           repetitions++;
           if (repetitions > 2) {
-            //try again
+            // try again
             return nextShape();
           }
         } catch (IllegalArgumentException e) {
@@ -116,7 +118,9 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
+      Component2D rectangle2D =
+          XYGeometry.create(
+              new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
       return testComponentQuery(rectangle2D, shape);
     }
 
@@ -142,7 +146,8 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
     private boolean testWithinPolygon(Component2D query, XYPolygon[] polygons) {
       Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
       for (XYPolygon p : polygons) {
-        Component2D.WithinRelation relation = POLYGONVALIDATOR.testWithinQuery(query, XYShape.createIndexableFields("dummy", p));
+        Component2D.WithinRelation relation =
+            POLYGONVALIDATOR.testWithinQuery(query, XYShape.createIndexableFields("dummy", p));
         if (relation == Component2D.WithinRelation.NOTWITHIN) {
           return false;
         } else if (relation == Component2D.WithinRelation.CANDIDATE) {

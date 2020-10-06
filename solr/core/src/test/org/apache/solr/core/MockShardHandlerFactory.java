@@ -29,12 +29,12 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 public class MockShardHandlerFactory extends ShardHandlerFactory implements PluginInfoInitialized {
   @SuppressWarnings({"rawtypes"})
   NamedList args;
-  
+
   @Override
   public void init(PluginInfo info) {
     args = info.initArgs;
   }
-  
+
   @Override
   public ShardHandler getShardHandler() {
     return new ShardHandler() {
@@ -42,8 +42,7 @@ public class MockShardHandlerFactory extends ShardHandlerFactory implements Plug
       public void prepDistributed(ResponseBuilder rb) {}
 
       @Override
-      public void submit(ShardRequest sreq, String shard,
-          ModifiableSolrParams params) {}
+      public void submit(ShardRequest sreq, String shard, ModifiableSolrParams params) {}
 
       @Override
       public ShardResponse takeCompletedIncludingErrors() {

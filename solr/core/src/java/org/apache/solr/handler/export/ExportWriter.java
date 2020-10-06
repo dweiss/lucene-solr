@@ -17,6 +17,11 @@
 
 package org.apache.solr.handler.export;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.util.Utils.makeMap;
+
+import com.codahale.metrics.Timer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -25,8 +30,6 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
-import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -77,22 +80,19 @@ import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.makeMap;
-
 /**
  * Prepares and writes the documents requested by /export requests
  *
- * {@link ExportWriter} gathers and sorts the documents for a core using "stream sorting".
- * <p>
- * Stream sorting works by repeatedly processing and modifying a bitmap of matching documents.  Each pass over the
- * bitmap identifies the smallest docs (default is {@link #DEFAULT_BATCH_SIZE}) that haven't been sent yet and stores them in a
- * Priority Queue.  They are then exported (written across the wire) and marked as sent (unset in the bitmap).
- * This process repeats until all matching documents have been sent.
- * <p>
- * This streaming approach is light on memory (only up to 2x batch size documents are ever stored in memory at
- * once), and it allows {@link ExportWriter} to scale well with regard to numDocs.
+ * <p>{@link ExportWriter} gathers and sorts the documents for a core using "stream sorting".
+ *
+ * <p>Stream sorting works by repeatedly processing and modifying a bitmap of matching documents.
+ * Each pass over the bitmap identifies the smallest docs (default is {@link #DEFAULT_BATCH_SIZE})
+ * that haven't been sent yet and stores them in a Priority Queue. They are then exported (written
+ * across the wire) and marked as sent (unset in the bitmap). This process repeats until all
+ * matching documents have been sent.
+ *
+ * <p>This streaming approach is light on memory (only up to 2x batch size documents are ever stored
+ * in memory at once), and it allows {@link ExportWriter} to scale well with regard to numDocs.
  */
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -120,10 +120,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final Timer writerWaitTimer;
   final Timer fillerWaitTimer;
 
-
-  public ExportWriter(SolrQueryRequest req, SolrQueryResponse res, String wt,
-                      StreamContext initialStreamContext, SolrMetricsContext solrMetricsContext,
-                      String metricsPath) {
+  public ExportWriter(
+      SolrQueryRequest req,
+      SolrQueryResponse res,
+      String wt,
+      StreamContext initialStreamContext,
+      SolrMetricsContext solrMetricsContext,
+      String metricsPath) {
     this.req = req;
     this.res = res;
     this.wt = wt;
@@ -131,7 +134,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     this.solrMetricsContext = solrMetricsContext;
     this.metricsPath = metricsPath;
     this.batchSize = req.getParams().getInt(BATCH_SIZE_PARAM, DEFAULT_BATCH_SIZE);
-    identifyLowestSortingDocTimer = solrMetricsContext.timer("identifyLowestSortingDoc", metricsPath);
+    identifyLowestSortingDocTimer =
+        solrMetricsContext.timer("identifyLowestSortingDoc", metricsPath);
     transferBatchToBufferTimer = solrMetricsContext.timer("transferBatchToBuffer", metricsPath);
     writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
     writerWaitTimer = solrMetricsContext.timer("writerWaitTimer", metricsPath);
@@ -152,16 +156,21 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       respWriter.flush();
       respWriter.close();
     }
-
   }
 
-  protected void writeException(Exception e, PushWriter w, boolean logException) throws IOException {
-    w.writeMap(mw -> {
-      mw.put("responseHeader", singletonMap("status", 400))
-          .put("response", makeMap(
-              "numFound", 0,
-              "docs", singletonList(singletonMap("EXCEPTION", e.getMessage()))));
-    });
+  protected void writeException(Exception e, PushWriter w, boolean logException)
+      throws IOException {
+    w.writeMap(
+        mw -> {
+          mw.put("responseHeader", singletonMap("status", 400))
+              .put(
+                  "response",
+                  makeMap(
+                      "numFound",
+                      0,
+                      "docs",
+                      singletonList(singletonMap("EXCEPTION", e.getMessage()))));
+        });
     if (logException) {
       SolrException.log(log, e);
     }
@@ -170,7 +179,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   public void write(OutputStream os) throws IOException {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
     if (rw instanceof BinaryResponseWriter) {
-      //todo add support for other writers after testing
+      // todo add support for other writers after testing
       writer = new JavaBinCodec(os, null);
     } else {
       respWriter = new OutputStreamWriter(os, StandardCharsets.UTF_8);
@@ -188,7 +197,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     SortSpec sortSpec = info.getResponseBuilder().getSortSpec();
 
     if (sortSpec == null) {
-      writeException((new IOException(new SyntaxError("No sort criteria was provided."))), writer, true);
+      writeException(
+          (new IOException(new SyntaxError("No sort criteria was provided."))), writer, true);
       return;
     }
 
@@ -196,29 +206,43 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     Sort sort = searcher.weightSort(sortSpec.getSort());
 
     if (sort == null) {
-      writeException((new IOException(new SyntaxError("No sort criteria was provided."))), writer, true);
+      writeException(
+          (new IOException(new SyntaxError("No sort criteria was provided."))), writer, true);
       return;
     }
 
     if (sort != null && sort.needsScores()) {
-      writeException((new IOException(new SyntaxError("Scoring is not currently supported with xsort."))), writer, true);
+      writeException(
+          (new IOException(new SyntaxError("Scoring is not currently supported with xsort."))),
+          writer,
+          true);
       return;
     }
 
-    // There is a bailout in SolrIndexSearcher.getDocListNC when there are _no_ docs in the index at all.
+    // There is a bailout in SolrIndexSearcher.getDocListNC when there are _no_ docs in the index at
+    // all.
     // if (lastDocRequested <= 0) {
     // That causes the totalHits and export entries in the context to _not_ get set.
-    // The only time that really matters is when we search against an _empty_ set. That's too obscure
-    // a condition to handle as part of this patch, if someone wants to pursue it it can be reproduced with:
-    // ant test  -Dtestcase=StreamingTest -Dtests.method=testAllValidExportTypes -Dtests.seed=10F13879D0D1D6AD -Dtests.slow=true -Dtests.locale=es-PA -Dtests.timezone=America/Bahia_Banderas -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
+    // The only time that really matters is when we search against an _empty_ set. That's too
+    // obscure
+    // a condition to handle as part of this patch, if someone wants to pursue it it can be
+    // reproduced with:
+    // ant test  -Dtestcase=StreamingTest -Dtests.method=testAllValidExportTypes
+    // -Dtests.seed=10F13879D0D1D6AD -Dtests.slow=true -Dtests.locale=es-PA
+    // -Dtests.timezone=America/Bahia_Banderas -Dtests.asserts=true -Dtests.file.encoding=ISO-8859-1
     // You'll have to uncomment the if below to hit the null pointer exception.
-    // This is such an unusual case (i.e. an empty index) that catching this concdition here is probably OK.
+    // This is such an unusual case (i.e. an empty index) that catching this concdition here is
+    // probably OK.
     // This came to light in the very artifical case of indexing a single doc to Cloud.
     if (req.getContext().get("totalHits") != null) {
       totalHits = ((Integer) req.getContext().get("totalHits")).intValue();
       sets = (FixedBitSet[]) req.getContext().get("export");
       if (sets == null) {
-        writeException((new IOException(new SyntaxError("xport RankQuery is required for xsort: rq={!xport}"))), writer, true);
+        writeException(
+            (new IOException(
+                new SyntaxError("xport RankQuery is required for xsort: rq={!xport}"))),
+            writer,
+            true);
         return;
       }
     }
@@ -228,7 +252,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     String[] fields = null;
 
     if (fl == null) {
-      writeException((new IOException(new SyntaxError("export field list (fl) must be specified."))), writer, true);
+      writeException(
+          (new IOException(new SyntaxError("export field list (fl) must be specified."))),
+          writer,
+          true);
       return;
     } else {
       fields = fl.split(",");
@@ -238,7 +265,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         fields[i] = fields[i].trim();
 
         if (fields[i].equals("score")) {
-          writeException((new IOException(new SyntaxError("Scoring is not currently supported with xsort."))), writer, true);
+          writeException(
+              (new IOException(new SyntaxError("Scoring is not currently supported with xsort."))),
+              writer,
+              true);
           return;
         }
       }
@@ -259,7 +289,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         StreamExpression expression = StreamExpressionParser.parse(expr);
         if (streamFactory.isEvaluator(expression)) {
           streamExpression = new StreamExpression(StreamParams.TUPLE);
-          streamExpression.addParameter(new StreamExpressionNamedParameter(StreamParams.RETURN_VALUE, expression));
+          streamExpression.addParameter(
+              new StreamExpressionNamedParameter(StreamParams.RETURN_VALUE, expression));
         } else {
           streamExpression = expression;
         }
@@ -281,28 +312,33 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       streamContext.put(CommonParams.SORT, params.get(CommonParams.SORT));
     }
 
-    writer.writeMap(m -> {
-      m.put("responseHeader", singletonMap("status", 0));
-      m.put("response", (MapWriter) mw -> {
-        mw.put("numFound", totalHits);
-        mw.put("docs", (IteratorWriter) iw -> writeDocs(req, os, iw, sort));
-      });
-    });
+    writer.writeMap(
+        m -> {
+          m.put("responseHeader", singletonMap("status", 0));
+          m.put(
+              "response",
+              (MapWriter)
+                  mw -> {
+                    mw.put("numFound", totalHits);
+                    mw.put("docs", (IteratorWriter) iw -> writeDocs(req, os, iw, sort));
+                  });
+        });
     if (streamContext != null) {
       streamContext = null;
     }
   }
 
   private TupleStream createTupleStream() throws IOException {
-    StreamFactory streamFactory = (StreamFactory)initialStreamContext.getStreamFactory().clone();
-    //Set the sort in the stream factory so it can be used during initialization.
-    streamFactory.withDefaultSort(((String)streamContext.get(CommonParams.SORT)));
+    StreamFactory streamFactory = (StreamFactory) initialStreamContext.getStreamFactory().clone();
+    // Set the sort in the stream factory so it can be used during initialization.
+    streamFactory.withDefaultSort(((String) streamContext.get(CommonParams.SORT)));
     TupleStream tupleStream = streamFactory.constructStream(streamExpression);
     tupleStream.setStreamContext(streamContext);
     return tupleStream;
   }
 
-  private void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
+  private void identifyLowestSortingUnexportedDocs(
+      List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
     Timer.Context timerContext = identifyLowestSortingDocTimer.time();
     try {
       queue.reset();
@@ -324,9 +360,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  private void transferBatchToBufferForOutput(SortQueue queue,
-                                                List<LeafReaderContext> leaves,
-                                                ExportBuffers.Buffer destination) throws IOException {
+  private void transferBatchToBufferForOutput(
+      SortQueue queue, List<LeafReaderContext> leaves, ExportBuffers.Buffer destination)
+      throws IOException {
     Timer.Context timerContext = transferBatchToBufferTimer.time();
     try {
       int outDocsIndex = -1;
@@ -351,12 +387,25 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  protected void writeDocs(SolrQueryRequest req, OutputStream os, IteratorWriter.ItemWriter writer, Sort sort) throws IOException {
+  protected void writeDocs(
+      SolrQueryRequest req, OutputStream os, IteratorWriter.ItemWriter writer, Sort sort)
+      throws IOException {
     List<LeafReaderContext> leaves = req.getSearcher().getTopReaderContext().leaves();
     final int queueSize = Math.min(batchSize, totalHits);
 
-    ExportBuffers buffers = new ExportBuffers(this, leaves, req.getSearcher(), os, writer, sort, queueSize, totalHits,
-        writeOutputBufferTimer, fillerWaitTimer, writerWaitTimer);
+    ExportBuffers buffers =
+        new ExportBuffers(
+            this,
+            leaves,
+            req.getSearcher(),
+            os,
+            writer,
+            sort,
+            queueSize,
+            totalHits,
+            writeOutputBufferTimer,
+            fillerWaitTimer,
+            writerWaitTimer);
 
     if (streamExpression != null) {
       streamContext.put(ExportBuffers.EXPORT_BUFFERS_KEY, buffers);
@@ -368,82 +417,88 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         buffers.getWriter().add((MapWriter) ew -> Tuple.EXCEPTION(e, true).writeMap(ew));
         return;
       }
-      buffers.run(() -> {
-        for (;;) {
-          if (Thread.currentThread().isInterrupted()) {
-            break;
-          }
-          final Tuple t;
-          try {
-            t = tupleStream.read();
-          } catch (final Exception e) {
-            buffers.getWriter().add((MapWriter) ew -> Tuple.EXCEPTION(e, true).writeMap(ew));
-            break;
-          }
-          if (t == null) {
-            break;
-          }
-          if (t.EOF && !t.EXCEPTION) {
-            break;
-          }
-          // use decorated writer to monitor the number of output writes
-          // and flush the output quickly in case of very few (reduced) output items
-          buffers.getWriter().add((MapWriter) ew -> t.writeMap(ew));
-          if (t.EXCEPTION && t.EOF) {
-            break;
-          }
-        }
-        return true;
-      });
+      buffers.run(
+          () -> {
+            for (; ; ) {
+              if (Thread.currentThread().isInterrupted()) {
+                break;
+              }
+              final Tuple t;
+              try {
+                t = tupleStream.read();
+              } catch (final Exception e) {
+                buffers.getWriter().add((MapWriter) ew -> Tuple.EXCEPTION(e, true).writeMap(ew));
+                break;
+              }
+              if (t == null) {
+                break;
+              }
+              if (t.EOF && !t.EXCEPTION) {
+                break;
+              }
+              // use decorated writer to monitor the number of output writes
+              // and flush the output quickly in case of very few (reduced) output items
+              buffers.getWriter().add((MapWriter) ew -> t.writeMap(ew));
+              if (t.EXCEPTION && t.EOF) {
+                break;
+              }
+            }
+            return true;
+          });
       tupleStream.close();
     } else {
-      buffers.run(() -> {
-        // get the initial buffer
-        log.debug("--- writer init exchanging from empty");
-        buffers.exchangeBuffers();
-        ExportBuffers.Buffer buffer = buffers.getOutputBuffer();
-        log.debug("--- writer init got {}", buffer);
-        while (buffer.outDocsIndex != ExportBuffers.Buffer.NO_MORE_DOCS) {
-          if (Thread.currentThread().isInterrupted()) {
-            log.debug("--- writer interrupted");
-            break;
-          }
-          Timer.Context timerContext = writeOutputBufferTimer.time();
-          try {
-            for (int i = buffer.outDocsIndex; i >= 0; --i) {
-              // we're using the raw writer here because there's no potential
-              // reduction in the number of output items, unlike when using
-              // streaming expressions
-              final SortDoc currentDoc = buffer.outDocs[i];
-              writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
-            }
-          } finally {
-            timerContext.stop();
-          }
-          log.debug("--- writer exchanging from {}", buffer);
-          timerContext = writerWaitTimer.time();
-          try {
+      buffers.run(
+          () -> {
+            // get the initial buffer
+            log.debug("--- writer init exchanging from empty");
             buffers.exchangeBuffers();
-          } finally {
-            timerContext.stop();
-          }
-          buffer = buffers.getOutputBuffer();
-          log.debug("--- writer got {}", buffer);
-        }
-        return true;
-      });
+            ExportBuffers.Buffer buffer = buffers.getOutputBuffer();
+            log.debug("--- writer init got {}", buffer);
+            while (buffer.outDocsIndex != ExportBuffers.Buffer.NO_MORE_DOCS) {
+              if (Thread.currentThread().isInterrupted()) {
+                log.debug("--- writer interrupted");
+                break;
+              }
+              Timer.Context timerContext = writeOutputBufferTimer.time();
+              try {
+                for (int i = buffer.outDocsIndex; i >= 0; --i) {
+                  // we're using the raw writer here because there's no potential
+                  // reduction in the number of output items, unlike when using
+                  // streaming expressions
+                  final SortDoc currentDoc = buffer.outDocs[i];
+                  writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
+                }
+              } finally {
+                timerContext.stop();
+              }
+              log.debug("--- writer exchanging from {}", buffer);
+              timerContext = writerWaitTimer.time();
+              try {
+                buffers.exchangeBuffers();
+              } finally {
+                timerContext.stop();
+              }
+              buffer = buffers.getOutputBuffer();
+              log.debug("--- writer got {}", buffer);
+            }
+            return true;
+          });
     }
   }
 
-  void fillOutDocs(List<LeafReaderContext> leaves, SortDoc sortDoc,
-                          SortQueue sortQueue, ExportBuffers.Buffer buffer) throws IOException {
+  void fillOutDocs(
+      List<LeafReaderContext> leaves,
+      SortDoc sortDoc,
+      SortQueue sortQueue,
+      ExportBuffers.Buffer buffer)
+      throws IOException {
     identifyLowestSortingUnexportedDocs(leaves, sortDoc, sortQueue);
     transferBatchToBufferForOutput(sortQueue, leaves, buffer);
   }
 
-  void writeDoc(SortDoc sortDoc,
-                          List<LeafReaderContext> leaves,
-                          EntryWriter ew, FieldWriter[] writers) throws IOException {
+  void writeDoc(
+      SortDoc sortDoc, List<LeafReaderContext> leaves, EntryWriter ew, FieldWriter[] writers)
+      throws IOException {
     int ord = sortDoc.ord;
     LeafReaderContext context = leaves.get(ord);
     int fieldIndex = 0;
@@ -454,7 +509,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  public FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher) throws IOException {
+  public FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher)
+      throws IOException {
     IndexSchema schema = searcher.getSchema();
     FieldWriter[] writers = new FieldWriter[fields.length];
     for (int i = 0; i < fields.length; i++) {
@@ -474,7 +530,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       FieldType fieldType = schemaField.getType();
 
       if (fieldType instanceof SortableTextField && schemaField.useDocValuesAsStored() == false) {
-        throw new IOException(schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
+        throw new IOException(
+            schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
       }
 
       if (fieldType instanceof IntValueFieldType) {
@@ -520,7 +577,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           writers[i] = new BoolFieldWriter(field, fieldType);
         }
       } else {
-        throw new IOException("Export fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
+        throw new IOException(
+            "Export fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
       }
     }
     return writers;
@@ -541,7 +599,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
 
       if (ft instanceof SortableTextField && schemaField.useDocValuesAsStored() == false) {
-        throw new IOException(schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
+        throw new IOException(
+            schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
       }
 
       if (ft instanceof IntValueFieldType) {
@@ -594,12 +653,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           sortValues[i] = new StringValue(vals, field, new IntComp.IntAsc());
         }
       } else {
-        throw new IOException("Sort fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
+        throw new IOException(
+            "Sort fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
       }
     }
-    //SingleValueSortDoc etc are specialized classes which don't have array lookups. On benchmarking large datasets
-    //This is faster than the using an array in SortDoc . So upto 4 sort fields we still want to keep specialized classes.
-    //SOLR-12616 has more details
+    // SingleValueSortDoc etc are specialized classes which don't have array lookups. On
+    // benchmarking large datasets
+    // This is faster than the using an array in SortDoc . So upto 4 sort fields we still want to
+    // keep specialized classes.
+    // SOLR-12616 has more details
     if (sortValues.length == 1) {
       return new SingleValueSortDoc(sortValues[0]);
     } else if (sortValues.length == 2) {
@@ -621,5 +683,4 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return "Early Client Disconnect";
     }
   }
-
 }

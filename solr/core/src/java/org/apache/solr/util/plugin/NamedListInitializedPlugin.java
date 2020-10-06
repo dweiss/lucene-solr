@@ -20,10 +20,9 @@ import org.apache.solr.common.util.NamedList;
 
 /**
  * A plugin that can be initialized with a NamedList
- * 
  *
  * @since solr 1.3
  */
 public interface NamedListInitializedPlugin {
-  void init( @SuppressWarnings({"rawtypes"})NamedList args );
+  void init(@SuppressWarnings({"rawtypes"}) NamedList args);
 }

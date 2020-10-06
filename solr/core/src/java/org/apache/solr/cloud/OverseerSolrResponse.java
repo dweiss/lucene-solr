@@ -20,21 +20,21 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.util.NamedList;
 
 public class OverseerSolrResponse extends SolrResponse {
-  
+
   @SuppressWarnings({"rawtypes"})
   NamedList responseList = null;
 
   private long elapsedTime;
-  
-  public OverseerSolrResponse(@SuppressWarnings({"rawtypes"})NamedList list) {
+
+  public OverseerSolrResponse(@SuppressWarnings({"rawtypes"}) NamedList list) {
     responseList = list;
   }
-  
+
   @Override
   public long getElapsedTime() {
     return elapsedTime;
   }
-  
+
   @Override
   public void setResponse(NamedList<Object> rsp) {
     this.responseList = rsp;
@@ -50,5 +50,4 @@ public class OverseerSolrResponse extends SolrResponse {
   public NamedList<Object> getResponse() {
     return responseList;
   }
-  
 }

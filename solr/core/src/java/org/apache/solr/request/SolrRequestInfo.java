@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
@@ -26,7 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
-
+import javax.servlet.http.HttpServletRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -42,7 +41,8 @@ public class SolrRequestInfo {
 
   protected static final int MAX_STACK_SIZE = 10;
 
-  protected static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal = ThreadLocal.withInitial(LinkedList::new);
+  protected static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal =
+      ThreadLocal.withInitial(LinkedList::new);
 
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
@@ -62,8 +62,8 @@ public class SolrRequestInfo {
   }
 
   /**
-   * Adds the SolrRequestInfo onto a stack held in a {@link ThreadLocal}.
-   * Remember to call {@link #clearRequestInfo()}!
+   * Adds the SolrRequestInfo onto a stack held in a {@link ThreadLocal}. Remember to call {@link
+   * #clearRequestInfo()}!
    */
   public static void setRequestInfo(SolrRequestInfo info) {
     Deque<SolrRequestInfo> stack = threadLocal.get();
@@ -90,8 +90,8 @@ public class SolrRequestInfo {
   }
 
   /**
-   * This reset method is more of a protection mechanism as
-   * we expect it to be empty by now because all "set" calls need to be balanced with a "clear".
+   * This reset method is more of a protection mechanism as we expect it to be empty by now because
+   * all "set" calls need to be balanced with a "clear".
    */
   public static void reset() {
     Deque<SolrRequestInfo> stack = threadLocal.get();
@@ -117,9 +117,11 @@ public class SolrRequestInfo {
 
   public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp) {
     this.req = req;
-    this.rsp = rsp;    
+    this.rsp = rsp;
   }
-  public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+
+  public SolrRequestInfo(
+      SolrQueryRequest req, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
     this(req, rsp);
     this.setAction(action);
   }
@@ -129,7 +131,8 @@ public class SolrRequestInfo {
     this.rsp = rsp;
   }
 
-  public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+  public SolrRequestInfo(
+      HttpServletRequest httpReq, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
     this(httpReq, rsp);
     this.action = action;
   }
@@ -140,8 +143,7 @@ public class SolrRequestInfo {
     return null;
   }
 
-
-  public Date getNOW() {    
+  public Date getNOW() {
     if (now != null) return now;
 
     long ms = 0;
@@ -159,7 +161,7 @@ public class SolrRequestInfo {
 
   /** The TimeZone specified by the request, or UTC if none was specified. */
   public TimeZone getClientTimeZone() {
-    if (tz == null)  {
+    if (tz == null) {
       tz = TimeZoneUtils.parseTimezone(req.getParams().get(CommonParams.TZ));
     }
     return tz;
@@ -204,14 +206,14 @@ public class SolrRequestInfo {
     return new ExecutorUtil.InheritableThreadLocalProvider() {
       @Override
       @SuppressWarnings({"unchecked"})
-      public void store(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
+      public void store(@SuppressWarnings({"rawtypes"}) AtomicReference ctx) {
         SolrRequestInfo me = SolrRequestInfo.getRequestInfo();
         if (me != null) ctx.set(me);
       }
 
       @Override
       @SuppressWarnings({"unchecked"})
-      public void set(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
+      public void set(@SuppressWarnings({"rawtypes"}) AtomicReference ctx) {
         SolrRequestInfo me = (SolrRequestInfo) ctx.get();
         if (me != null) {
           SolrRequestInfo.setRequestInfo(me);
@@ -219,7 +221,7 @@ public class SolrRequestInfo {
       }
 
       @Override
-      public void clean(@SuppressWarnings({"rawtypes"})AtomicReference ctx) {
+      public void clean(@SuppressWarnings({"rawtypes"}) AtomicReference ctx) {
         if (ctx.get() != null) {
           SolrRequestInfo.clearRequestInfo();
         }

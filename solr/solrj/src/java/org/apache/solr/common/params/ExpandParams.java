@@ -16,9 +16,7 @@
  */
 package org.apache.solr.common.params;
 
-/**
- * Expand parameters
- */
+/** Expand parameters */
 public interface ExpandParams {
 
   public static final String EXPAND = "expand";
@@ -28,4 +26,3 @@ public interface ExpandParams {
   public static final String EXPAND_Q = EXPAND + ".q";
   public static final String EXPAND_FQ = EXPAND + ".fq";
 }
-

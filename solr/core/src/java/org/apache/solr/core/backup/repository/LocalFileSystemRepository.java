@@ -17,6 +17,7 @@
 
 package org.apache.solr.core.backup.repository;
 
+import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -28,7 +29,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -38,12 +38,10 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
-import com.google.common.base.Preconditions;
-
 /**
- * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of Solr indexes to a
- * local file-system. (Note - This can even be used for a shared file-system if it is exposed via a local file-system
- * interface e.g. NFS).
+ * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of
+ * Solr indexes to a local file-system. (Note - This can even be used for a shared file-system if it
+ * is exposed via a local file-system interface e.g. NFS).
  */
 public class LocalFileSystemRepository implements BackupRepository {
   @SuppressWarnings("rawtypes")
@@ -96,19 +94,22 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public void deleteDirectory(URI path) throws IOException {
-    Files.walkFileTree(Paths.get(path), new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        Files.delete(file);
-        return FileVisitResult.CONTINUE;
-      }
+    Files.walkFileTree(
+        Paths.get(path),
+        new SimpleFileVisitor<Path>() {
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+              throws IOException {
+            Files.delete(file);
+            return FileVisitResult.CONTINUE;
+          }
 
-      @Override
-      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-        Files.delete(dir);
-        return FileVisitResult.CONTINUE;
-      }
-    });
+          @Override
+          public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            Files.delete(dir);
+            return FileVisitResult.CONTINUE;
+          }
+        });
   }
 
   @Override

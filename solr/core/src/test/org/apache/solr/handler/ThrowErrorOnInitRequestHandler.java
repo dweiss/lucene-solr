@@ -17,19 +17,14 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/**
- * throws a {@link java.lang.Error} on init for testing purposes
- */
-public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase
-{
+/** throws a {@link java.lang.Error} on init for testing purposes */
+public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase {
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
-  {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     /* NOOP */
   }
 
@@ -41,7 +36,7 @@ public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
     String errorMessage = (String) args.get("error");
     if (errorMessage != null) {
       throw new Error(errorMessage);

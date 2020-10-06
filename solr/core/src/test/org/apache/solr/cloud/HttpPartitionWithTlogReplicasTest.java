@@ -28,5 +28,4 @@ public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest {
   protected boolean useTlogReplicas() {
     return true;
   }
-
 }

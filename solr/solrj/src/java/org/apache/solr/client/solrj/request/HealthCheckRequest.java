@@ -17,13 +17,13 @@
 
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.HealthCheckResponse;
 import org.apache.solr.common.params.SolrParams;
-
-import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
 public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
 
@@ -42,7 +42,8 @@ public class HealthCheckRequest extends SolrRequest<HealthCheckResponse> {
 
   @Override
   protected HealthCheckResponse createResponse(SolrClient client) {
-    // TODO: Accept requests w/ CloudSolrClient while ensuring that the request doesn't get routed to
+    // TODO: Accept requests w/ CloudSolrClient while ensuring that the request doesn't get routed
+    // to
     // an unintended recepient.
     assert client instanceof HttpSolrClient;
     return new HealthCheckResponse();

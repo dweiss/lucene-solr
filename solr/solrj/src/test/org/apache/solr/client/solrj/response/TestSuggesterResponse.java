@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.response;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -29,10 +28,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Test for SuggesterComponent's response in Solrj
- *
- */
+/** Test for SuggesterComponent's response in Solrj */
 public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
@@ -125,5 +121,4 @@ public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
     client.add(doc3);
     client.commit(true, true);
   }
-
 }

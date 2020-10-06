@@ -21,14 +21,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.rrd4j.core.RrdByteArrayBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
+/** */
 public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -52,7 +49,9 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
   public SolrRrdBackend(String path, boolean readOnly, SolrRrdBackendFactory factory) {
     super(path);
     this.factory = factory;
-    this.lastModifiedTime = TimeUnit.MILLISECONDS.convert(factory.getTimeSource().getEpochTimeNs(), TimeUnit.NANOSECONDS);
+    this.lastModifiedTime =
+        TimeUnit.MILLISECONDS.convert(
+            factory.getTimeSource().getEpochTimeNs(), TimeUnit.NANOSECONDS);
     try {
       SyncData syncData = factory.getData(path);
       if (syncData != null) {
@@ -68,6 +67,7 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
 
   /**
    * Open an unregistered (throwaway) read-only clone of another backend.
+   *
    * @param other other backend
    */
   public SolrRrdBackend(SolrRrdBackend other) {
@@ -90,7 +90,9 @@ public class SolrRrdBackend extends RrdByteArrayBackend implements Closeable {
   }
 
   private void markDirty() {
-    lastModifiedTime = TimeUnit.MILLISECONDS.convert(factory.getTimeSource().getEpochTimeNs(), TimeUnit.NANOSECONDS);
+    lastModifiedTime =
+        TimeUnit.MILLISECONDS.convert(
+            factory.getTimeSource().getEpochTimeNs(), TimeUnit.NANOSECONDS);
     dirty = true;
   }
 

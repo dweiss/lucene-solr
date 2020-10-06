@@ -25,42 +25,44 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
- * Identifies the language of a set of input fields using Tika's
- * LanguageIdentifier. The tika-core-x.y.jar must be on the classpath
- * <p>
- * The UpdateProcessorChain config entry can take a number of parameters
- * which may also be passed as HTTP parameters on the update request
- * and override the defaults. Here is the simplest processor config possible:
- * 
+ * Identifies the language of a set of input fields using Tika's LanguageIdentifier. The
+ * tika-core-x.y.jar must be on the classpath
+ *
+ * <p>The UpdateProcessorChain config entry can take a number of parameters which may also be passed
+ * as HTTP parameters on the update request and override the defaults. Here is the simplest
+ * processor config possible:
+ *
  * <pre class="prettyprint" >
  * &lt;processor class=&quot;org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory&quot;&gt;
  *   &lt;str name=&quot;langid.fl&quot;&gt;title,text&lt;/str&gt;
  *   &lt;str name=&quot;langid.langField&quot;&gt;language_s&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
- * See <a href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ *
+ * See <a
+ * href="http://wiki.apache.org/solr/LanguageDetection">http://wiki.apache.org/solr/LanguageDetection</a>
+ *
  * @since 3.5
  */
-public class TikaLanguageIdentifierUpdateProcessorFactory extends
-        UpdateRequestProcessorFactory implements SolrCoreAware, LangIdParams {
+public class TikaLanguageIdentifierUpdateProcessorFactory extends UpdateRequestProcessorFactory
+    implements SolrCoreAware, LangIdParams {
 
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
 
   @Override
-  public void inform(SolrCore core) {
-  }
+  public void inform(SolrCore core) {}
 
   /**
-   * The UpdateRequestProcessor may be initialized in solrconfig.xml similarly
-   * to a RequestHandler, with defaults, appends and invariants.
-   * @param args a NamedList with the configuration parameters 
+   * The UpdateRequestProcessor may be initialized in solrconfig.xml similarly to a RequestHandler,
+   * with defaults, appends and invariants.
+   *
+   * @param args a NamedList with the configuration parameters
    */
   @Override
   @SuppressWarnings("rawtypes")
-  public void init( NamedList args )
-  {
+  public void init(NamedList args) {
     if (args != null) {
       Object o;
       o = args.get("defaults");
@@ -81,14 +83,12 @@ public class TikaLanguageIdentifierUpdateProcessorFactory extends
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
-                                            SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     // Process defaults, appends and invariants if we got a request
-    if(req != null) {
+    if (req != null) {
       SolrPluginUtils.setDefaults(req, defaults, appends, invariants);
     }
     return new TikaLanguageIdentifierUpdateProcessor(req, rsp, next);
   }
-
-
 }

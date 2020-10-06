@@ -16,23 +16,23 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.util.*;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.Pair;
 
-import java.util.*;
-
-/**
- * Relational expression that uses Solr calling convention.
- */
+/** Relational expression that uses Solr calling convention. */
 interface SolrRel extends RelNode {
   void implement(Implementor implementor);
 
   /** Calling convention for relational operations that occur in Solr. */
   Convention CONVENTION = new Convention.Impl("Solr", SolrRel.class);
 
-  /** Callback for the implementation process that converts a tree of {@link SolrRel} nodes into a Solr query. */
+  /**
+   * Callback for the implementation process that converts a tree of {@link SolrRel} nodes into a
+   * Solr query.
+   */
   class Implementor {
     final Map<String, String> fieldMappings = new HashMap<>();
     final Map<String, String> reverseAggMappings = new HashMap<>();
@@ -48,15 +48,15 @@ interface SolrRel extends RelNode {
     SolrTable solrTable;
 
     void addFieldMapping(String key, String val, boolean overwrite) {
-      if(key != null) {
-        if(overwrite || !fieldMappings.containsKey(key)) {
+      if (key != null) {
+        if (overwrite || !fieldMappings.containsKey(key)) {
           this.fieldMappings.put(key, val);
         }
       }
     }
 
     void addReverseAggMapping(String key, String val) {
-      if(key != null && !reverseAggMappings.containsKey(key)) {
+      if (key != null && !reverseAggMappings.containsKey(key)) {
         this.reverseAggMappings.put(key, val);
       }
     }
@@ -84,7 +84,7 @@ interface SolrRel extends RelNode {
       this.metricPairs.add(new Pair<>(metric, column));
 
       String metricIdentifier = metric.toLowerCase(Locale.ROOT) + "(" + column + ")";
-      if(outName != null) {
+      if (outName != null) {
         this.addFieldMapping(outName, metricIdentifier, true);
       }
     }
@@ -92,7 +92,6 @@ interface SolrRel extends RelNode {
     void setHavingPredicate(String havingPredicate) {
       this.havingPredicate = havingPredicate;
     }
-
 
     void setLimit(String limit) {
       limitValue = limit;

@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering.carrot2;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.carrot2.core.*;
 import org.carrot2.core.attribute.AttributeNames;
 import org.carrot2.core.attribute.Processing;
 import org.carrot2.util.attribute.*;
 import org.carrot2.util.attribute.constraint.IntRange;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Bindable(prefix = "MockClusteringAlgorithm")
-public class MockClusteringAlgorithm extends ProcessingComponentBase implements
-        IClusteringAlgorithm {
+public class MockClusteringAlgorithm extends ProcessingComponentBase
+    implements IClusteringAlgorithm {
   @Input
   @Processing
   @Attribute(key = AttributeNames.DOCUMENTS)
@@ -55,10 +55,7 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
   @IntRange(min = 0)
   public int maxClusters = 0;
 
-  @Input
-  @Processing
-  @Attribute
-  public int otherTopicsModulo = 0;
+  @Input @Processing @Attribute public int otherTopicsModulo = 0;
 
   @Override
   public void process() throws ProcessingException {
@@ -80,7 +77,8 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
         label.append(".");
         label.append(i);
         Cluster newCluster = createCluster(label.toString(), documentIndex, document);
-        cluster.addSubclusters(createCluster(label.toString(), documentIndex, document), newCluster);
+        cluster.addSubclusters(
+            createCluster(label.toString(), documentIndex, document), newCluster);
         cluster = newCluster;
       }
       documentIndex++;
@@ -90,8 +88,7 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
   private Cluster createCluster(String labelBase, int documentIndex, Document... documents) {
     Cluster cluster = new Cluster();
     cluster.setScore(documentIndex * 0.25);
-    if (otherTopicsModulo != 0 && documentIndex % otherTopicsModulo == 0)
-    {
+    if (otherTopicsModulo != 0 && documentIndex % otherTopicsModulo == 0) {
       cluster.setOtherTopics(true);
     }
     for (int i = 0; i < labels; i++) {

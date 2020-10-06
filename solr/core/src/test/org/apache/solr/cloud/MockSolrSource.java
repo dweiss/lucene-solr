@@ -22,23 +22,21 @@ import static org.mockito.Mockito.when;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 
-public class MockSolrSource  {
+public class MockSolrSource {
 
-  public static ZkController makeSimpleMock(Overseer overseer, ZkStateReader reader, SolrZkClient zkClient) {
+  public static ZkController makeSimpleMock(
+      Overseer overseer, ZkStateReader reader, SolrZkClient zkClient) {
     ZkController zkControllerMock = mock(ZkController.class);
     if (overseer == null) overseer = mock(Overseer.class);
-    
 
     if (reader != null && zkClient == null) {
       zkClient = reader.getZkClient();
     } else {
-      if (zkClient == null) {
-      }
+      if (zkClient == null) {}
       reader = mock(ZkStateReader.class);
       when(reader.getZkClient()).thenReturn(zkClient);
     }
-     
-    
+
     when(zkControllerMock.getOverseer()).thenReturn(overseer);
     when(zkControllerMock.getZkStateReader()).thenReturn(reader);
     when(zkControllerMock.getZkClient()).thenReturn(zkClient);

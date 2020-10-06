@@ -18,7 +18,6 @@ package org.apache.solr.handler.clustering;
 
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -26,27 +25,25 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * Base class for clustering engines performing cluster analysis on search
- * results.
- * 
+ * Base class for clustering engines performing cluster analysis on search results.
+ *
  * @lucene.experimental
  */
 public abstract class SearchClusteringEngine extends ClusteringEngine {
-  /**
-   * Do the clustering, return a clusters structure to be appended to
-   * {@link SolrQueryResponse}.
-   */
-  public abstract Object cluster(Query query, SolrDocumentList solrDocumentList,
-      Map<SolrDocument,Integer> docIds, SolrQueryRequest sreq);
+  /** Do the clustering, return a clusters structure to be appended to {@link SolrQueryResponse}. */
+  public abstract Object cluster(
+      Query query,
+      SolrDocumentList solrDocumentList,
+      Map<SolrDocument, Integer> docIds,
+      SolrQueryRequest sreq);
 
   /**
-   * Returns the set of field names to load.
-   * Concrete classes can override this method if needed.
+   * Returns the set of field names to load. Concrete classes can override this method if needed.
    * Default implementation returns null, that is, all stored fields are loaded.
-   * 
+   *
    * @return The set of field names to load.
    */
-  protected Set<String> getFieldsToLoad(SolrQueryRequest sreq){
+  protected Set<String> getFieldsToLoad(SolrQueryRequest sreq) {
     return null;
   }
 }

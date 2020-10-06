@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.ByteBuffersDirectory;
@@ -34,8 +32,9 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestPerSegmentDeletes extends LuceneTestCase {
   public void testDeletes1() throws Exception {
-    //IndexWriter.debug2 = System.out;
-    Directory dir = new MockDirectoryWrapper(new Random(random().nextLong()), new ByteBuffersDirectory());
+    // IndexWriter.debug2 = System.out;
+    Directory dir =
+        new MockDirectoryWrapper(new Random(random().nextLong()), new ByteBuffersDirectory());
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergeScheduler(new SerialMergeScheduler());
     iwc.setMaxBufferedDocs(5000);
@@ -45,22 +44,22 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, iwc);
     for (int x = 0; x < 5; x++) {
       writer.addDocument(DocHelper.createDocument(x, "1", 2));
-      //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
+      // System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
-    //System.out.println("commit1");
+    // System.out.println("commit1");
     writer.commit();
     assertEquals(1, writer.cloneSegmentInfos().size());
     for (int x = 5; x < 10; x++) {
       writer.addDocument(DocHelper.createDocument(x, "2", 2));
-      //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
+      // System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
-    //System.out.println("commit2");
+    // System.out.println("commit2");
     writer.commit();
     assertEquals(2, writer.cloneSegmentInfos().size());
 
     for (int x = 10; x < 15; x++) {
       writer.addDocument(DocHelper.createDocument(x, "3", 2));
-      //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
+      // System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
 
     writer.deleteDocuments(new Term("id", "1"));
@@ -100,95 +99,73 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     r2.close();
 
     /**
-    // added docs are in the ram buffer
-    for (int x = 15; x < 20; x++) {
-      writer.addDocument(TestIndexWriterReader.createDocument(x, "4", 2));
-      System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
-    }
-    assertTrue(writer.numRamDocs() > 0);
-    // delete from the ram buffer
-    writer.deleteDocuments(new Term("id", Integer.toString(13)));
-
-    Term id3 = new Term("id", Integer.toString(3));
-
-    // delete from the 1st segment
-    writer.deleteDocuments(id3);
-
-    assertTrue(writer.numRamDocs() > 0);
-
-    //System.out
-    //    .println("segdels1:" + writer.docWriter.deletesToString());
-
-    //assertTrue(writer.docWriter.segmentDeletes.size() > 0);
-
-    // we cause a merge to happen
-    fsmp.doMerge = true;
-    fsmp.start = 0;
-    fsmp.length = 2;
-    System.out.println("maybeMerge "+writer.segmentInfos);
-
-    SegmentInfo info0 = writer.segmentInfos.info(0);
-    SegmentInfo info1 = writer.segmentInfos.info(1);
-
-    writer.maybeMerge();
-    System.out.println("maybeMerge after "+writer.segmentInfos);
-    // there should be docs in RAM
-    assertTrue(writer.numRamDocs() > 0);
-
-    // assert we've merged the 1 and 2 segments
-    // and still have a segment leftover == 2
-    assertEquals(2, writer.segmentInfos.size());
-    assertFalse(segThere(info0, writer.segmentInfos));
-    assertFalse(segThere(info1, writer.segmentInfos));
-
-    //System.out.println("segdels2:" + writer.docWriter.deletesToString());
-
-    //assertTrue(writer.docWriter.segmentDeletes.size() > 0);
-
-    IndexReader r = writer.getReader();
-    IndexReader r1 = r.getSequentialSubReaders()[0];
-    printDelDocs(r1.getLiveDocs());
-    int[] docs = toDocsArray(id3, null, r);
-    System.out.println("id3 docs:"+Arrays.toString(docs));
-    // there shouldn't be any docs for id:3
-    assertTrue(docs == null);
-    r.close();
-
-    part2(writer, fsmp);
-    **/
+     * // added docs are in the ram buffer for (int x = 15; x < 20; x++) {
+     * writer.addDocument(TestIndexWriterReader.createDocument(x, "4", 2));
+     * System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs()); }
+     * assertTrue(writer.numRamDocs() > 0); // delete from the ram buffer writer.deleteDocuments(new
+     * Term("id", Integer.toString(13)));
+     *
+     * <p>Term id3 = new Term("id", Integer.toString(3));
+     *
+     * <p>// delete from the 1st segment writer.deleteDocuments(id3);
+     *
+     * <p>assertTrue(writer.numRamDocs() > 0);
+     *
+     * <p>//System.out // .println("segdels1:" + writer.docWriter.deletesToString());
+     *
+     * <p>//assertTrue(writer.docWriter.segmentDeletes.size() > 0);
+     *
+     * <p>// we cause a merge to happen fsmp.doMerge = true; fsmp.start = 0; fsmp.length = 2;
+     * System.out.println("maybeMerge "+writer.segmentInfos);
+     *
+     * <p>SegmentInfo info0 = writer.segmentInfos.info(0); SegmentInfo info1 =
+     * writer.segmentInfos.info(1);
+     *
+     * <p>writer.maybeMerge(); System.out.println("maybeMerge after "+writer.segmentInfos); // there
+     * should be docs in RAM assertTrue(writer.numRamDocs() > 0);
+     *
+     * <p>// assert we've merged the 1 and 2 segments // and still have a segment leftover == 2
+     * assertEquals(2, writer.segmentInfos.size()); assertFalse(segThere(info0,
+     * writer.segmentInfos)); assertFalse(segThere(info1, writer.segmentInfos));
+     *
+     * <p>//System.out.println("segdels2:" + writer.docWriter.deletesToString());
+     *
+     * <p>//assertTrue(writer.docWriter.segmentDeletes.size() > 0);
+     *
+     * <p>IndexReader r = writer.getReader(); IndexReader r1 = r.getSequentialSubReaders()[0];
+     * printDelDocs(r1.getLiveDocs()); int[] docs = toDocsArray(id3, null, r);
+     * System.out.println("id3 docs:"+Arrays.toString(docs)); // there shouldn't be any docs for
+     * id:3 assertTrue(docs == null); r.close();
+     *
+     * <p>part2(writer, fsmp);
+     */
     // System.out.println("segdels2:"+writer.docWriter.segmentDeletes.toString());
-    //System.out.println("close");
+    // System.out.println("close");
     writer.close();
     dir.close();
   }
 
   /**
-  static boolean hasPendingDeletes(SegmentInfos infos) {
-    for (SegmentInfo info : infos) {
-      if (info.deletes.any()) {
-        return true;
-      }
-    }
-    return false;
-  }
-  **/
+   * static boolean hasPendingDeletes(SegmentInfos infos) { for (SegmentInfo info : infos) { if
+   * (info.deletes.any()) { return true; } } return false; }
+   */
   void part2(IndexWriter writer, RangeMergePolicy fsmp) throws Exception {
     for (int x = 20; x < 25; x++) {
       writer.addDocument(DocHelper.createDocument(x, "5", 2));
-      //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
+      // System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
     writer.flush(false, false);
     for (int x = 25; x < 30; x++) {
       writer.addDocument(DocHelper.createDocument(x, "5", 2));
-      //System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
+      // System.out.println("numRamDocs(" + x + ")" + writer.numRamDocs());
     }
     writer.flush(false, false);
 
-    //System.out.println("infos3:"+writer.segmentInfos);
+    // System.out.println("infos3:"+writer.segmentInfos);
 
     Term delterm = new Term("id", "8");
     writer.deleteDocuments(delterm);
-    //System.out.println("segdels3:" + writer.docWriter.deletesToString());
+    // System.out.println("segdels3:" + writer.docWriter.deletesToString());
 
     fsmp.doMerge = true;
     fsmp.start = 1;
@@ -198,11 +175,11 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     // deletes for info1, the newly created segment from the
     // merge should have no deletes because they were applied in
     // the merge
-    //SegmentInfo info1 = writer.segmentInfos.info(1);
-    //assertFalse(exists(info1, writer.docWriter.segmentDeletes));
+    // SegmentInfo info1 = writer.segmentInfos.info(1);
+    // assertFalse(exists(info1, writer.docWriter.segmentDeletes));
 
-    //System.out.println("infos4:"+writer.segmentInfos);
-    //System.out.println("segdels4:" + writer.docWriter.deletesToString());
+    // System.out.println("infos4:"+writer.segmentInfos);
+    // System.out.println("segdels4:" + writer.docWriter.deletesToString());
   }
 
   boolean segThere(SegmentCommitInfo info, SegmentInfos infos) {
@@ -219,8 +196,7 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
   }
 
-  public int[] toDocsArray(Term term, Bits bits, IndexReader reader)
-      throws IOException {
+  public int[] toDocsArray(Term term, Bits bits, IndexReader reader) throws IOException {
     TermsEnum ctermsEnum = MultiTerms.getTerms(reader, term.field).iterator();
     if (ctermsEnum.seekExact(new BytesRef(term.text()))) {
       PostingsEnum postingsEnum = TestUtil.docs(random(), ctermsEnum, null, PostingsEnum.NONE);
@@ -252,7 +228,8 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
+    public MergeSpecification findMerges(
+        MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
         throws IOException {
       MergeSpecification ms = new MergeSpecification();
       if (doMerge) {
@@ -265,8 +242,11 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-                                               int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
+    public MergeSpecification findForcedMerges(
+        SegmentInfos segmentInfos,
+        int maxSegmentCount,
+        Map<SegmentCommitInfo, Boolean> segmentsToMerge,
+        MergeContext mergeContext)
         throws IOException {
       return null;
     }
@@ -278,7 +258,8 @@ public class TestPerSegmentDeletes extends LuceneTestCase {
     }
 
     @Override
-    public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, MergeContext mergeContext) {
+    public boolean useCompoundFile(
+        SegmentInfos segments, SegmentCommitInfo newSegment, MergeContext mergeContext) {
       return useCompoundFile;
     }
   }

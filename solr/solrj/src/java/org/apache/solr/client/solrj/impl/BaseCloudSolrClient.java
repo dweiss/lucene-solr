@@ -17,6 +17,9 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
@@ -45,7 +48,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -88,32 +90,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
-import static org.apache.solr.common.params.CommonParams.ID;
-
 public abstract class BaseCloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private volatile String defaultCollection;
-  //no of times collection state to be reloaded if stale state error is received
-  private static final int MAX_STALE_RETRIES = Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
+  // no of times collection state to be reloaded if stale state error is received
+  private static final int MAX_STALE_RETRIES =
+      Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
   private Random rand = new Random();
 
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
   private final RequestReplicaListTransformerGenerator requestRLTGenerator;
-  boolean parallelUpdates; //TODO final
-  private ExecutorService threadPool = ExecutorUtil
-      .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(
-          "CloudSolrClient ThreadPool"));
+  boolean parallelUpdates; // TODO final
+  private ExecutorService threadPool =
+      ExecutorUtil.newMDCAwareCachedThreadPool(
+          new SolrNamedThreadFactory("CloudSolrClient ThreadPool"));
 
   // We can figure this out from the collection,
   // there's no need to let this get out of sync.
   @Deprecated(since = "8.7")
   private String routeFieldDeprecated = null;
+
   public static final String STATE_VERSION = "_stateVer_";
-  private long retryExpiryTime = TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS);//3 seconds or 3 million nanos
+  private long retryExpiryTime =
+      TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
   private final Set<String> NON_ROUTABLE_PARAMS;
 
   {
@@ -132,8 +134,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     // NON_ROUTABLE_PARAMS.add(UpdateParams.ROLLBACK);
 
   }
-  private volatile List<Object> locks = objectList(3);
 
+  private volatile List<Object> locks = objectList(3);
 
   static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
     final AtomicLong puts = new AtomicLong();
@@ -144,13 +146,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     @Override
     public ExpiringCachedDocCollection get(Object key) {
       ExpiringCachedDocCollection val = super.get(key);
-      if(val == null) {
+      if (val == null) {
         // a new collection is likely to be added now.
-        //check if there are stale items and remove them
+        // check if there are stale items and remove them
         evictStale();
         return null;
       }
-      if(val.isExpired(timeToLive)) {
+      if (val.isExpired(timeToLive)) {
         super.remove(key);
         return null;
       }
@@ -165,10 +167,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     void evictStale() {
-      if(!evictLock.tryLock()) return;
+      if (!evictLock.tryLock()) return;
       try {
         for (Entry<String, ExpiringCachedDocCollection> e : entrySet()) {
-          if(e.getValue().isExpired(timeToLive)){
+          if (e.getValue().isExpired(timeToLive)) {
             super.remove(e.getKey());
           }
         }
@@ -176,14 +178,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         evictLock.unlock();
       }
     }
-
   }
 
   /**
-   * This is the time to wait to refetch the state
-   * after getting the same state version from ZK
-   * <p>
-   * secs
+   * This is the time to wait to refetch the state after getting the same state version from ZK
+   *
+   * <p>secs
    */
   public void setRetryExpiryTime(int secs) {
     this.retryExpiryTime = TimeUnit.NANOSECONDS.convert(secs, TimeUnit.SECONDS);
@@ -194,9 +194,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   class ExpiringCachedDocCollection {
     final DocCollection cached;
     final long cachedAt;
-    //This is the time at which the collection is retried and got the same old version
+    // This is the time at which the collection is retried and got the same old version
     volatile long retriedAt = -1;
-    //flag that suggests that this is potentially to be rechecked
+    // flag that suggests that this is potentially to be rechecked
     volatile boolean maybeStale = false;
 
     ExpiringCachedDocCollection(DocCollection cached) {
@@ -210,11 +210,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     boolean shouldRetry() {
-      if (maybeStale) {// we are not sure if it is stale so check with retry time
-        if ((retriedAt == -1 ||
-            (System.nanoTime() - retriedAt) > retryExpiryTime)) {
-          return true;// we retried a while back. and we could not get anything new.
-          //it's likely that it is not going to be available now also.
+      if (maybeStale) { // we are not sure if it is stale so check with retry time
+        if ((retriedAt == -1 || (System.nanoTime() - retriedAt) > retryExpiryTime)) {
+          return true; // we retried a while back. and we could not get anything new.
+          // it's likely that it is not going to be available now also.
         }
       }
       return false;
@@ -225,17 +224,20 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
   }
 
-  protected BaseCloudSolrClient(boolean updatesToLeaders, boolean parallelUpdates, boolean directUpdatesToLeadersOnly) {
+  protected BaseCloudSolrClient(
+      boolean updatesToLeaders, boolean parallelUpdates, boolean directUpdatesToLeadersOnly) {
     this.updatesToLeaders = updatesToLeaders;
     this.parallelUpdates = parallelUpdates;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
     this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
   }
 
-  /** Sets the cache ttl for DocCollection Objects cached.
+  /**
+   * Sets the cache ttl for DocCollection Objects cached.
+   *
    * @param seconds ttl value in seconds
    */
-  public void setCollectionCacheTTl(int seconds){
+  public void setCollectionCacheTTl(int seconds) {
     assert seconds > 0;
     this.collectionStateCache.timeToLive = seconds * 1000L;
   }
@@ -248,7 +250,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   @Override
   public void close() throws IOException {
-    if(this.threadPool != null && !this.threadPool.isShutdown()) {
+    if (this.threadPool != null && !this.threadPool.isShutdown()) {
       this.threadPool.shutdown();
     }
   }
@@ -260,9 +262,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   /**
    * Note: This setter method is <b>not thread-safe</b>.
    *
-   * @param processor
-   *          Default Response Parser chosen to parse the response if the parser
-   *          were not specified as part of the request.
+   * @param processor Default Response Parser chosen to parse the response if the parser were not
+   *     specified as part of the request.
    * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
    */
   public void setParser(ResponseParser processor) {
@@ -277,16 +278,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     getLbClient().setRequestWriter(requestWriter);
   }
 
-  /**
-   * @return the zkHost value used to connect to zookeeper.
-   */
+  /** @return the zkHost value used to connect to zookeeper. */
   public String getZkHost() {
     return assertZKStateProvider().zkHost;
   }
 
   public ZkStateReader getZkStateReader() {
     if (getClusterStateProvider() instanceof ZkClientClusterStateProvider) {
-      ZkClientClusterStateProvider provider = (ZkClientClusterStateProvider) getClusterStateProvider();
+      ZkClientClusterStateProvider provider =
+          (ZkClientClusterStateProvider) getClusterStateProvider();
       getClusterStateProvider().connect();
       return provider.zkStateReader;
     }
@@ -295,8 +295,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   /**
    * @param routeField the field to route documents on.
-   *                   <p>
-   *                   deprecated, the field is automatically determined from Zookeeper
+   *     <p>deprecated, the field is automatically determined from Zookeeper
    */
   @Deprecated(since = "8.7")
   public void setIdField(String routeField) {
@@ -306,10 +305,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   /**
    * @return the field that updates are routed on.
-   *
-   * deprecated, the field is automatically determined from Zookeeper
+   *     <p>deprecated, the field is automatically determined from Zookeeper
    */
-  @Deprecated (since = "8.7")
+  @Deprecated(since = "8.7")
   public String getIdField() {
     log.warn("getIdField is deprecated, route field is in cluster state");
     return routeFieldDeprecated;
@@ -341,23 +339,29 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /**
-   * Connect to the zookeeper ensemble.
-   * This is an optional method that may be used to force a connect before any other requests are sent.
+   * Connect to the zookeeper ensemble. This is an optional method that may be used to force a
+   * connect before any other requests are sent.
    */
   public void connect() {
     getClusterStateProvider().connect();
   }
 
   /**
-   * Connect to a cluster.  If the cluster is not ready, retry connection up to a given timeout.
+   * Connect to a cluster. If the cluster is not ready, retry connection up to a given timeout.
+   *
    * @param duration the timeout
    * @param timeUnit the units of the timeout
    * @throws TimeoutException if the cluster is not ready after the timeout
    * @throws InterruptedException if the wait is interrupted
    */
-  public void connect(long duration, TimeUnit timeUnit) throws TimeoutException, InterruptedException {
+  public void connect(long duration, TimeUnit timeUnit)
+      throws TimeoutException, InterruptedException {
     if (log.isInfoEnabled()) {
-      log.info("Waiting for {} {} for cluster at {} to be ready", duration, timeUnit, getClusterStateProvider());
+      log.info(
+          "Waiting for {} {} for cluster at {} to be ready",
+          duration,
+          timeUnit,
+          getClusterStateProvider());
     }
     long timeout = System.nanoTime() + timeUnit.toNanos(duration);
     while (System.nanoTime() < timeout) {
@@ -367,8 +371,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           log.info("Cluster at {} ready", getClusterStateProvider());
         }
         return;
-      }
-      catch (RuntimeException e) {
+      } catch (RuntimeException e) {
         // not ready yet, then...
       }
       TimeUnit.MILLISECONDS.sleep(250);
@@ -381,33 +384,28 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       return (ZkClientClusterStateProvider) getClusterStateProvider();
     }
     throw new IllegalArgumentException("This client does not use ZK");
-
   }
 
   /**
    * Block until a CollectionStatePredicate returns true, or the wait times out
    *
-   * <p>
-   * Note that the predicate may be called again even after it has returned true, so
-   * implementors should avoid changing state within the predicate call itself.
-   * </p>
+   * <p>Note that the predicate may be called again even after it has returned true, so implementors
+   * should avoid changing state within the predicate call itself.
    *
-   * <p>
-   * This implementation utilizes {@link CollectionStateWatcher} internally. 
-   * Callers that don't care about liveNodes are encouraged to use a {@link DocCollection} {@link Predicate} 
-   * instead
-   * </p>
+   * <p>This implementation utilizes {@link CollectionStateWatcher} internally. Callers that don't
+   * care about liveNodes are encouraged to use a {@link DocCollection} {@link Predicate} instead
    *
    * @see #waitForState(String, long, TimeUnit, Predicate)
    * @see #registerCollectionStateWatcher
    * @param collection the collection to watch
-   * @param wait       how long to wait
-   * @param unit       the units of the wait parameter
-   * @param predicate  a {@link CollectionStatePredicate} to check the collection state
+   * @param wait how long to wait
+   * @param unit the units of the wait parameter
+   * @param predicate a {@link CollectionStatePredicate} to check the collection state
    * @throws InterruptedException on interrupt
-   * @throws TimeoutException     on timeout
+   * @throws TimeoutException on timeout
    */
-  public void waitForState(String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
+  public void waitForState(
+      String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
       throws InterruptedException, TimeoutException {
     getClusterStateProvider().connect();
     assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
@@ -415,20 +413,19 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   /**
    * Block until a Predicate returns true, or the wait times out
    *
-   * <p>
-   * Note that the predicate may be called again even after it has returned true, so
-   * implementors should avoid changing state within the predicate call itself.
-   * </p>
+   * <p>Note that the predicate may be called again even after it has returned true, so implementors
+   * should avoid changing state within the predicate call itself.
    *
    * @see #registerDocCollectionWatcher
    * @param collection the collection to watch
-   * @param wait       how long to wait
-   * @param unit       the units of the wait parameter
-   * @param predicate  a {@link Predicate} to test against the {@link DocCollection}
+   * @param wait how long to wait
+   * @param unit the units of the wait parameter
+   * @param predicate a {@link Predicate} to test against the {@link DocCollection}
    * @throws InterruptedException on interrupt
-   * @throws TimeoutException     on timeout
+   * @throws TimeoutException on timeout
    */
-  public void waitForState(String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
+  public void waitForState(
+      String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
     getClusterStateProvider().connect();
     assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
@@ -438,38 +435,32 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * Register a CollectionStateWatcher to be called when the cluster state for a collection changes
    * <em>or</em> the set of live nodes changes.
    *
-   * <p>
-   * The Watcher will automatically be removed when it's 
-   * <code>onStateChanged</code> returns <code>true</code>
-   * </p>
+   * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
+   * <code>true</code>
    *
-   * <p>
-   * This implementation utilizes {@link ZkStateReader#registerCollectionStateWatcher} internally.
-   * Callers that don't care about liveNodes are encouraged to use a {@link DocCollectionWatcher} 
-   * instead
-   * </p>
+   * <p>This implementation utilizes {@link ZkStateReader#registerCollectionStateWatcher}
+   * internally. Callers that don't care about liveNodes are encouraged to use a {@link
+   * DocCollectionWatcher} instead
    *
    * @see #registerDocCollectionWatcher(String, DocCollectionWatcher)
    * @see ZkStateReader#registerCollectionStateWatcher
    * @param collection the collection to watch
-   * @param watcher    a watcher that will be called when the state changes
+   * @param watcher a watcher that will be called when the state changes
    */
   public void registerCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
     getClusterStateProvider().connect();
     assertZKStateProvider().zkStateReader.registerCollectionStateWatcher(collection, watcher);
   }
-  
+
   /**
    * Register a DocCollectionWatcher to be called when the cluster state for a collection changes.
    *
-   * <p>
-   * The Watcher will automatically be removed when it's 
-   * <code>onStateChanged</code> returns <code>true</code>
-   * </p>
+   * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
+   * <code>true</code>
    *
    * @see ZkStateReader#registerDocCollectionWatcher
    * @param collection the collection to watch
-   * @param watcher    a watcher that will be called when the state changes
+   * @param watcher a watcher that will be called when the state changes
    */
   public void registerDocCollectionWatcher(String collection, DocCollectionWatcher watcher) {
     getClusterStateProvider().connect();
@@ -477,16 +468,17 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   @SuppressWarnings({"unchecked"})
-  private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection) throws SolrServerException {
+  private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection)
+      throws SolrServerException {
     UpdateRequest updateRequest = (UpdateRequest) request;
     SolrParams params = request.getParams();
     ModifiableSolrParams routableParams = new ModifiableSolrParams();
     ModifiableSolrParams nonRoutableParams = new ModifiableSolrParams();
 
-    if(params != null) {
+    if (params != null) {
       nonRoutableParams.add(params);
       routableParams.add(params);
-      for(String param : NON_ROUTABLE_PARAMS) {
+      for (String param : NON_ROUTABLE_PARAMS) {
         routableParams.remove(param);
       }
     } else {
@@ -494,17 +486,23 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     if (collection == null) {
-      throw new SolrServerException("No collection param specified on request and no default collection has been set.");
+      throw new SolrServerException(
+          "No collection param specified on request and no default collection has been set.");
     }
 
-    //Check to see if the collection is an alias. Updates to multi-collection aliases are ok as long
+    // Check to see if the collection is an alias. Updates to multi-collection aliases are ok as
+    // long
     // as they are routed aliases
     List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collection);
     if (getClusterStateProvider().isRoutedAlias(collection) || aliasedCollections.size() == 1) {
       collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
     } else {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Update request to non-routed multi-collection alias not supported: "
-        + collection + " -> " + aliasedCollections);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Update request to non-routed multi-collection alias not supported: "
+              + collection
+              + " -> "
+              + aliasedCollections);
     }
 
     DocCollection col = getDocCollection(collection, null);
@@ -516,20 +514,27 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       return null;
     }
 
-    ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(params);
+    ReplicaListTransformer replicaListTransformer =
+        requestRLTGenerator.getReplicaListTransformer(params);
 
-    //Create the URL map, which is keyed on slice name.
-    //The value is a list of URLs for each replica in the slice.
-    //The first value in the list is the leader for the slice.
+    // Create the URL map, which is keyed on slice name.
+    // The value is a list of URLs for each replica in the slice.
+    // The first value in the list is the leader for the slice.
     final Map<String, List<String>> urlMap = buildUrlMap(col, replicaListTransformer);
-    String routeField = (routeFieldDeprecated != null) ? routeFieldDeprecated :
-        (col.getRouter().getRouteField(col) == null) ? ID : col.getRouter().getRouteField(col);
-    final Map<String, ? extends LBSolrClient.Req> routes = createRoutes(updateRequest, routableParams, col, router, urlMap, routeField);
+    String routeField =
+        (routeFieldDeprecated != null)
+            ? routeFieldDeprecated
+            : (col.getRouter().getRouteField(col) == null)
+                ? ID
+                : col.getRouter().getRouteField(col);
+    final Map<String, ? extends LBSolrClient.Req> routes =
+        createRoutes(updateRequest, routableParams, col, router, urlMap, routeField);
     if (routes == null) {
       if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, routeField)) {
         // we have info (documents with ids and/or ids to delete) with
         // which to find the leaders but we could not find (all of) them
-        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+        throw new SolrException(
+            SolrException.ErrorCode.SERVICE_UNAVAILABLE,
             "directUpdatesToLeadersOnly==true but could not find leader(s)");
       } else {
         // we could not find a leader or routes yet - use unoptimized general path
@@ -539,7 +544,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
     final NamedList<Throwable> exceptions = new NamedList<>();
     @SuppressWarnings({"rawtypes"})
-    final NamedList<NamedList> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
+    final NamedList<NamedList> shardResponses =
+        new NamedList<>(routes.size() + 1); // +1 for deleteQuery
 
     long start = System.nanoTime();
 
@@ -550,15 +556,18 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         final LBSolrClient.Req lbRequest = entry.getValue();
         try {
           MDC.put("CloudSolrClient.url", url);
-          responseFutures.put(url, threadPool.submit(() -> {
-            return getLbClient().request(lbRequest).getResponse();
-          }));
+          responseFutures.put(
+              url,
+              threadPool.submit(
+                  () -> {
+                    return getLbClient().request(lbRequest).getResponse();
+                  }));
         } finally {
           MDC.remove("CloudSolrClient.url");
         }
       }
 
-      for (final Map.Entry<String, Future<NamedList<?>>> entry: responseFutures.entrySet()) {
+      for (final Map.Entry<String, Future<NamedList<?>>> entry : responseFutures.entrySet()) {
         final String url = entry.getKey();
         final Future<NamedList<?>> responseFuture = entry.getValue();
         try {
@@ -573,9 +582,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       if (exceptions.size() > 0) {
         Throwable firstException = exceptions.getVal(0);
-        if(firstException instanceof SolrException) {
+        if (firstException instanceof SolrException) {
           SolrException e = (SolrException) firstException;
-          throw getRouteException(SolrException.ErrorCode.getErrorCode(e.code()), exceptions, routes);
+          throw getRouteException(
+              SolrException.ErrorCode.getErrorCode(e.code()), exceptions, routes);
         } else {
           throw getRouteException(SolrException.ErrorCode.SERVER_ERROR, exceptions, routes);
         }
@@ -588,7 +598,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           NamedList<Object> rsp = getLbClient().request(lbRequest).getResponse();
           shardResponses.add(url, rsp);
         } catch (Exception e) {
-          if(e instanceof SolrException) {
+          if (e instanceof SolrException) {
             throw (SolrException) e;
           } else {
             throw new SolrServerException(e);
@@ -615,7 +625,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         nonRoutableRequest = new UpdateRequest();
       }
       nonRoutableRequest.setParams(nonRoutableParams);
-      nonRoutableRequest.setBasicAuthCredentials(request.getBasicAuthUser(), request.getBasicAuthPassword());
+      nonRoutableRequest.setBasicAuthCredentials(
+          request.getBasicAuthUser(), request.getBasicAuthPassword());
       List<String> urlList = new ArrayList<>(routes.keySet());
       Collections.shuffle(urlList, rand);
       LBSolrClient.Req req = new LBSolrClient.Req(nonRoutableRequest, urlList);
@@ -630,23 +641,35 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     long end = System.nanoTime();
 
     @SuppressWarnings({"rawtypes"})
-    RouteResponse rr = condenseResponse(shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
+    RouteResponse rr =
+        condenseResponse(
+            shardResponses, (int) TimeUnit.MILLISECONDS.convert(end - start, TimeUnit.NANOSECONDS));
     rr.setRouteResponses(shardResponses);
     rr.setRoutes(routes);
     return rr;
   }
 
-  protected RouteException getRouteException(SolrException.ErrorCode serverError, NamedList<Throwable> exceptions, Map<String, ? extends LBSolrClient.Req> routes) {
+  protected RouteException getRouteException(
+      SolrException.ErrorCode serverError,
+      NamedList<Throwable> exceptions,
+      Map<String, ? extends LBSolrClient.Req> routes) {
     return new RouteException(serverError, exceptions, routes);
   }
 
-  protected Map<String, ? extends LBSolrClient.Req> createRoutes(UpdateRequest updateRequest, ModifiableSolrParams routableParams,
-                                                                 DocCollection col, DocRouter router, Map<String, List<String>> urlMap,
-                                                                 String routeField) {
-    return urlMap == null ? null : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, routeField);
+  protected Map<String, ? extends LBSolrClient.Req> createRoutes(
+      UpdateRequest updateRequest,
+      ModifiableSolrParams routableParams,
+      DocCollection col,
+      DocRouter router,
+      Map<String, List<String>> urlMap,
+      String routeField) {
+    return urlMap == null
+        ? null
+        : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, routeField);
   }
 
-  private Map<String,List<String>> buildUrlMap(DocCollection col, ReplicaListTransformer replicaListTransformer) {
+  private Map<String, List<String>> buildUrlMap(
+      DocCollection col, ReplicaListTransformer replicaListTransformer) {
     Map<String, List<String>> urlMap = new HashMap<>();
     Slice[] slices = col.getActiveSlicesArr();
     for (Slice slice : slices) {
@@ -654,9 +677,11 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       List<Replica> sortedReplicas = new ArrayList<>();
       Replica leader = slice.getLeader();
       if (directUpdatesToLeadersOnly && leader == null) {
-        for (Replica replica : slice.getReplicas(
-            replica -> replica.isActive(getClusterStateProvider().getLiveNodes())
-                && replica.getType() == Replica.Type.NRT)) {
+        for (Replica replica :
+            slice.getReplicas(
+                replica ->
+                    replica.isActive(getClusterStateProvider().getLiveNodes())
+                        && replica.getType() == Replica.Type.NRT)) {
           leader = replica;
           break;
         }
@@ -683,13 +708,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       // put the leaderUrl first.
       sortedReplicas.add(0, leader);
 
-      urlMap.put(name, sortedReplicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList()));
+      urlMap.put(
+          name, sortedReplicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList()));
     }
     return urlMap;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  protected <T extends RouteResponse> T condenseResponse(NamedList response, int timeMillis, Supplier<T> supplier) {
+  protected <T extends RouteResponse> T condenseResponse(
+      NamedList response, int timeMillis, Supplier<T> supplier) {
     T condensed = supplier.get();
     int status = 0;
     Integer rf = null;
@@ -702,31 +729,33 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     // For "adds", "deletes", "deleteByQuery" etc.
     Map<String, NamedList> versions = new HashMap<>();
 
-    for(int i=0; i<response.size(); i++) {
-      NamedList shardResponse = (NamedList)response.getVal(i);
-      NamedList header = (NamedList)shardResponse.get("responseHeader");
-      Integer shardStatus = (Integer)header.get("status");
+    for (int i = 0; i < response.size(); i++) {
+      NamedList shardResponse = (NamedList) response.getVal(i);
+      NamedList header = (NamedList) shardResponse.get("responseHeader");
+      Integer shardStatus = (Integer) header.get("status");
       int s = shardStatus.intValue();
-      if(s > 0) {
+      if (s > 0) {
         status = s;
       }
       Object rfObj = header.get(UpdateRequest.REPFACT);
       if (rfObj != null && rfObj instanceof Integer) {
-        Integer routeRf = (Integer)rfObj;
-        if (rf == null || routeRf < rf)
-          rf = routeRf;
+        Integer routeRf = (Integer) rfObj;
+        if (rf == null || routeRf < rf) rf = routeRf;
       }
-      minRf = (Integer)header.get(UpdateRequest.MIN_REPFACT);
+      minRf = (Integer) header.get(UpdateRequest.MIN_REPFACT);
 
       List<SimpleOrderedMap<String>> shardTolerantErrors =
           (List<SimpleOrderedMap<String>>) header.get("errors");
       if (null != shardTolerantErrors) {
         Integer shardMaxToleratedErrors = (Integer) header.get("maxErrors");
-        assert null != shardMaxToleratedErrors : "TolerantUpdateProcessor reported errors but not maxErrors";
+        assert null != shardMaxToleratedErrors
+            : "TolerantUpdateProcessor reported errors but not maxErrors";
         // if we get into some weird state where the nodes disagree about the effective maxErrors,
         // assume the min value seen to decide if we should fail.
-        maxToleratedErrors = Math.min(maxToleratedErrors,
-            ToleratedUpdateError.getEffectiveMaxErrors(shardMaxToleratedErrors.intValue()));
+        maxToleratedErrors =
+            Math.min(
+                maxToleratedErrors,
+                ToleratedUpdateError.getEffectiveMaxErrors(shardMaxToleratedErrors.intValue()));
 
         if (null == toleratedErrors) {
           toleratedErrors = new ArrayList<SimpleOrderedMap<String>>(shardTolerantErrors.size());
@@ -735,12 +764,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           toleratedErrors.add(err);
         }
       }
-      for (String updateType: Arrays.asList("adds", "deletes", "deleteByQuery")) {
+      for (String updateType : Arrays.asList("adds", "deletes", "deleteByQuery")) {
         Object obj = shardResponse.get(updateType);
         if (obj instanceof NamedList) {
-          NamedList versionsList = versions.containsKey(updateType) ?
-              versions.get(updateType): new NamedList();
-          versionsList.addAll((NamedList)obj);
+          NamedList versionsList =
+              versions.containsKey(updateType) ? versions.get(updateType) : new NamedList();
+          versionsList.addAll((NamedList) obj);
           versions.put(updateType, versionsList);
         }
       }
@@ -749,21 +778,22 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     NamedList cheader = new NamedList();
     cheader.add("status", status);
     cheader.add("QTime", timeMillis);
-    if (rf != null)
-      cheader.add(UpdateRequest.REPFACT, rf);
-    if (minRf != null)
-      cheader.add(UpdateRequest.MIN_REPFACT, minRf);
+    if (rf != null) cheader.add(UpdateRequest.REPFACT, rf);
+    if (minRf != null) cheader.add(UpdateRequest.MIN_REPFACT, minRf);
     if (null != toleratedErrors) {
       cheader.add("maxErrors", ToleratedUpdateError.getUserFriendlyMaxErrors(maxToleratedErrors));
       cheader.add("errors", toleratedErrors);
       if (maxToleratedErrors < toleratedErrors.size()) {
         // cumulative errors are too high, we need to throw a client exception w/correct metadata
 
-        // NOTE: it shouldn't be possible for 1 == toleratedErrors.size(), because if that were the case
+        // NOTE: it shouldn't be possible for 1 == toleratedErrors.size(), because if that were the
+        // case
         // then at least one shard should have thrown a real error before this, so we don't worry
         // about having a more "singular" exception msg for that situation
-        StringBuilder msgBuf =  new StringBuilder()
-            .append(toleratedErrors.size()).append(" Async failures during distributed update: ");
+        StringBuilder msgBuf =
+            new StringBuilder()
+                .append(toleratedErrors.size())
+                .append(" Async failures during distributed update: ");
 
         NamedList metadata = new NamedList<String>();
         for (SimpleOrderedMap<String> err : toleratedErrors) {
@@ -773,7 +803,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           msgBuf.append("\n").append(te.getMessage());
         }
 
-        SolrException toThrow = new SolrException(SolrException.ErrorCode.BAD_REQUEST, msgBuf.toString());
+        SolrException toThrow =
+            new SolrException(SolrException.ErrorCode.BAD_REQUEST, msgBuf.toString());
         toThrow.setMetadata(metadata);
         throw toThrow;
       }
@@ -794,9 +825,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   public static class RouteResponse<T extends LBSolrClient.Req> extends NamedList {
     @SuppressWarnings({"rawtypes"})
     private NamedList routeResponses;
+
     private Map<String, T> routes;
 
-    public void setRouteResponses(@SuppressWarnings({"rawtypes"})NamedList routeResponses) {
+    public void setRouteResponses(@SuppressWarnings({"rawtypes"}) NamedList routeResponses) {
       this.routeResponses = routeResponses;
     }
 
@@ -812,7 +844,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     public Map<String, T> getRoutes() {
       return routes;
     }
-
   }
 
   public static class RouteException extends SolrException {
@@ -820,7 +851,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     private NamedList<Throwable> throwables;
     private Map<String, ? extends LBSolrClient.Req> routes;
 
-    public RouteException(ErrorCode errorCode, NamedList<Throwable> throwables, Map<String, ? extends LBSolrClient.Req> routes){
+    public RouteException(
+        ErrorCode errorCode,
+        NamedList<Throwable> throwables,
+        Map<String, ? extends LBSolrClient.Req> routes) {
       super(errorCode, throwables.getVal(0).getMessage(), throwables.getVal(0));
       this.throwables = throwables;
       this.routes = routes;
@@ -852,7 +886,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws SolrServerException, IOException {
+  public NamedList<Object> request(
+      @SuppressWarnings({"rawtypes"}) SolrRequest request, String collection)
+      throws SolrServerException, IOException {
     // the collection parameter of the request overrides that of the parameter to this method
     String requestCollection = request.getCollection();
     if (requestCollection != null) {
@@ -866,18 +902,22 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /**
-   * As this class doesn't watch external collections on the client side,
-   * there's a chance that the request will fail due to cached stale state,
-   * which means the state must be refreshed from ZK and retried.
+   * As this class doesn't watch external collections on the client side, there's a chance that the
+   * request will fail due to cached stale state, which means the state must be refreshed from ZK
+   * and retried.
    */
-  protected NamedList<Object> requestWithRetryOnStaleState(@SuppressWarnings({"rawtypes"})SolrRequest request, int retryCount, List<String> inputCollections)
+  protected NamedList<Object> requestWithRetryOnStaleState(
+      @SuppressWarnings({"rawtypes"}) SolrRequest request,
+      int retryCount,
+      List<String> inputCollections)
       throws SolrServerException, IOException {
     connect(); // important to call this before you start working with the ZkStateReader
 
     // build up a _stateVer_ param to pass to the server containing all of the
     // external collection state versions involved in this request, which allows
     // the server to notify us that our cached state for one or more of the external
-    // collections is stale and needs to be refreshed ... this code has no impact on internal collections
+    // collections is stale and needs to be refreshed ... this code has no impact on internal
+    // collections
     String stateVerParam = null;
     List<DocCollection> requestedCollections = null;
     boolean isCollectionRequestOfV2 = false;
@@ -889,7 +929,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
     boolean isUpdate = (request instanceof IsUpdateRequest) && (request instanceof UpdateRequest);
-    if (!inputCollections.isEmpty() && !isAdmin && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
+    if (!inputCollections.isEmpty()
+        && !isAdmin
+        && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
       Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
 
       StringBuilder stateVerParamBuilder = null;
@@ -897,16 +939,19 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         // track the version of state we're using on the client side using the _stateVer_ param
         DocCollection coll = getDocCollection(requestedCollection, null);
         if (coll == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + requestedCollection);
         }
         int collVer = coll.getZNodeVersion();
-        if(requestedCollections == null) requestedCollections = new ArrayList<>(requestedCollectionNames.size());
+        if (requestedCollections == null)
+          requestedCollections = new ArrayList<>(requestedCollectionNames.size());
         requestedCollections.add(coll);
 
         if (stateVerParamBuilder == null) {
           stateVerParamBuilder = new StringBuilder();
         } else {
-          stateVerParamBuilder.append("|"); // hopefully pipe is not an allowed char in a collection name
+          stateVerParamBuilder.append(
+              "|"); // hopefully pipe is not an allowed char in a collection name
         }
 
         stateVerParamBuilder.append(coll.getName()).append(":").append(collVer);
@@ -929,11 +974,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     NamedList<Object> resp = null;
     try {
       resp = sendRequest(request, inputCollections);
-      //to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from there
+      // to avoid an O(n) operation we always add STATE_VERSION to the last and try to read it from
+      // there
       Object o = resp == null || resp.size() == 0 ? null : resp.get(STATE_VERSION, resp.size() - 1);
-      if(o != null && o instanceof Map) {
-        //remove this because no one else needs this and tests would fail if they are comparing responses
-        resp.remove(resp.size()-1);
+      if (o != null && o instanceof Map) {
+        // remove this because no one else needs this and tests would fail if they are comparing
+        // responses
+        resp.remove(resp.size() - 1);
         @SuppressWarnings({"rawtypes"})
         Map invalidStates = (Map) o;
         for (Object invalidEntries : invalidStates.entrySet()) {
@@ -941,7 +988,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           Map.Entry e = (Map.Entry) invalidEntries;
           getDocCollection((String) e.getKey(), (Integer) e.getValue());
         }
-
       }
     } catch (Exception exc) {
 
@@ -949,30 +995,35 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       // don't do retry support for admin requests
       // or if the request doesn't have a collection specified
       // or request is v2 api and its method is not GET
-      if (inputCollections.isEmpty() || isAdmin || (request instanceof V2Request && request.getMethod() != SolrRequest.METHOD.GET)) {
+      if (inputCollections.isEmpty()
+          || isAdmin
+          || (request instanceof V2Request && request.getMethod() != SolrRequest.METHOD.GET)) {
         if (exc instanceof SolrServerException) {
-          throw (SolrServerException)exc;
+          throw (SolrServerException) exc;
         } else if (exc instanceof IOException) {
-          throw (IOException)exc;
-        }else if (exc instanceof RuntimeException) {
+          throw (IOException) exc;
+        } else if (exc instanceof RuntimeException) {
           throw (RuntimeException) exc;
-        }
-        else {
+        } else {
           throw new SolrServerException(rootCause);
         }
       }
 
-      int errorCode = (rootCause instanceof SolrException) ?
-          ((SolrException)rootCause).code() : SolrException.ErrorCode.UNKNOWN.code;
+      int errorCode =
+          (rootCause instanceof SolrException)
+              ? ((SolrException) rootCause).code()
+              : SolrException.ErrorCode.UNKNOWN.code;
 
       boolean wasCommError =
-          (rootCause instanceof ConnectException ||
-              rootCause instanceof SocketException ||
-              wasCommError(rootCause));
+          (rootCause instanceof ConnectException
+              || rootCause instanceof SocketException
+              || wasCommError(rootCause));
 
       if (wasCommError
-          || (exc instanceof RouteException && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
-        //TODO there are other reasons for 404. We need to change the solr response format from HTML to structured data to know that
+          || (exc instanceof RouteException
+              && (errorCode == 503)) // 404 because the core does not exist 503 service unavailable
+      // TODO there are other reasons for 404. We need to change the solr response format from HTML
+      // to structured data to know that
       ) {
         // it was a communication error. it is likely that
         // the node to which the request to be sent is down . So , expire the state
@@ -986,32 +1037,48 @@ public abstract class BaseCloudSolrClient extends SolrClient {
             cacheEntry.maybeStale = true;
           }
         }
-        if (retryCount < MAX_STALE_RETRIES) {//if it is a communication error , we must try again
-          //may be, we have a stale version of the collection state
+        if (retryCount < MAX_STALE_RETRIES) { // if it is a communication error , we must try again
+          // may be, we have a stale version of the collection state
           // and we could not get any information from the server
-          //it is probably not worth trying again and again because
+          // it is probably not worth trying again and again because
           // the state would not have been updated
-          log.info("Request to collection {} failed due to ({}) {}, retry={} maxRetries={} commError={} errorCode={} - retrying",
-              inputCollections, errorCode, rootCause, retryCount, MAX_STALE_RETRIES, wasCommError, errorCode);
+          log.info(
+              "Request to collection {} failed due to ({}) {}, retry={} maxRetries={} commError={} errorCode={} - retrying",
+              inputCollections,
+              errorCode,
+              rootCause,
+              retryCount,
+              MAX_STALE_RETRIES,
+              wasCommError,
+              errorCode);
           return requestWithRetryOnStaleState(request, retryCount + 1, inputCollections);
         }
       } else {
         log.info("request was not communication error it seems");
       }
-      log.info("Request to collection {} failed due to ({}) {}, retry={} maxRetries={} commError={} errorCode={} ",
-          inputCollections, errorCode, rootCause, retryCount, MAX_STALE_RETRIES, wasCommError, errorCode);
+      log.info(
+          "Request to collection {} failed due to ({}) {}, retry={} maxRetries={} commError={} errorCode={} ",
+          inputCollections,
+          errorCode,
+          rootCause,
+          retryCount,
+          MAX_STALE_RETRIES,
+          wasCommError,
+          errorCode);
 
       boolean stateWasStale = false;
-      if (retryCount < MAX_STALE_RETRIES  &&
-          requestedCollections != null    &&
-          !requestedCollections.isEmpty() &&
-          (SolrException.ErrorCode.getErrorCode(errorCode) == SolrException.ErrorCode.INVALID_STATE || errorCode == 404))
-      {
+      if (retryCount < MAX_STALE_RETRIES
+          && requestedCollections != null
+          && !requestedCollections.isEmpty()
+          && (SolrException.ErrorCode.getErrorCode(errorCode)
+                  == SolrException.ErrorCode.INVALID_STATE
+              || errorCode == 404)) {
         // cached state for one or more external collections was stale
         // re-issue request using updated state
         stateWasStale = true;
 
-        // just re-read state for all of them, which is a little heavy handed but hopefully a rare occurrence
+        // just re-read state for all of them, which is a little heavy handed but hopefully a rare
+        // occurrence
         for (DocCollection ext : requestedCollections) {
           collectionStateCache.remove(ext.getName());
         }
@@ -1019,18 +1086,19 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       // if we experienced a communication error, it's worth checking the state
       // with ZK just to make sure the node we're trying to hit is still part of the collection
-      if (retryCount < MAX_STALE_RETRIES &&
-          !stateWasStale &&
-          requestedCollections != null &&
-          !requestedCollections.isEmpty() &&
-          wasCommError) {
+      if (retryCount < MAX_STALE_RETRIES
+          && !stateWasStale
+          && requestedCollections != null
+          && !requestedCollections.isEmpty()
+          && wasCommError) {
         for (DocCollection ext : requestedCollections) {
           DocCollection latestStateFromZk = getDocCollection(ext.getName(), null);
           if (latestStateFromZk.getZNodeVersion() != ext.getZNodeVersion()) {
             // looks like we couldn't reach the server because the state was stale == retry
             stateWasStale = true;
             // we just pulled state from ZK, so update the cache so that the retry uses it
-            collectionStateCache.put(ext.getName(), new ExpiringCachedDocCollection(latestStateFromZk));
+            collectionStateCache.put(
+                ext.getName(), new ExpiringCachedDocCollection(latestStateFromZk));
           }
         }
       }
@@ -1041,10 +1109,14 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       // if the state was stale, then we retry the request once with new state pulled from Zk
       if (stateWasStale) {
-        log.warn("Re-trying request to collection(s) {} after stale state error from server.", inputCollections);
-        resp = requestWithRetryOnStaleState(request, retryCount+1, inputCollections);
+        log.warn(
+            "Re-trying request to collection(s) {} after stale state error from server.",
+            inputCollections);
+        resp = requestWithRetryOnStaleState(request, retryCount + 1, inputCollections);
       } else {
-        if (exc instanceof SolrException || exc instanceof SolrServerException || exc instanceof IOException) {
+        if (exc instanceof SolrException
+            || exc instanceof SolrServerException
+            || exc instanceof IOException) {
           throw exc;
         } else {
           throw new SolrServerException(rootCause);
@@ -1055,7 +1127,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return resp;
   }
 
-  protected NamedList<Object> sendRequest(@SuppressWarnings({"rawtypes"})SolrRequest request, List<String> inputCollections)
+  protected NamedList<Object> sendRequest(
+      @SuppressWarnings({"rawtypes"}) SolrRequest request, List<String> inputCollections)
       throws SolrServerException, IOException {
     connect();
 
@@ -1066,10 +1139,16 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if (request instanceof UpdateRequest) {
         isUpdate = true;
         if (inputCollections.size() > 1) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Update request must be sent to a single collection " +
-              "or an alias: " + inputCollections);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Update request must be sent to a single collection "
+                  + "or an alias: "
+                  + inputCollections);
         }
-        String collection = inputCollections.isEmpty() ? null : inputCollections.get(0); // getting first mimics HttpSolrCall
+        String collection =
+            inputCollections.isEmpty()
+                ? null
+                : inputCollections.get(0); // getting first mimics HttpSolrCall
         NamedList<Object> response = directUpdate((AbstractUpdateRequest) request, collection);
         if (response != null) {
           return response;
@@ -1083,7 +1162,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       reqParams = new ModifiableSolrParams();
     }
 
-    ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(reqParams);
+    ReplicaListTransformer replicaListTransformer =
+        requestRLTGenerator.getReplicaListTransformer(reqParams);
 
     final Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
 
@@ -1093,35 +1173,43 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
         Collections.shuffle(liveNodesList, rand);
-        theUrlList.add(Utils.getBaseUrlForNodeName(liveNodesList.get(0),
-            getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
+        theUrlList.add(
+            Utils.getBaseUrlForNodeName(
+                liveNodesList.get(0),
+                getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME, "http")));
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
       for (String liveNode : liveNodes) {
-        theUrlList.add(Utils.getBaseUrlForNodeName(liveNode,
-            getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
+        theUrlList.add(
+            Utils.getBaseUrlForNodeName(
+                liveNode,
+                getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME, "http")));
       }
 
     } else { // Typical...
       Set<String> collectionNames = resolveAliases(inputCollections, isUpdate);
       if (collectionNames.isEmpty()) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "No collection param specified on request and no default collection has been set: " + inputCollections);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "No collection param specified on request and no default collection has been set: "
+                + inputCollections);
       }
 
       // TODO: not a big deal because of the caching, but we could avoid looking
       //   at every shard when getting leaders if we tweaked some things
 
-      // Retrieve slices from the cloud state and, for each collection specified, add it to the Map of slices.
-      Map<String,Slice> slices = new HashMap<>();
+      // Retrieve slices from the cloud state and, for each collection specified, add it to the Map
+      // of slices.
+      Map<String, Slice> slices = new HashMap<>();
       String shardKeys = reqParams.get(ShardParams._ROUTE_);
       for (String collectionName : collectionNames) {
         DocCollection col = getDocCollection(collectionName, null);
         if (col == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Collection not found: " + collectionName);
         }
-        Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams , col);
+        Collection<Slice> routeSlices = col.getRouter().getSearchSlices(shardKeys, reqParams, col);
         ClientUtils.addSlices(slices, collectionName, routeSlices, true);
       }
 
@@ -1133,8 +1221,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         for (Replica replica : slice.getReplicas()) {
           String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
-              || replica.getState() != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
-            continue;
+              || replica.getState()
+                  != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
+          continue;
           if (sendToLeaders && replica.equals(leader)) {
             sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
           } else {
@@ -1143,7 +1232,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         }
       }
 
-      // Sort the leader replicas, if any, according to the request preferences    (none if !sendToLeaders)
+      // Sort the leader replicas, if any, according to the request preferences    (none if
+      // !sendToLeaders)
       replicaListTransformer.transform(sortedReplicas);
 
       // Sort the replicas, if any, according to the request preferences and append to our list
@@ -1153,15 +1243,18 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       String joinedInputCollections = StrUtils.join(inputCollections, ',');
       Set<String> seenNodes = new HashSet<>();
-      sortedReplicas.forEach( replica -> {
-        if (seenNodes.add(replica.getNodeName())) {
-          theUrlList.add(ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
-        }
-      });
+      sortedReplicas.forEach(
+          replica -> {
+            if (seenNodes.add(replica.getNodeName())) {
+              theUrlList.add(
+                  ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+            }
+          });
 
       if (theUrlList.isEmpty()) {
         collectionStateCache.keySet().removeAll(collectionNames);
-        throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+        throw new SolrException(
+            SolrException.ErrorCode.INVALID_STATE,
             "Could not find a healthy node to handle the request.");
       }
     }
@@ -1171,7 +1264,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return rsp.getResponse();
   }
 
-  /** Resolves the input collections to their possible aliased collections. Doesn't validate collection existence. */
+  /**
+   * Resolves the input collections to their possible aliased collections. Doesn't validate
+   * collection existence.
+   */
   private Set<String> resolveAliases(List<String> inputCollections, boolean isUpdate) {
     if (inputCollections.isEmpty()) {
       return Collections.emptySet();
@@ -1192,62 +1288,64 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return updatesToLeaders;
   }
 
-  /**
-   * @return true if direct updates are sent to shard leaders only
-   */
+  /** @return true if direct updates are sent to shard leaders only */
   public boolean isDirectUpdatesToLeadersOnly() {
     return directUpdatesToLeadersOnly;
   }
 
-  /**If caches are expired they are refreshed after acquiring a lock.
-   * use this to set the number of locks
+  /**
+   * If caches are expired they are refreshed after acquiring a lock. use this to set the number of
+   * locks
    */
-  public void setParallelCacheRefreshes(int n){ locks = objectList(n); }
+  public void setParallelCacheRefreshes(int n) {
+    locks = objectList(n);
+  }
 
   protected static ArrayList<Object> objectList(int n) {
-    ArrayList<Object> l =  new ArrayList<>(n);
-    for(int i=0;i<n;i++) l.add(new Object());
+    ArrayList<Object> l = new ArrayList<>(n);
+    for (int i = 0; i < n; i++) l.add(new Object());
     return l;
   }
 
-
-  protected DocCollection getDocCollection(String collection, Integer expectedVersion) throws SolrException {
+  protected DocCollection getDocCollection(String collection, Integer expectedVersion)
+      throws SolrException {
     if (expectedVersion == null) expectedVersion = -1;
     if (collection == null) return null;
     ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(collection);
     DocCollection col = cacheEntry == null ? null : cacheEntry.cached;
     if (col != null) {
-      if (expectedVersion <= col.getZNodeVersion()
-          && !cacheEntry.shouldRetry()) return col;
+      if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
     }
 
     ClusterState.CollectionRef ref = getCollectionRef(collection);
     if (ref == null) {
-      //no such collection exists
+      // no such collection exists
       return null;
     }
     if (!ref.isLazilyLoaded()) {
-      //it is readily available just return it
+      // it is readily available just return it
       return ref.get();
     }
     @SuppressWarnings({"rawtypes"})
     List locks = this.locks;
-    final Object lock = locks.get(Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
+    final Object lock =
+        locks.get(
+            Math.abs(
+                Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
     DocCollection fetchedCol = null;
     synchronized (lock) {
       /*we have waited for sometime just check once again*/
       cacheEntry = collectionStateCache.get(collection);
       col = cacheEntry == null ? null : cacheEntry.cached;
       if (col != null) {
-        if (expectedVersion <= col.getZNodeVersion()
-            && !cacheEntry.shouldRetry()) return col;
+        if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
       }
       // We are going to fetch a new version
       // we MUST try to get a new version
-      fetchedCol = ref.get();//this is a call to ZK
-      if (fetchedCol == null) return null;// this collection no more exists
+      fetchedCol = ref.get(); // this is a call to ZK
+      if (fetchedCol == null) return null; // this collection no more exists
       if (col != null && fetchedCol.getZNodeVersion() == col.getZNodeVersion()) {
-        cacheEntry.setRetriedAt();//we retried and found that it is the same version
+        cacheEntry.setRetriedAt(); // we retried and found that it is the same version
         cacheEntry.maybeStale = false;
       } else {
         collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol));
@@ -1261,20 +1359,18 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /**
-   * Useful for determining the minimum achieved replication factor across
-   * all shards involved in processing an update request, typically useful
-   * for gauging the replication factor of a batch.
+   * Useful for determining the minimum achieved replication factor across all shards involved in
+   * processing an update request, typically useful for gauging the replication factor of a batch.
    */
   @SuppressWarnings("rawtypes")
   public int getMinAchievedReplicationFactor(String collection, NamedList resp) {
     // it's probably already on the top-level header set by condense
-    NamedList header = (NamedList)resp.get("responseHeader");
-    Integer achRf = (Integer)header.get(UpdateRequest.REPFACT);
-    if (achRf != null)
-      return achRf.intValue();
+    NamedList header = (NamedList) resp.get("responseHeader");
+    Integer achRf = (Integer) header.get(UpdateRequest.REPFACT);
+    if (achRf != null) return achRf.intValue();
 
     // not on the top-level header, walk the shard route tree
-    Map<String,Integer> shardRf = getShardReplicationFactor(collection, resp);
+    Map<String, Integer> shardRf = getShardReplicationFactor(collection, resp);
     for (Integer rf : shardRf.values()) {
       if (achRf == null || rf < achRf) {
         achRf = rf;
@@ -1284,19 +1380,19 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /**
-   * Walks the NamedList response after performing an update request looking for
-   * the replication factor that was achieved in each shard involved in the request.
-   * For single doc updates, there will be only one shard in the return value.
+   * Walks the NamedList response after performing an update request looking for the replication
+   * factor that was achieved in each shard involved in the request. For single doc updates, there
+   * will be only one shard in the return value.
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map<String,Integer> getShardReplicationFactor(String collection, NamedList resp) {
+  public Map<String, Integer> getShardReplicationFactor(String collection, NamedList resp) {
     connect();
 
-    Map<String,Integer> results = new HashMap<String,Integer>();
+    Map<String, Integer> results = new HashMap<String, Integer>();
     if (resp instanceof RouteResponse) {
-      NamedList routes = ((RouteResponse)resp).getRouteResponses();
+      NamedList routes = ((RouteResponse) resp).getRouteResponses();
       DocCollection coll = getDocCollection(collection, null);
-      Map<String,String> leaders = new HashMap<String,String>();
+      Map<String, String> leaders = new HashMap<String, String>();
       for (Slice slice : coll.getActiveSlicesArr()) {
         Replica leader = slice.getLeader();
         if (leader != null) {
@@ -1309,17 +1405,17 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       @SuppressWarnings({"unchecked"})
-      Iterator<Map.Entry<String,Object>> routeIter = routes.iterator();
+      Iterator<Map.Entry<String, Object>> routeIter = routes.iterator();
       while (routeIter.hasNext()) {
-        Map.Entry<String,Object> next = routeIter.next();
+        Map.Entry<String, Object> next = routeIter.next();
         String host = next.getKey();
-        NamedList hostResp = (NamedList)next.getValue();
-        Integer rf = (Integer)((NamedList)hostResp.get("responseHeader")).get(UpdateRequest.REPFACT);
+        NamedList hostResp = (NamedList) next.getValue();
+        Integer rf =
+            (Integer) ((NamedList) hostResp.get("responseHeader")).get(UpdateRequest.REPFACT);
         if (rf != null) {
           String shard = leaders.get(host);
           if (shard == null) {
-            if (host.endsWith("/"))
-              shard = leaders.get(host.substring(0,host.length()-1));
+            if (host.endsWith("/")) shard = leaders.get(host.substring(0, host.length() - 1));
             if (shard == null) {
               shard = host;
             }
@@ -1332,8 +1428,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   private static boolean hasInfoToFindLeaders(UpdateRequest updateRequest, String idField) {
-    final Map<SolrInputDocument,Map<String,Object>> documents = updateRequest.getDocumentsMap();
-    final Map<String,Map<String,Object>> deleteById = updateRequest.getDeleteByIdMap();
+    final Map<SolrInputDocument, Map<String, Object>> documents = updateRequest.getDocumentsMap();
+    final Map<String, Map<String, Object>> deleteById = updateRequest.getDeleteByIdMap();
 
     final boolean hasNoDocuments = (documents == null || documents.isEmpty());
     final boolean hasNoDeleteById = (deleteById == null || deleteById.isEmpty());
@@ -1343,7 +1439,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     }
 
     if (documents != null) {
-      for (final Map.Entry<SolrInputDocument,Map<String,Object>> entry : documents.entrySet()) {
+      for (final Map.Entry<SolrInputDocument, Map<String, Object>> entry : documents.entrySet()) {
         final SolrInputDocument doc = entry.getKey();
         final Object fieldValue = doc.getFieldValue(idField);
         if (fieldValue == null) {
@@ -1355,5 +1451,4 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
     return true;
   }
-
 }

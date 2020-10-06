@@ -17,8 +17,9 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.lang.invoke.MethodHandles;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
@@ -29,11 +30,7 @@ import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-
-/**
- *
- */
+/** */
 public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -44,7 +41,9 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(
+      ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results)
+      throws Exception {
     String extCollectionName = message.getStr(CoreAdminParams.NAME);
     String target = message.getStr(CollectionAdminParams.TARGET);
 
@@ -53,7 +52,9 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     if (extCollectionName == null || target == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "both collection 'name' and 'target' name must be specified");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "both collection 'name' and 'target' name must be specified");
     }
     Aliases aliases = ocmh.zkStateReader.getAliases();
 
@@ -65,13 +66,20 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
       collectionName = extCollectionName;
     }
     if (!state.hasCollection(collectionName)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "source collection '" + collectionName + "' not found.");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "source collection '" + collectionName + "' not found.");
     }
     if (ocmh.zkStateReader.getAliases().hasAlias(target)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "target alias '" + target + "' exists: "
-          + ocmh.zkStateReader.getAliases().getCollectionAliasListMap().get(target));
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "target alias '"
+              + target
+              + "' exists: "
+              + ocmh.zkStateReader.getAliases().getCollectionAliasListMap().get(target));
     }
 
-    ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithRename(extCollectionName, target));
+    ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(
+        a -> a.cloneWithRename(extCollectionName, target));
   }
 }

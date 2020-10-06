@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.payloads.FloatEncoder;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
@@ -45,7 +44,8 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
 
     return new QParser(qstr, localParams, params, req) {
       @Override
@@ -81,7 +81,8 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
         PayloadEncoder encoder = null;
         String e = PayloadUtils.getPayloadEncoder(ft);
-        if ("float".equals(e)) {    // TODO: centralize this string->PayloadEncoder logic (see DelimitedPayloadTokenFilterFactory)
+        if ("float".equals(e)) { // TODO: centralize this string->PayloadEncoder logic (see
+          // DelimitedPayloadTokenFilterFactory)
           encoder = new FloatEncoder();
         } else if ("integer".equals(e)) {
           encoder = new IntegerEncoder();
@@ -90,20 +91,20 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         }
 
         if (encoder == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid encoder: " + e + " for field: " + field);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "invalid encoder: " + e + " for field: " + field);
         }
 
         List<BytesRef> payloads = new ArrayList<>();
-        String[] rawPayloads = p.split(" ");  // since payloads (most likely) came in whitespace delimited, just split
+        String[] rawPayloads =
+            p.split(" "); // since payloads (most likely) came in whitespace delimited, just split
         for (String rawPayload : rawPayloads) {
-          if (rawPayload.length() > 0)
-            payloads.add(encoder.encode(rawPayload.toCharArray()));
+          if (rawPayload.length() > 0) payloads.add(encoder.encode(rawPayload.toCharArray()));
         }
 
         return new SpanPayloadCheckQuery(query, payloads);
       }
     };
-
-
   }
 }

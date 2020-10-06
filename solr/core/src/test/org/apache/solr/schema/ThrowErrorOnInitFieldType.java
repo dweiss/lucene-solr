@@ -18,12 +18,10 @@ package org.apache.solr.schema;
 
 import java.util.Map;
 
-/**
- * throws an {@link java.lang.Error} on init for testing purposes
- */
+/** throws an {@link java.lang.Error} on init for testing purposes */
 public class ThrowErrorOnInitFieldType extends TextField {
 
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
     throw new Error("Doing my job, throwing java.lang.Error");
   }
 }

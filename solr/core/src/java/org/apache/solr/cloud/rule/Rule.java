@@ -16,15 +16,6 @@
  */
 package org.apache.solr.cloud.rule;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.CANNOT_ASSIGN_FAIL;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.NODE_CAN_BE_ASSIGNED;
 import static org.apache.solr.cloud.rule.Rule.MatchStatus.NOT_APPLICABLE;
@@ -36,6 +27,13 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.rule.ImplicitSnitch.CORES;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 
 public class Rule {
   public static final String WILD_CARD = "*";
@@ -46,7 +44,7 @@ public class Rule {
   Condition replica;
   Condition tag;
 
-  public Rule(@SuppressWarnings({"rawtypes"})Map m) {
+  public Rule(@SuppressWarnings({"rawtypes"}) Map m) {
     for (Object o : m.entrySet()) {
       @SuppressWarnings({"rawtypes"})
       Map.Entry e = (Map.Entry) o;
@@ -55,22 +53,23 @@ public class Rule {
       else if (condition.name.equals(REPLICA_PROP)) replica = condition;
       else {
         if (tag != null) {
-          throw new RuntimeException("There can be only one and only one tag other than 'shard' and 'replica' in rule " + m);
+          throw new RuntimeException(
+              "There can be only one and only one tag other than 'shard' and 'replica' in rule "
+                  + m);
         }
         tag = condition;
       }
-
     }
     if (shard == null) shard = SHARD_DEFAULT;
     if (replica == null) replica = REPLICA_DEFAULT;
-    if (tag == null) throw new RuntimeException("There should be a tag other than 'shard' and 'replica'");
+    if (tag == null)
+      throw new RuntimeException("There should be a tag other than 'shard' and 'replica'");
     if (replica.isWildCard() && tag.isWildCard()) {
       throw new RuntimeException("Both replica and tag cannot be wild cards");
     }
-
   }
 
-  static Object parseObj(Object o, @SuppressWarnings({"rawtypes"})Class typ) {
+  static Object parseObj(Object o, @SuppressWarnings({"rawtypes"}) Class typ) {
     if (o == null) return o;
     if (typ == String.class) return String.valueOf(o);
     if (typ == Integer.class) {
@@ -88,16 +87,19 @@ public class Rule {
     for (String kv : keyVals) {
       List<String> keyVal = StrUtils.splitSmart(kv, ':');
       if (keyVal.size() != 2) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid rule. should have only key and val in : " + kv);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Invalid rule. should have only key and val in : " + kv);
       }
       if (keyVal.get(0).trim().length() == 0 || keyVal.get(1).trim().length() == 0) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid rule. should have key and val in : " + kv);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Invalid rule. should have key and val in : " + kv);
       }
       result.put(keyVal.get(0).trim(), keyVal.get(1).trim());
     }
     return result;
   }
-
 
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -111,66 +113,76 @@ public class Rule {
   }
 
   /**
-   * Check if it is possible to assign this node as a replica of the given shard
-   * without violating this rule
+   * Check if it is possible to assign this node as a replica of the given shard without violating
+   * this rule
    *
-   * @param testNode       The node in question
-   * @param shardVsNodeSet Set of nodes for every shard 
-   * @param nodeVsTags     The pre-fetched tags for all the nodes
-   * @param shardName      The shard to which this node should be attempted
+   * @param testNode The node in question
+   * @param shardVsNodeSet Set of nodes for every shard
+   * @param nodeVsTags The pre-fetched tags for all the nodes
+   * @param shardName The shard to which this node should be attempted
    * @return MatchStatus
    */
-  MatchStatus tryAssignNodeToShard(String testNode,
-                                   Map<String, Map<String,Integer>> shardVsNodeSet,
-                                   Map<String, Map<String, Object>> nodeVsTags,
-                                   String shardName, Phase phase) {
+  MatchStatus tryAssignNodeToShard(
+      String testNode,
+      Map<String, Map<String, Integer>> shardVsNodeSet,
+      Map<String, Map<String, Object>> nodeVsTags,
+      String shardName,
+      Phase phase) {
 
     if (tag.isWildCard()) {
-      //this is ensuring uniqueness across a certain tag
-      //eg: rack:r168
+      // this is ensuring uniqueness across a certain tag
+      // eg: rack:r168
       if (!shard.isWildCard() && shardName.equals(shard.val)) return NOT_APPLICABLE;
       Object tagValueForThisNode = nodeVsTags.get(testNode).get(tag.name);
-      int v = getNumberOfNodesWithSameTagVal(shard, nodeVsTags, shardVsNodeSet,
-          shardName, new Condition(tag.name, tagValueForThisNode, EQUAL), phase);
+      int v =
+          getNumberOfNodesWithSameTagVal(
+              shard,
+              nodeVsTags,
+              shardVsNodeSet,
+              shardName,
+              new Condition(tag.name, tagValueForThisNode, EQUAL),
+              phase);
       if (phase == Phase.ASSIGN || phase == Phase.FUZZY_ASSIGN)
-        v++;//v++ because including this node , it becomes v+1 during ASSIGN
-      return replica.canMatch(v, phase) ?
-          NODE_CAN_BE_ASSIGNED :
-          CANNOT_ASSIGN_FAIL;
+        v++; // v++ because including this node , it becomes v+1 during ASSIGN
+      return replica.canMatch(v, phase) ? NODE_CAN_BE_ASSIGNED : CANNOT_ASSIGN_FAIL;
     } else {
       if (!shard.isWildCard() && !shardName.equals(shard.val)) return NOT_APPLICABLE;
       if (replica.isWildCard()) {
-        //this means for each replica, the value must match
-        //shard match is already tested
+        // this means for each replica, the value must match
+        // shard match is already tested
         Map<String, Object> tags = nodeVsTags.get(testNode);
-        if (tag.canMatch(tags == null ? null : tags.get(tag.name), phase)) return NODE_CAN_BE_ASSIGNED;
+        if (tag.canMatch(tags == null ? null : tags.get(tag.name), phase))
+          return NODE_CAN_BE_ASSIGNED;
         else return CANNOT_ASSIGN_FAIL;
       } else {
-        int v = getNumberOfNodesWithSameTagVal(shard, nodeVsTags, shardVsNodeSet, shardName, tag, phase);
+        int v =
+            getNumberOfNodesWithSameTagVal(
+                shard, nodeVsTags, shardVsNodeSet, shardName, tag, phase);
         return replica.canMatch(v, phase) ? NODE_CAN_BE_ASSIGNED : CANNOT_ASSIGN_FAIL;
-
       }
-
     }
   }
 
-  private int getNumberOfNodesWithSameTagVal(Condition shardCondition,
-                                             Map<String, Map<String, Object>> nodeVsTags,
-                                             Map<String, Map<String,Integer>> shardVsNodeSet,
-                                             String shardName,
-                                             Condition tagCondition,
-                                             Phase phase) {
+  private int getNumberOfNodesWithSameTagVal(
+      Condition shardCondition,
+      Map<String, Map<String, Object>> nodeVsTags,
+      Map<String, Map<String, Integer>> shardVsNodeSet,
+      String shardName,
+      Condition tagCondition,
+      Phase phase) {
 
     int countMatchingThisTagValue = 0;
-    for (Map.Entry<String, Map<String,Integer>> entry : shardVsNodeSet.entrySet()) {
-      //check if this shard is relevant. either it is a ANY Wild card (**)
+    for (Map.Entry<String, Map<String, Integer>> entry : shardVsNodeSet.entrySet()) {
+      // check if this shard is relevant. either it is a ANY Wild card (**)
       // or this shard is same as the shard in question
       if (shardCondition.val.equals(WILD_WILD_CARD) || entry.getKey().equals(shardName)) {
-        Map<String,Integer> nodesInThisShard = shardVsNodeSet.get(shardCondition.val.equals(WILD_WILD_CARD) ? entry.getKey() : shardName);
+        Map<String, Integer> nodesInThisShard =
+            shardVsNodeSet.get(
+                shardCondition.val.equals(WILD_WILD_CARD) ? entry.getKey() : shardName);
         if (nodesInThisShard != null) {
-          for (Map.Entry<String,Integer> aNode : nodesInThisShard.entrySet()) {
+          for (Map.Entry<String, Integer> aNode : nodesInThisShard.entrySet()) {
             Map<String, Object> tagValues = nodeVsTags.get(aNode.getKey());
-            if(tagValues == null) continue;
+            if (tagValues == null) continue;
             Object obj = tagValues.get(tag.name);
             if (tagCondition.canMatch(obj, phase)) countMatchingThisTagValue += aNode.getValue();
           }
@@ -180,9 +192,11 @@ public class Rule {
     return countMatchingThisTagValue;
   }
 
-  public int compare(String n1, String n2,
-                     Map<String, Map<String, Object>> nodeVsTags,
-                     Map<String, Map<String,Integer>> currentState) {
+  public int compare(
+      String n1,
+      String n2,
+      Map<String, Map<String, Object>> nodeVsTags,
+      Map<String, Map<String, Integer>> currentState) {
     return tag.compare(n1, n2, nodeVsTags);
   }
 
@@ -204,12 +218,10 @@ public class Rule {
         return checkNumeric(super.match(val));
       }
 
-
       @Override
       public boolean canMatch(Object ruleVal, Object testVal) {
         return testVal != null && compareNum(ruleVal, testVal) == 1;
       }
-
     },
     LESS_THAN("<") {
       @Override
@@ -255,7 +267,6 @@ public class Rule {
       return Objects.equals(String.valueOf(ruleVal), String.valueOf(testVal));
     }
 
-
     public int compare(Object n1Val, Object n2Val) {
       return 0;
     }
@@ -275,7 +286,10 @@ public class Rule {
   }
 
   enum Phase {
-    ASSIGN, VERIFY, FUZZY_ASSIGN, FUZZY_VERIFY
+    ASSIGN,
+    VERIFY,
+    FUZZY_ASSIGN,
+    FUZZY_VERIFY
   }
 
   public static class Condition {
@@ -328,7 +342,6 @@ public class Rule {
       }
       this.val = expectedVal;
       this.fuzzy = fuzzy;
-
     }
 
     public boolean isWildCard() {
@@ -338,11 +351,11 @@ public class Rule {
     boolean canMatch(Object testVal, Phase phase) {
       if (phase == Phase.FUZZY_ASSIGN || phase == Phase.FUZZY_VERIFY) return true;
       if (phase == Phase.ASSIGN) {
-        if ((name.equals(REPLICA_PROP) || name.equals(CORES)) &&
-            (operand == GREATER_THAN || operand == NOT_EQUAL)) {
-          //the no:of replicas or cores will increase towards the end
-          //so this should only be checked in the Phase.
-          //process
+        if ((name.equals(REPLICA_PROP) || name.equals(CORES))
+            && (operand == GREATER_THAN || operand == NOT_EQUAL)) {
+          // the no:of replicas or cores will increase towards the end
+          // so this should only be checked in the Phase.
+          // process
           return true;
         }
       }
@@ -350,15 +363,13 @@ public class Rule {
       return operand.canMatch(val, testVal);
     }
 
-
     @Override
     public boolean equals(Object obj) {
       if (obj instanceof Condition) {
         Condition that = (Condition) obj;
-        return Objects.equals(name, that.name) &&
-            Objects.equals(operand, that.operand) &&
-            Objects.equals(val, that.val);
-
+        return Objects.equals(name, that.name)
+            && Objects.equals(operand, that.operand)
+            && Objects.equals(val, that.val);
       }
       return false;
     }
@@ -385,11 +396,5 @@ public class Rule {
       if (n1Val == null || n2Val == null) return -1;
       return isWildCard() ? 0 : operand.compare(n1Val, n2Val);
     }
-
   }
-
-
 }
-
-
-

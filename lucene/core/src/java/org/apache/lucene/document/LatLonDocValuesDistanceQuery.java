@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.index.DocValues;
@@ -40,7 +39,8 @@ final class LatLonDocValuesDistanceQuery extends Query {
   private final double latitude, longitude;
   private final double radiusMeters;
 
-  LatLonDocValuesDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
+  LatLonDocValuesDistanceQuery(
+      String field, double latitude, double longitude, double radiusMeters) {
     if (Double.isFinite(radiusMeters) == false || radiusMeters < 0) {
       throw new IllegalArgumentException("radiusMeters: '" + radiusMeters + "' is invalid");
     }
@@ -84,10 +84,10 @@ final class LatLonDocValuesDistanceQuery extends Query {
       return false;
     }
     LatLonDocValuesDistanceQuery other = (LatLonDocValuesDistanceQuery) obj;
-    return field.equals(other.field) &&
-        Double.doubleToLongBits(latitude) == Double.doubleToLongBits(other.latitude) &&
-        Double.doubleToLongBits(longitude) == Double.doubleToLongBits(other.longitude) &&
-        Double.doubleToLongBits(radiusMeters) == Double.doubleToLongBits(other.radiusMeters);
+    return field.equals(other.field)
+        && Double.doubleToLongBits(latitude) == Double.doubleToLongBits(other.latitude)
+        && Double.doubleToLongBits(longitude) == Double.doubleToLongBits(other.longitude)
+        && Double.doubleToLongBits(radiusMeters) == Double.doubleToLongBits(other.radiusMeters);
   }
 
   @Override
@@ -101,10 +101,12 @@ final class LatLonDocValuesDistanceQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
-      private final GeoEncodingUtils.DistancePredicate distancePredicate = GeoEncodingUtils.createDistancePredicate(latitude, longitude, radiusMeters);
+      private final GeoEncodingUtils.DistancePredicate distancePredicate =
+          GeoEncodingUtils.createDistancePredicate(latitude, longitude, radiusMeters);
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -113,27 +115,27 @@ final class LatLonDocValuesDistanceQuery extends Query {
           return null;
         }
 
-        final TwoPhaseIterator iterator = new TwoPhaseIterator(values) {
+        final TwoPhaseIterator iterator =
+            new TwoPhaseIterator(values) {
 
-          @Override
-          public boolean matches() throws IOException {
-            for (int i = 0, count = values.docValueCount(); i < count; ++i) {
-              final long value = values.nextValue();
-              final int lat = (int) (value >>> 32);
-              final int lon = (int) (value & 0xFFFFFFFF);
-              if (distancePredicate.test(lat, lon)) {
-                return true;
+              @Override
+              public boolean matches() throws IOException {
+                for (int i = 0, count = values.docValueCount(); i < count; ++i) {
+                  final long value = values.nextValue();
+                  final int lat = (int) (value >>> 32);
+                  final int lon = (int) (value & 0xFFFFFFFF);
+                  if (distancePredicate.test(lat, lon)) {
+                    return true;
+                  }
+                }
+                return false;
               }
-            }
-            return false;
-          }
 
-          @Override
-          public float matchCost() {
-            return 100f; // TODO: what should it be?
-          }
-
-        };
+              @Override
+              public float matchCost() {
+                return 100f; // TODO: what should it be?
+              }
+            };
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
@@ -141,8 +143,6 @@ final class LatLonDocValuesDistanceQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return DocValues.isCacheable(ctx, field);
       }
-
     };
   }
-
 }

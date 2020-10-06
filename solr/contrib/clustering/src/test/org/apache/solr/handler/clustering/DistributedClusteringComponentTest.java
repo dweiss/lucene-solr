@@ -22,8 +22,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.junit.Test;
 
 @SuppressSSL
-public class DistributedClusteringComponentTest extends
-    BaseDistributedSearchTestCase {
+public class DistributedClusteringComponentTest extends BaseDistributedSearchTestCase {
 
   @Override
   public String getSolrHome() {
@@ -35,20 +34,20 @@ public class DistributedClusteringComponentTest extends
     del("*:*");
     int numberOfDocs = 0;
     for (String[] doc : AbstractClusteringTestCase.DOCUMENTS) {
-      index(id, Integer.toString(numberOfDocs++), "url", doc[0], "title", doc[1], "snippet", doc[2]);
+      index(
+          id, Integer.toString(numberOfDocs++), "url", doc[0], "title", doc[1], "snippet", doc[2]);
     }
     commit();
     handle.clear();
     // Only really care about the clusters for this test case, so drop the header and response
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
-    query(                                                                                                   
+    query(
         ClusteringComponent.COMPONENT_NAME, "true",
         CommonParams.Q, "*:*",
         CommonParams.SORT, id + " desc",
         ClusteringParams.USE_SEARCH_RESULTS, "true");
     // destroy is not needed because distribTearDown method of base class does it.
-    //destroyServers();
+    // destroyServers();
   }
-
 }

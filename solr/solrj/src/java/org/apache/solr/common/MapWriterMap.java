@@ -25,7 +25,7 @@ public class MapWriterMap implements MapWriter {
   @SuppressWarnings({"rawtypes"})
   private final Map delegate;
 
-  public MapWriterMap(@SuppressWarnings({"rawtypes"})Map delegate) {
+  public MapWriterMap(@SuppressWarnings({"rawtypes"}) Map delegate) {
     this.delegate = delegate;
   }
 
@@ -49,10 +49,9 @@ public class MapWriterMap implements MapWriter {
     return MapWriter.super._get(path, def);
   }
 
-
   @Override
   @SuppressWarnings("unchecked")
-  public Map<String,Object> toMap(Map<String, Object> map) {
+  public Map<String, Object> toMap(Map<String, Object> map) {
     return delegate;
   }
 }

@@ -16,9 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.util.Map;
 import java.util.Properties;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -27,16 +28,14 @@ import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 /**
  * This class is experimental and subject to change.
  *
  * @since solr 5.4
  */
-public abstract class ConfigSetAdminRequest
-      <Q extends ConfigSetAdminRequest<Q,R>, R extends ConfigSetAdminResponse>
-      extends SolrRequest<R> {
+public abstract class ConfigSetAdminRequest<
+        Q extends ConfigSetAdminRequest<Q, R>, R extends ConfigSetAdminResponse>
+    extends SolrRequest<R> {
 
   protected ConfigSetAction action = null;
 
@@ -51,7 +50,7 @@ public abstract class ConfigSetAdminRequest
   }
 
   public ConfigSetAdminRequest(String path) {
-    super (METHOD.GET, path);
+    super(METHOD.GET, path);
   }
 
   protected abstract Q getThis();
@@ -59,20 +58,19 @@ public abstract class ConfigSetAdminRequest
   @Override
   public SolrParams getParams() {
     if (action == null) {
-      throw new RuntimeException( "no action specified!" );
+      throw new RuntimeException("no action specified!");
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(ConfigSetParams.ACTION, action.toString());
     return params;
   }
 
-
   @Override
   protected abstract R createResponse(SolrClient client);
 
-  protected abstract static class ConfigSetSpecificAdminRequest
-       <T extends ConfigSetAdminRequest<T,ConfigSetAdminResponse>>
-       extends ConfigSetAdminRequest<T,ConfigSetAdminResponse> {
+  protected abstract static class ConfigSetSpecificAdminRequest<
+          T extends ConfigSetAdminRequest<T, ConfigSetAdminResponse>>
+      extends ConfigSetAdminRequest<T, ConfigSetAdminResponse> {
     protected String configSetName = null;
 
     public final T setConfigSetName(String configSetName) {
@@ -88,7 +86,7 @@ public abstract class ConfigSetAdminRequest
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       if (configSetName == null) {
-        throw new RuntimeException( "no ConfigSet specified!" );
+        throw new RuntimeException("no ConfigSet specified!");
       }
       params.set(NAME, configSetName);
       return params;
@@ -145,9 +143,9 @@ public abstract class ConfigSetAdminRequest
         params.set("baseConfigSet", baseConfigSetName);
       }
       if (properties != null) {
-        for (@SuppressWarnings({"rawtypes"})Map.Entry entry : properties.entrySet()) {
-          params.set(PROPERTY_PREFIX + "." + entry.getKey().toString(),
-              entry.getValue().toString());
+        for (@SuppressWarnings({"rawtypes"}) Map.Entry entry : properties.entrySet()) {
+          params.set(
+              PROPERTY_PREFIX + "." + entry.getKey().toString(), entry.getValue().toString());
         }
       }
       return params;

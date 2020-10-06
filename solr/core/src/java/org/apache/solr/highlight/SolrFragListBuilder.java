@@ -24,19 +24,20 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public interface SolrFragListBuilder extends SolrInfoBean, NamedListInitializedPlugin {
 
-  /** <code>init</code> will be called just once, immediately after creation.
-   * <p>The args are user-level initialization parameters that
-   * may be specified when declaring a request handler in
-   * solrconfig.xml
+  /**
+   * <code>init</code> will be called just once, immediately after creation.
+   *
+   * <p>The args are user-level initialization parameters that may be specified when declaring a
+   * request handler in solrconfig.xml
    */
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args);
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args);
 
   /**
    * Return a FragListBuilder.
-   * 
+   *
    * @param params The params controlling Highlighting
    * @return An appropriate FragListBuilder.
    */
-  public FragListBuilder getFragListBuilder( SolrParams params );
+  public FragListBuilder getFragListBuilder(SolrParams params);
 }

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.security;
 
+import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
+
+import com.google.common.collect.ImmutableSet;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -27,30 +30,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
+public class Sha256AuthenticationProvider
+    implements ConfigEditablePlugin, BasicAuthPlugin.AuthenticationProvider {
 
-public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  BasicAuthPlugin.AuthenticationProvider {
-
-  static String CANNOT_DELETE_LAST_USER_ERROR = "You cannot delete the last user. At least one user must be configured at all times.";
+  static String CANNOT_DELETE_LAST_USER_ERROR =
+      "You cannot delete the last user. At least one user must be configured at all times.";
   private Map<String, String> credentials;
   private String realm;
   private Map<String, String> promptHeader;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
   @SuppressWarnings({"unchecked"})
-  static void putUser(String user, String pwd, @SuppressWarnings({"rawtypes"})Map credentials) {
+  static void putUser(String user, String pwd, @SuppressWarnings({"rawtypes"}) Map credentials) {
     if (user == null || pwd == null) return;
     String val = getSaltedHashedValue(pwd);
     credentials.put(user, val);
@@ -72,13 +71,16 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     } else {
       this.realm = "solr";
     }
-    
-    promptHeader = Collections.unmodifiableMap(Collections.singletonMap("WWW-Authenticate", "Basic realm=\"" + realm + "\""));
+
+    promptHeader =
+        Collections.unmodifiableMap(
+            Collections.singletonMap("WWW-Authenticate", "Basic realm=\"" + realm + "\""));
     credentials = new LinkedHashMap<>();
     @SuppressWarnings({"unchecked"})
-    Map<String,String> users = (Map<String,String>) pluginConfig.get("credentials");
+    Map<String, String> users = (Map<String, String>) pluginConfig.get("credentials");
     if (users == null || users.isEmpty()) {
-      throw new IllegalStateException("No users configured yet. At least one user must be configured in security.json");
+      throw new IllegalStateException(
+          "No users configured yet. At least one user must be configured in security.json");
     }
     for (Map.Entry<String, String> e : users.entrySet()) {
       String v = e.getValue();
@@ -88,7 +90,6 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
       }
       credentials.put(e.getKey(), v);
     }
-
   }
 
   public boolean authenticate(String username, String password) {
@@ -117,7 +118,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
       digest = MessageDigest.getInstance("SHA-256");
     } catch (NoSuchAlgorithmException e) {
       log.error("Cannot find algorithm ", e);
-      return null;//should not happen
+      return null; // should not happen
     }
     if (saltKey != null) {
       digest.reset();
@@ -144,12 +145,12 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
         @SuppressWarnings({"rawtypes"})
         Map map = (Map) latestConf.get("credentials");
         if (map == null || !map.keySet().containsAll(names)) {
-          cmd.addError("No such user(s) " +names );
+          cmd.addError("No such user(s) " + names);
           return null;
         }
         for (String name : names) {
           if (map.containsKey(name)) {
-            if (map.size() == 1){
+            if (map.size() == 1) {
               cmd.addError(CANNOT_DELETE_LAST_USER_ERROR);
               return null;
             }
@@ -158,7 +159,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
         }
         return latestConf;
       }
-      if ("set-user".equals(cmd.name) ) {
+      if ("set-user".equals(cmd.name)) {
         @SuppressWarnings({"rawtypes"})
         Map map = getMapValue(latestConf, "credentials");
         @SuppressWarnings({"rawtypes"})
@@ -166,13 +167,12 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
         for (Object o : kv.entrySet()) {
           @SuppressWarnings({"rawtypes"})
           Map.Entry e = (Map.Entry) o;
-          if(e.getKey() == null || e.getValue() == null){
+          if (e.getKey() == null || e.getValue() == null) {
             cmd.addError("name and password must be non-null");
             return null;
           }
           putUser(String.valueOf(e.getKey()), String.valueOf(e.getValue()), map);
         }
-
       }
     }
     return latestConf;

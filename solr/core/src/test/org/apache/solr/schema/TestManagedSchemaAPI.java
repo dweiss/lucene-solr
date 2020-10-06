@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -43,7 +42,8 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
   }
 
@@ -63,7 +63,8 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     String fieldName = "myNewField";
     addStringField(fieldName, collection, cloudClient);
 
-    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(collection);
+    CollectionAdminRequest.Reload reloadRequest =
+        CollectionAdminRequest.reloadCollection(collection);
     CollectionAdminResponse response = reloadRequest.process(cloudClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -85,15 +86,19 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     doc.addField("id", "2");
     doc.addField(fieldName, "val1");
     UpdateRequest ureq = new UpdateRequest().add(doc);
-    cloudClient.request(ureq, collection);;
+    cloudClient.request(ureq, collection);
+    ;
   }
 
-  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient) throws IOException, SolrServerException {
+  private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient)
+      throws IOException, SolrServerException {
     Map<String, Object> fieldAttributes = new LinkedHashMap<>();
     fieldAttributes.put("name", fieldName);
     fieldAttributes.put("type", "string");
-    SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
-    SchemaResponse.UpdateResponse addFieldResponse = addFieldUpdateSchemaRequest.process(cloudClient, collection);
+    SchemaRequest.AddField addFieldUpdateSchemaRequest =
+        new SchemaRequest.AddField(fieldAttributes);
+    SchemaResponse.UpdateResponse addFieldResponse =
+        addFieldUpdateSchemaRequest.process(cloudClient, collection);
     assertEquals(0, addFieldResponse.getStatus());
     assertNull(addFieldResponse.getResponse().get("errors"));
 
@@ -109,17 +114,17 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
 
     String fieldName = "id";
     SchemaRequest.Field getFieldRequest = new SchemaRequest.Field(fieldName);
-    SchemaResponse.FieldResponse getFieldResponse = getFieldRequest.process(cloudClient, collection);
+    SchemaResponse.FieldResponse getFieldResponse =
+        getFieldRequest.process(cloudClient, collection);
     Map<String, Object> field = getFieldResponse.getField();
     field.put("docValues", true);
     SchemaRequest.ReplaceField replaceRequest = new SchemaRequest.ReplaceField(field);
     SchemaResponse.UpdateResponse replaceResponse = replaceRequest.process(cloudClient, collection);
     assertNull(replaceResponse.getResponse().get("errors"));
-    CollectionAdminRequest.Reload reloadRequest = CollectionAdminRequest.reloadCollection(collection);
+    CollectionAdminRequest.Reload reloadRequest =
+        CollectionAdminRequest.reloadCollection(collection);
     CollectionAdminResponse response = reloadRequest.process(cloudClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-
   }
-
 }

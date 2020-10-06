@@ -37,11 +37,11 @@ public class ClassificationEvaluation {
   }
 
   @SuppressWarnings({"unchecked"})
-  public void putToMap(@SuppressWarnings({"rawtypes"})Map map) {
-    map.put("truePositive_i",truePositive);
-    map.put("trueNegative_i",trueNegative);
-    map.put("falsePositive_i",falsePositive);
-    map.put("falseNegative_i",falseNegative);
+  public void putToMap(@SuppressWarnings({"rawtypes"}) Map map) {
+    map.put("truePositive_i", truePositive);
+    map.put("trueNegative_i", trueNegative);
+    map.put("falsePositive_i", falsePositive);
+    map.put("falseNegative_i", falseNegative);
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -51,13 +51,13 @@ public class ClassificationEvaluation {
     return map;
   }
 
-  public static ClassificationEvaluation create(@SuppressWarnings({"rawtypes"})Map map) {
+  public static ClassificationEvaluation create(@SuppressWarnings({"rawtypes"}) Map map) {
     ClassificationEvaluation evaluation = new ClassificationEvaluation();
     evaluation.addEvaluation(map);
     return evaluation;
   }
 
-  public void addEvaluation(@SuppressWarnings({"rawtypes"})Map map) {
+  public void addEvaluation(@SuppressWarnings({"rawtypes"}) Map map) {
     this.truePositive += (long) map.get("truePositive_i");
     this.trueNegative += (long) map.get("trueNegative_i");
     this.falsePositive += (long) map.get("falsePositive_i");
@@ -82,6 +82,7 @@ public class ClassificationEvaluation {
   }
 
   public double getAccuracy() {
-    return (double) (truePositive + trueNegative) / (truePositive + trueNegative + falseNegative + falsePositive);
+    return (double) (truePositive + trueNegative)
+        / (truePositive + trueNegative + falseNegative + falsePositive);
   }
 }

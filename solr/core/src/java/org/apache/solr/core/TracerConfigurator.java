@@ -17,10 +17,9 @@
 
 package org.apache.solr.core;
 
-import java.lang.invoke.MethodHandles;
-
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopTracerFactory;
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.GlobalTracer;
@@ -32,7 +31,8 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   public abstract Tracer getTracer();
 
-  public static void loadTracer(SolrResourceLoader loader, PluginInfo info, ZkStateReader stateReader) {
+  public static void loadTracer(
+      SolrResourceLoader loader, PluginInfo info, ZkStateReader stateReader) {
     if (info == null) {
       // in case of a Tracer is registered to OpenTracing through javaagent
       if (io.opentracing.util.GlobalTracer.isRegistered()) {
@@ -43,8 +43,8 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
         GlobalTracer.get().setSamplePercentage(0.0);
       }
     } else {
-      TracerConfigurator configurator = loader
-          .newInstance(info.className, TracerConfigurator.class);
+      TracerConfigurator configurator =
+          loader.newInstance(info.className, TracerConfigurator.class);
       configurator.init(info.initArgs);
 
       GlobalTracer.setup(configurator.getTracer());
@@ -53,18 +53,20 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
   }
 
   private static void registerListener(ZkStateReader stateReader) {
-    stateReader.registerClusterPropertiesListener(properties -> {
-      if (properties.containsKey(ZkStateReader.SAMPLE_PERCENTAGE)) {
-        try {
-          double sampleRate = Double.parseDouble(properties.get(ZkStateReader.SAMPLE_PERCENTAGE).toString());
-          GlobalTracer.get().setSamplePercentage(sampleRate);
-        } catch (NumberFormatException e) {
-          log.error("Unable to set sample rate", e);
-        }
-      } else {
-        GlobalTracer.get().setSamplePercentage(0.1);
-      }
-      return false;
-    });
+    stateReader.registerClusterPropertiesListener(
+        properties -> {
+          if (properties.containsKey(ZkStateReader.SAMPLE_PERCENTAGE)) {
+            try {
+              double sampleRate =
+                  Double.parseDouble(properties.get(ZkStateReader.SAMPLE_PERCENTAGE).toString());
+              GlobalTracer.get().setSamplePercentage(sampleRate);
+            } catch (NumberFormatException e) {
+              log.error("Unable to set sample rate", e);
+            }
+          } else {
+            GlobalTracer.get().setSamplePercentage(0.1);
+          }
+          return false;
+        });
   }
 }

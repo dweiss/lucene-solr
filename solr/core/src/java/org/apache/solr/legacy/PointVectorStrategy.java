@@ -40,55 +40,49 @@ import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Simple {@link SpatialStrategy} which represents Points in two numeric fields.
- * The Strategy's best feature is decent distance sort.
+ * Simple {@link SpatialStrategy} which represents Points in two numeric fields. The Strategy's best
+ * feature is decent distance sort.
  *
- * <p>
- * <b>Characteristics:</b>
- * <br>
+ * <p><b>Characteristics:</b> <br>
+ *
  * <ul>
- * <li>Only indexes points; just one per field value.</li>
- * <li>Can query by a rectangle or circle.</li>
- * <li>{@link
- * org.apache.lucene.spatial.query.SpatialOperation#Intersects} and {@link
- * SpatialOperation#IsWithin} is supported.</li>
- * <li>Requires DocValues for
- * {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point)} and for
- * searching with a Circle.</li>
+ *   <li>Only indexes points; just one per field value.
+ *   <li>Can query by a rectangle or circle.
+ *   <li>{@link org.apache.lucene.spatial.query.SpatialOperation#Intersects} and {@link
+ *       SpatialOperation#IsWithin} is supported.
+ *   <li>Requires DocValues for {@link
+ *       #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point)} and for searching with a
+ *       Circle.
  * </ul>
  *
- * <p>
- * <b>Implementation:</b>
- * <p>
- * This is a simple Strategy.  Search works with a pair of range queries on two {@link DoublePoint}s representing
- * x &amp; y fields.  A Circle query does the same bbox query but adds a
- * ValueSource filter on
- * {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point)}.
- * <p>
- * One performance shortcoming with this strategy is that a scenario involving
- * both a search using a Circle and sort will result in calculations for the
- * spatial distance being done twice -- once for the filter and second for the
- * sort.
+ * <p><b>Implementation:</b>
+ *
+ * <p>This is a simple Strategy. Search works with a pair of range queries on two {@link
+ * DoublePoint}s representing x &amp; y fields. A Circle query does the same bbox query but adds a
+ * ValueSource filter on {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point)}.
+ *
+ * <p>One performance shortcoming with this strategy is that a scenario involving both a search
+ * using a Circle and sort will result in calculations for the spatial distance being done twice --
+ * once for the filter and second for the sort.
  *
  * @lucene.experimental
  */
 public class PointVectorStrategy extends SpatialStrategy {
 
-  // note: we use a FieldType to articulate the options we want on the field.  We don't use it as-is with a Field, we
+  // note: we use a FieldType to articulate the options we want on the field.  We don't use it as-is
+  // with a Field, we
   //  create more than one Field.
 
-  /**
-   * pointValues, docValues, and nothing else.
-   */
+  /** pointValues, docValues, and nothing else. */
   public static FieldType DEFAULT_FIELDTYPE;
 
-  @Deprecated
-  public static LegacyFieldType LEGACY_FIELDTYPE;
+  @Deprecated public static LegacyFieldType LEGACY_FIELDTYPE;
+
   static {
     // Default: pointValues + docValues
     FieldType type = new FieldType();
-    type.setDimensions(1, Double.BYTES);//pointValues (assume Double)
-    type.setDocValuesType(DocValuesType.NUMERIC);//docValues
+    type.setDimensions(1, Double.BYTES); // pointValues (assume Double)
+    type.setDocValuesType(DocValuesType.NUMERIC); // docValues
     type.setStored(false);
     type.freeze();
     DEFAULT_FIELDTYPE = type;
@@ -96,8 +90,8 @@ public class PointVectorStrategy extends SpatialStrategy {
     LegacyFieldType legacyType = new LegacyFieldType();
     legacyType.setIndexOptions(IndexOptions.DOCS);
     legacyType.setNumericType(LegacyNumericType.DOUBLE);
-    legacyType.setNumericPrecisionStep(8);// same as solr default
-    legacyType.setDocValuesType(DocValuesType.NONE);//no docValues!
+    legacyType.setNumericPrecisionStep(8); // same as solr default
+    legacyType.setDocValuesType(DocValuesType.NONE); // no docValues!
     legacyType.setStored(false);
     legacyType.freeze();
     LEGACY_FIELDTYPE = legacyType;
@@ -117,16 +111,18 @@ public class PointVectorStrategy extends SpatialStrategy {
   private final LegacyFieldType legacyNumericFieldType; // not stored; holds precision step.
 
   /**
-   * Create a new {@link PointVectorStrategy} instance that uses {@link DoublePoint} and {@link DoublePoint#newRangeQuery}
+   * Create a new {@link PointVectorStrategy} instance that uses {@link DoublePoint} and {@link
+   * DoublePoint#newRangeQuery}
    */
   public static PointVectorStrategy newInstance(SpatialContext ctx, String fieldNamePrefix) {
     return new PointVectorStrategy(ctx, fieldNamePrefix, DEFAULT_FIELDTYPE);
   }
 
   /**
-   * Create a new {@link PointVectorStrategy} instance that uses {@link LegacyDoubleField} for backwards compatibility.
-   * However, back-compat is limited; we don't support circle queries or {@link #makeDistanceValueSource(Point, double)}
-   * since that requires docValues (the legacy config didn't have that).
+   * Create a new {@link PointVectorStrategy} instance that uses {@link LegacyDoubleField} for
+   * backwards compatibility. However, back-compat is limited; we don't support circle queries or
+   * {@link #makeDistanceValueSource(Point, double)} since that requires docValues (the legacy
+   * config didn't have that).
    *
    * @deprecated LegacyNumerics will be removed
    */
@@ -136,14 +132,14 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   /**
-   * Create a new instance configured with the provided FieldType options. See {@link #DEFAULT_FIELDTYPE}.
-   * a field type is used to articulate the desired options (namely pointValues, docValues, stored).  Legacy numerics
-   * is configurable this way too.
+   * Create a new instance configured with the provided FieldType options. See {@link
+   * #DEFAULT_FIELDTYPE}. a field type is used to articulate the desired options (namely
+   * pointValues, docValues, stored). Legacy numerics is configurable this way too.
    */
   public PointVectorStrategy(SpatialContext ctx, String fieldNamePrefix, FieldType fieldType) {
     super(ctx, fieldNamePrefix);
-    this.fieldNameX = fieldNamePrefix+SUFFIX_X;
-    this.fieldNameY = fieldNamePrefix+SUFFIX_Y;
+    this.fieldNameX = fieldNamePrefix + SUFFIX_X;
+    this.fieldNameY = fieldNamePrefix + SUFFIX_Y;
 
     int numPairs = 0;
     if ((this.hasStored = fieldType.stored())) {
@@ -155,13 +151,17 @@ public class PointVectorStrategy extends SpatialStrategy {
     if ((this.hasPointVals = fieldType.pointDimensionCount() > 0)) {
       numPairs++;
     }
-    if (fieldType.indexOptions() != IndexOptions.NONE && fieldType instanceof LegacyFieldType && ((LegacyFieldType)fieldType).numericType() != null) {
+    if (fieldType.indexOptions() != IndexOptions.NONE
+        && fieldType instanceof LegacyFieldType
+        && ((LegacyFieldType) fieldType).numericType() != null) {
       if (hasPointVals) {
-        throw new IllegalArgumentException("pointValues and LegacyNumericType are mutually exclusive");
+        throw new IllegalArgumentException(
+            "pointValues and LegacyNumericType are mutually exclusive");
       }
       final LegacyFieldType legacyType = (LegacyFieldType) fieldType;
       if (legacyType.numericType() != LegacyNumericType.DOUBLE) {
-        throw new IllegalArgumentException(getClass() + " does not support " + legacyType.numericType());
+        throw new IllegalArgumentException(
+            getClass() + " does not support " + legacyType.numericType());
       }
       numPairs++;
       legacyNumericFieldType = new LegacyFieldType(LegacyDoubleField.TYPE_NOT_STORED);
@@ -173,7 +173,6 @@ public class PointVectorStrategy extends SpatialStrategy {
     this.fieldsLen = numPairs * 2;
   }
 
-
   String getFieldNameX() {
     return fieldNameX;
   }
@@ -184,8 +183,7 @@ public class PointVectorStrategy extends SpatialStrategy {
 
   @Override
   public Field[] createIndexableFields(Shape shape) {
-    if (shape instanceof Point)
-      return createIndexableFields((Point) shape);
+    if (shape instanceof Point) return createIndexableFields((Point) shape);
     throw new UnsupportedOperationException("Can only index Point, not " + shape);
   }
 
@@ -220,42 +218,45 @@ public class PointVectorStrategy extends SpatialStrategy {
 
   @Override
   public ConstantScoreQuery makeQuery(SpatialArgs args) {
-    if(! SpatialOperation.is( args.getOperation(),
-        SpatialOperation.Intersects,
-        SpatialOperation.IsWithin ))
+    if (!SpatialOperation.is(
+        args.getOperation(), SpatialOperation.Intersects, SpatialOperation.IsWithin))
       throw new UnsupportedSpatialOperation(args.getOperation());
     Shape shape = args.getShape();
     if (shape instanceof Rectangle) {
       Rectangle bbox = (Rectangle) shape;
       return new ConstantScoreQuery(makeWithin(bbox));
     } else if (shape instanceof Circle) {
-      Circle circle = (Circle)shape;
+      Circle circle = (Circle) shape;
       Rectangle bbox = circle.getBoundingBox();
       Query approxQuery = makeWithin(bbox);
       BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
       double r = circle.getRadius();
-      FunctionMatchQuery vsMatchQuery = new FunctionMatchQuery(makeDistanceValueSource(circle.getCenter()),
-          v -> 0 <= v && v <= r);
-      bqBuilder.add(approxQuery, BooleanClause.Occur.FILTER);//should have lowest "cost" value; will drive iteration
+      FunctionMatchQuery vsMatchQuery =
+          new FunctionMatchQuery(
+              makeDistanceValueSource(circle.getCenter()), v -> 0 <= v && v <= r);
+      bqBuilder.add(
+          approxQuery,
+          BooleanClause.Occur.FILTER); // should have lowest "cost" value; will drive iteration
       bqBuilder.add(vsMatchQuery, BooleanClause.Occur.FILTER);
       return new ConstantScoreQuery(bqBuilder.build());
     } else {
-      throw new UnsupportedOperationException("Only Rectangles and Circles are currently supported, " +
-          "found [" + shape.getClass() + "]");//TODO
+      throw new UnsupportedOperationException(
+          "Only Rectangles and Circles are currently supported, "
+              + "found ["
+              + shape.getClass()
+              + "]"); // TODO
     }
   }
 
-  /**
-   * Constructs a query to retrieve documents that fully contain the input envelope.
-   */
+  /** Constructs a query to retrieve documents that fully contain the input envelope. */
   private Query makeWithin(Rectangle bbox) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     BooleanClause.Occur MUST = BooleanClause.Occur.MUST;
     if (bbox.getCrossesDateLine()) {
-      //use null as performance trick since no data will be beyond the world bounds
-      bq.add(rangeQuery(fieldNameX, null/*-180*/, bbox.getMaxX()), BooleanClause.Occur.SHOULD );
-      bq.add(rangeQuery(fieldNameX, bbox.getMinX(), null/*+180*/), BooleanClause.Occur.SHOULD );
-      bq.setMinimumNumberShouldMatch(1);//must match at least one of the SHOULD
+      // use null as performance trick since no data will be beyond the world bounds
+      bq.add(rangeQuery(fieldNameX, null /*-180*/, bbox.getMaxX()), BooleanClause.Occur.SHOULD);
+      bq.add(rangeQuery(fieldNameX, bbox.getMinX(), null /*+180*/), BooleanClause.Occur.SHOULD);
+      bq.setMinimumNumberShouldMatch(1); // must match at least one of the SHOULD
     } else {
       bq.add(rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX()), MUST);
     }
@@ -264,9 +265,9 @@ public class PointVectorStrategy extends SpatialStrategy {
   }
 
   /**
-   * Returns a numeric range query based on FieldType
-   * {@link LegacyNumericRangeQuery} is used for indexes created using {@code FieldType.LegacyNumericType}
-   * {@link DoublePoint#newRangeQuery} is used for indexes created using {@link DoublePoint} fields
+   * Returns a numeric range query based on FieldType {@link LegacyNumericRangeQuery} is used for
+   * indexes created using {@code FieldType.LegacyNumericType} {@link DoublePoint#newRangeQuery} is
+   * used for indexes created using {@link DoublePoint} fields
    */
   private Query rangeQuery(String fieldName, Double min, Double max) {
     if (hasPointVals) {
@@ -280,10 +281,16 @@ public class PointVectorStrategy extends SpatialStrategy {
 
       return DoublePoint.newRangeQuery(fieldName, min, max);
 
-    } else if (legacyNumericFieldType != null) {// todo remove legacy numeric support in 7.0
-      return LegacyNumericRangeQuery.newDoubleRange(fieldName, legacyNumericFieldType.numericPrecisionStep(), min, max, true, true);//inclusive
+    } else if (legacyNumericFieldType != null) { // todo remove legacy numeric support in 7.0
+      return LegacyNumericRangeQuery.newDoubleRange(
+          fieldName,
+          legacyNumericFieldType.numericPrecisionStep(),
+          min,
+          max,
+          true,
+          true); // inclusive
     }
-    //TODO try doc-value range query?
+    // TODO try doc-value range query?
     throw new UnsupportedOperationException("An index is required for this operation.");
   }
 }

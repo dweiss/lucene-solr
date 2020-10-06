@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -64,10 +63,20 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
   }
 
   public void doRootShardRoutingTest() throws Exception {
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(
+        4,
+        cloudClient
+            .getZkStateReader()
+            .getClusterState()
+            .getCollection(DEFAULT_COLLECTION)
+            .getSlices()
+            .size());
     final String[] ids = {"3", "4", "5", "6"};
 
-    assertEquals("size of ids to index should be the same as the number of clients", clients.size(), ids.length);
+    assertEquals(
+        "size of ids to index should be the same as the number of clients",
+        clients.size(),
+        ids.length);
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
@@ -84,9 +93,14 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
 
     indexDoc(aClient, params, doc);
 
-    for(int idIndex = 0; idIndex < ids.length; ++idIndex) {
+    for (int idIndex = 0; idIndex < ids.length; ++idIndex) {
 
-      doc = sdoc("id", "2", "grandChildren", map("add", sdocs(sdoc("id", ids[idIndex], "level_s", "grand_child"))));
+      doc =
+          sdoc(
+              "id",
+              "2",
+              "grandChildren",
+              map("add", sdocs(sdoc("id", ids[idIndex], "level_s", "grand_child"))));
 
       indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
 
@@ -95,9 +109,11 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
 
       // assert RTG request respects _route_ param
-      QueryResponse routeRsp = getRandomSolrClient().query(params("qt","/get", "id","2", "_route_", "1"));
+      QueryResponse routeRsp =
+          getRandomSolrClient().query(params("qt", "/get", "id", "2", "_route_", "1"));
       SolrDocument results = (SolrDocument) routeRsp.getResponse().get("doc");
-      assertNotNull("RTG should find doc because _route_ was set to the root documents' ID", results);
+      assertNotNull(
+          "RTG should find doc because _route_ was set to the root documents' ID", results);
       assertEquals("2", results.getFieldValue("id"));
 
       // assert all docs are indexed under the same root
@@ -105,7 +121,8 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       assertEquals(0, getRandomSolrClient().query(params("q", "-_root_:1")).getResults().size());
 
       // assert all docs are indexed inside the same block
-      QueryResponse rsp = getRandomSolrClient().query(params("qt","/get", "id","1", "fl", "*, [child]"));
+      QueryResponse rsp =
+          getRandomSolrClient().query(params("qt", "/get", "id", "1", "fl", "*, [child]"));
       SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
       assertEquals("1", val.getFieldValue("id"));
       @SuppressWarnings({"unchecked"})
@@ -123,10 +140,20 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
   }
 
   public void doNestedInplaceUpdateTest() throws Exception {
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(
+        4,
+        cloudClient
+            .getZkStateReader()
+            .getClusterState()
+            .getCollection(DEFAULT_COLLECTION)
+            .getSlices()
+            .size());
     final String[] ids = {"3", "4", "5", "6"};
 
-    assertEquals("size of ids to index should be the same as the number of clients", clients.size(), ids.length);
+    assertEquals(
+        "size of ids to index should be the same as the number of clients",
+        clients.size(),
+        ids.length);
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
@@ -143,7 +170,12 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
 
     indexDocAndRandomlyCommit(aClient, params, doc);
 
-    doc = sdoc("id", "2", "grandChildren", map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
+    doc =
+        sdoc(
+            "id",
+            "2",
+            "grandChildren",
+            map("add", sdocs(sdoc("id", ids[0], "level_s", "grand_child"))));
 
     indexDocAndRandomlyCommit(aClient, params, doc);
 
@@ -153,9 +185,11 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       indexDocAndRandomlyCommit(getRandomSolrClient(), params, doc);
 
       // assert RTG request respects _route_ param
-      QueryResponse routeRsp = getRandomSolrClient().query(params("qt","/get", "id","2", "_route_", "1"));
+      QueryResponse routeRsp =
+          getRandomSolrClient().query(params("qt", "/get", "id", "2", "_route_", "1"));
       SolrDocument results = (SolrDocument) routeRsp.getResponse().get("doc");
-      assertNotNull("RTG should find doc because _route_ was set to the root documents' ID", results);
+      assertNotNull(
+          "RTG should find doc because _route_ was set to the root documents' ID", results);
       assertEquals("2", results.getFieldValue("id"));
 
       // assert all docs are indexed under the same root
@@ -163,7 +197,8 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
       assertEquals(0, getRandomSolrClient().query(params("q", "-_root_:1")).getResults().size());
 
       // assert all docs are indexed inside the same block
-      QueryResponse rsp = getRandomSolrClient().query(params("qt","/get", "id","1", "fl", "*, [child]"));
+      QueryResponse rsp =
+          getRandomSolrClient().query(params("qt", "/get", "id", "1", "fl", "*, [child]"));
       SolrDocument val = (SolrDocument) rsp.getResponse().get("doc");
       assertEquals("1", val.getFieldValue("id"));
       @SuppressWarnings({"unchecked"})
@@ -181,7 +216,14 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
   }
 
   public void sendWrongRouteParam() throws Exception {
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(
+        4,
+        cloudClient
+            .getZkStateReader()
+            .getClusterState()
+            .getCollection(DEFAULT_COLLECTION)
+            .getSlices()
+            .size());
     final String rootId = "1";
 
     SolrInputDocument doc = sdoc("id", rootId, "level_s", "root");
@@ -194,31 +236,41 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
 
     indexDocAndRandomlyCommit(aClient, params("wt", "json", "_route_", rootId), doc, false);
 
-    final SolrInputDocument childDoc = sdoc("id", rootId, "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
+    final SolrInputDocument childDoc =
+        sdoc("id", rootId, "children", map("add", sdocs(sdoc("id", "2", "level_s", "child"))));
 
     indexDocAndRandomlyCommit(aClient, rightParams, childDoc, false);
 
-    final SolrInputDocument grandChildDoc = sdoc("id", "2", "grandChildren",
-        map("add", sdocs(
-            sdoc("id", "3", "level_s", "grandChild")
-            )
-        )
-    );
+    final SolrInputDocument grandChildDoc =
+        sdoc(
+            "id",
+            "2",
+            "grandChildren",
+            map("add", sdocs(sdoc("id", "3", "level_s", "grandChild"))));
 
-    SolrException e = expectThrows(SolrException.class,
-        "wrong \"_route_\" param should throw an exception",
-        () -> indexDocAndRandomlyCommit(aClient, wrongRootParams, grandChildDoc)
-    );
+    SolrException e =
+        expectThrows(
+            SolrException.class,
+            "wrong \"_route_\" param should throw an exception",
+            () -> indexDocAndRandomlyCommit(aClient, wrongRootParams, grandChildDoc));
 
-    assertTrue("message should suggest the wrong \"_route_\" param was supplied",
+    assertTrue(
+        "message should suggest the wrong \"_route_\" param was supplied",
         e.getMessage().contains("perhaps the wrong \"_route_\" param was supplied"));
   }
 
-  private void indexDocAndRandomlyCommit(SolrClient client, SolrParams params, SolrInputDocument sdoc) throws IOException, SolrServerException {
+  private void indexDocAndRandomlyCommit(
+      SolrClient client, SolrParams params, SolrInputDocument sdoc)
+      throws IOException, SolrServerException {
     indexDocAndRandomlyCommit(client, params, sdoc, true);
   }
 
-  private void indexDocAndRandomlyCommit(SolrClient client, SolrParams params, SolrInputDocument sdoc, boolean compareToControlCollection) throws IOException, SolrServerException {
+  private void indexDocAndRandomlyCommit(
+      SolrClient client,
+      SolrParams params,
+      SolrInputDocument sdoc,
+      boolean compareToControlCollection)
+      throws IOException, SolrServerException {
     if (compareToControlCollection) {
       indexDoc(client, params, sdoc);
     } else {
@@ -233,5 +285,4 @@ public class NestedShardedAtomicUpdateTest extends AbstractFullDistribZkTestBase
   private SolrClient getRandomSolrClient() {
     return clients.get(random().nextInt(clients.size()));
   }
-
 }

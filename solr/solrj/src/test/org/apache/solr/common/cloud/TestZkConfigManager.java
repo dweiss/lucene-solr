@@ -17,6 +17,14 @@
 package org.apache.solr.common.cloud;
 
 import com.google.common.base.Throwables;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.zookeeper.KeeperException;
@@ -27,15 +35,6 @@ import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 public class TestZkConfigManager extends SolrTestCaseJ4 {
 
@@ -137,57 +136,79 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
     final String writeableUsername = "writeable";
     final String writeablePassword = "writeable";
 
-    ZkACLProvider aclProvider = new DefaultZkACLProvider(){
-      @Override
-      protected List<ACL> createGlobalACLsToAdd() {
-        try {
-          List<ACL> result = new ArrayList<>();
-          result.add(new ACL(ZooDefs.Perms.ALL, new Id("digest", DigestAuthenticationProvider.generateDigest(writeableUsername + ":" + writeablePassword))));
-          result.add(new ACL(ZooDefs.Perms.READ, new Id("digest", DigestAuthenticationProvider.generateDigest(readOnlyUsername + ":" + readOnlyPassword))));
-          return result;
-        }
-        catch (NoSuchAlgorithmException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
+    ZkACLProvider aclProvider =
+        new DefaultZkACLProvider() {
+          @Override
+          protected List<ACL> createGlobalACLsToAdd() {
+            try {
+              List<ACL> result = new ArrayList<>();
+              result.add(
+                  new ACL(
+                      ZooDefs.Perms.ALL,
+                      new Id(
+                          "digest",
+                          DigestAuthenticationProvider.generateDigest(
+                              writeableUsername + ":" + writeablePassword))));
+              result.add(
+                  new ACL(
+                      ZooDefs.Perms.READ,
+                      new Id(
+                          "digest",
+                          DigestAuthenticationProvider.generateDigest(
+                              readOnlyUsername + ":" + readOnlyPassword))));
+              return result;
+            } catch (NoSuchAlgorithmException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
 
-    ZkCredentialsProvider readonly = new DefaultZkCredentialsProvider(){
-      @Override
-      protected Collection<ZkCredentials> createCredentials() {
-        List<ZkCredentials> credentials = new ArrayList<>();
-        credentials.add(new ZkCredentials("digest", (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
-        return credentials;
-      }
-    };
+    ZkCredentialsProvider readonly =
+        new DefaultZkCredentialsProvider() {
+          @Override
+          protected Collection<ZkCredentials> createCredentials() {
+            List<ZkCredentials> credentials = new ArrayList<>();
+            credentials.add(
+                new ZkCredentials(
+                    "digest",
+                    (readOnlyUsername + ":" + readOnlyPassword).getBytes(StandardCharsets.UTF_8)));
+            return credentials;
+          }
+        };
 
-    ZkCredentialsProvider writeable = new DefaultZkCredentialsProvider(){
-      @Override
-      protected Collection<ZkCredentials> createCredentials() {
-        List<ZkCredentials> credentials = new ArrayList<>();
-        credentials.add(new ZkCredentials("digest", (writeableUsername + ":" + writeablePassword).getBytes(StandardCharsets.UTF_8)));
-        return credentials;
-      }
-    };
+    ZkCredentialsProvider writeable =
+        new DefaultZkCredentialsProvider() {
+          @Override
+          protected Collection<ZkCredentials> createCredentials() {
+            List<ZkCredentials> credentials = new ArrayList<>();
+            credentials.add(
+                new ZkCredentials(
+                    "digest",
+                    (writeableUsername + ":" + writeablePassword)
+                        .getBytes(StandardCharsets.UTF_8)));
+            return credentials;
+          }
+        };
 
     Path configPath = createTempDir("acl-config");
     Files.createFile(configPath.resolve("file1"));
 
     // Start with all-access client
-    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
+    try (SolrZkClient client =
+        buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, writeable)) {
       ZkConfigManager configManager = new ZkConfigManager(client);
       configManager.uploadConfigDir(configPath, "acltest");
       assertEquals(1, configManager.listConfigs().size());
     }
 
     // Readonly access client can get the list of configs, but can't upload
-    try (SolrZkClient client = buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
+    try (SolrZkClient client =
+        buildZkClient(zkServer.getZkAddress("/acl"), aclProvider, readonly)) {
       ZkConfigManager configManager = new ZkConfigManager(client);
       assertEquals(1, configManager.listConfigs().size());
       configManager.uploadConfigDir(configPath, "acltest2");
-      fail ("Should have thrown an ACL exception");
-    }
-    catch (IOException e) {
+      fail("Should have thrown an ACL exception");
+    } catch (IOException e) {
       assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
     }
 
@@ -196,16 +217,16 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       ZkConfigManager configManager = new ZkConfigManager(client);
       configManager.listConfigs();
       fail("Should have thrown an ACL exception");
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       assertEquals(KeeperException.NoAuthException.class, Throwables.getRootCause(e).getClass());
     }
-
   }
 
-  static SolrZkClient buildZkClient(String zkAddress, final ZkACLProvider aclProvider,
-                                    final ZkCredentialsProvider credentialsProvider) {
-    return new SolrZkClient(zkAddress, 10000){
+  static SolrZkClient buildZkClient(
+      String zkAddress,
+      final ZkACLProvider aclProvider,
+      final ZkCredentialsProvider credentialsProvider) {
+    return new SolrZkClient(zkAddress, 10000) {
       @Override
       protected ZkCredentialsProvider createZkCredentialsToAddAutomatically() {
         return credentialsProvider;
@@ -217,5 +238,4 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       }
     };
   }
-
 }

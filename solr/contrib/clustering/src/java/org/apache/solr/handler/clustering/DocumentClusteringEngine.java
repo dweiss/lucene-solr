@@ -15,33 +15,35 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering;
-import org.apache.solr.common.util.NamedList;
+
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.DocSet;
 
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public abstract class DocumentClusteringEngine extends ClusteringEngine {
 
   /**
-   * Experimental.  Subject to change before the next release
+   * Experimental. Subject to change before the next release
    *
-   * Cluster all the documents in the index.  Clustering is often an expensive task that can take a long time.
+   * <p>Cluster all the documents in the index. Clustering is often an expensive task that can take
+   * a long time.
+   *
    * @param solrParams The params controlling clustering
    * @return The clustering results
    */
   public abstract NamedList<?> cluster(SolrParams solrParams);
 
   /**
-   * Experimental.  Subject to change before the next release
+   * Experimental. Subject to change before the next release
    *
-   * Cluster the set of docs.  Clustering of documents is often an expensive task that can take a long time.
-   * @param docs The docs to cluster.  If null, cluster all docs as in {@link #cluster(org.apache.solr.common.params.SolrParams)}
+   * <p>Cluster the set of docs. Clustering of documents is often an expensive task that can take a
+   * long time.
+   *
+   * @param docs The docs to cluster. If null, cluster all docs as in {@link
+   *     #cluster(org.apache.solr.common.params.SolrParams)}
    * @param solrParams The params controlling the clustering
    * @return The results.
    */
   public abstract NamedList<?> cluster(DocSet docs, SolrParams solrParams);
-
-
 }

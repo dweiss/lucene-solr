@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin;
 
 import java.io.StringReader;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.params.CommonParams;
@@ -26,12 +25,10 @@ import org.apache.solr.util.RedactionUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
 public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
 
   public static final String PASSWORD = "secret123";
   public static final String REDACT_STRING = RedactionUtils.getRedactString();
-
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -41,31 +38,32 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRedaction() throws Exception {
     RedactionUtils.setRedactSystemProperty(true);
-    for(String propName: new String[]{"some.password", "javax.net.ssl.trustStorePassword"}){
+    for (String propName : new String[] {"some.password", "javax.net.ssl.trustStorePassword"}) {
       System.setProperty(propName, PASSWORD);
       NamedList<NamedList<NamedList<Object>>> properties = readProperties();
 
-      assertEquals("Failed to redact "+propName, REDACT_STRING, properties.get(propName));
+      assertEquals("Failed to redact " + propName, REDACT_STRING, properties.get(propName));
     }
   }
 
   @Test
   public void testDisabledRedaction() throws Exception {
     RedactionUtils.setRedactSystemProperty(false);
-    for(String propName: new String[]{"some.password", "javax.net.ssl.trustStorePassword"}){
+    for (String propName : new String[] {"some.password", "javax.net.ssl.trustStorePassword"}) {
       System.setProperty(propName, PASSWORD);
       NamedList<NamedList<NamedList<Object>>> properties = readProperties();
 
-      assertEquals("Failed to *not* redact "+propName, PASSWORD, properties.get(propName));
+      assertEquals("Failed to *not* redact " + propName, PASSWORD, properties.get(propName));
     }
   }
 
   @SuppressWarnings({"unchecked"})
   private NamedList<NamedList<NamedList<Object>>> readProperties() throws Exception {
-    String xml = h.query(req(
-        CommonParams.QT, "/admin/properties",
-        CommonParams.WT, "xml"
-    ));
+    String xml =
+        h.query(
+            req(
+                CommonParams.QT, "/admin/properties",
+                CommonParams.WT, "xml"));
 
     XMLResponseParser parser = new XMLResponseParser();
     return (NamedList<NamedList<NamedList<Object>>>)

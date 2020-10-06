@@ -18,17 +18,15 @@ package org.apache.solr.common.cloud;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 
 /**
- * ZkACLProvider that gives all permissions for the user specified in System
- * property "solr.authorization.superuser" (default: "solr") when using sasl,
- * and gives read permissions for anyone else.  Designed for a setup where
- * configurations have already been set up and will not be modified, or
- * where configuration changes are controlled via Solr APIs.
+ * ZkACLProvider that gives all permissions for the user specified in System property
+ * "solr.authorization.superuser" (default: "solr") when using sasl, and gives read permissions for
+ * anyone else. Designed for a setup where configurations have already been set up and will not be
+ * modified, or where configuration changes are controlled via Solr APIs.
  */
 public class SaslZkACLProvider extends SecurityAwareZkACLProvider {
 

@@ -17,14 +17,13 @@
 
 package org.apache.solr.servlet;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
@@ -34,7 +33,8 @@ import org.eclipse.jetty.server.Response;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+// commented 4-Sep-2018
+// @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
 public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARD = 3;
@@ -43,14 +43,14 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest
-        .createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
+    CollectionAdminRequest.createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
-        false, true, 30);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, 30);
   }
 
   @Test
@@ -66,7 +66,9 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
     SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
     for (int i = 0; i < NUM_SHARD * REPLICA_FACTOR * 20; i++) {
       if (coreNames.size() == numCores) return;
-      HttpSolrCall httpSolrCall = new HttpSolrCall(dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
+      HttpSolrCall httpSolrCall =
+          new HttpSolrCall(
+              dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
       try {
         httpSolrCall.init();
       } catch (Exception e) {
@@ -93,14 +95,10 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
         }
 
         @Override
-        public void setWriteListener(WriteListener writeListener) {
-
-        }
+        public void setWriteListener(WriteListener writeListener) {}
 
         @Override
-        public void write(int b) throws IOException {
-
-        }
+        public void write(int b) throws IOException {}
       };
     }
 
@@ -152,9 +150,7 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
         }
 
         @Override
-        public void setReadListener(ReadListener readListener) {
-
-        }
+        public void setReadListener(ReadListener readListener) {}
 
         @Override
         public int read() throws IOException {
@@ -163,5 +159,4 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
       };
     }
   }
-
 }

@@ -18,7 +18,6 @@ package org.apache.solr.handler.clustering.carrot2;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.carrot2.core.Cluster;
 import org.carrot2.core.IClusteringAlgorithm;
 import org.carrot2.core.LanguageCode;
@@ -35,25 +34,21 @@ import org.carrot2.util.attribute.Input;
 import org.carrot2.util.attribute.Output;
 
 /**
- * A mock implementation of Carrot2 clustering algorithm for testing whether the
- * customized lexical resource lookup works correctly. This algorithm ignores
- * the input documents and instead for each word from {@link #wordsToCheck}, it
- * outputs a cluster labeled with the word only if the word is neither a stop
- * word nor a stop label.
+ * A mock implementation of Carrot2 clustering algorithm for testing whether the customized lexical
+ * resource lookup works correctly. This algorithm ignores the input documents and instead for each
+ * word from {@link #wordsToCheck}, it outputs a cluster labeled with the word only if the word is
+ * neither a stop word nor a stop label.
  */
 @Bindable(prefix = "LexicalResourcesCheckClusteringAlgorithm")
-public class LexicalResourcesCheckClusteringAlgorithm extends
-    ProcessingComponentBase implements IClusteringAlgorithm {
+public class LexicalResourcesCheckClusteringAlgorithm extends ProcessingComponentBase
+    implements IClusteringAlgorithm {
 
   @Output
   @Processing
   @Attribute(key = AttributeNames.CLUSTERS)
   public List<Cluster> clusters;
 
-  @Input
-  @Processing
-  @Attribute
-  public String wordsToCheck;
+  @Input @Processing @Attribute public String wordsToCheck;
 
   public BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
 
@@ -66,12 +61,11 @@ public class LexicalResourcesCheckClusteringAlgorithm extends
 
     // Test with Maltese so that the English clustering performed in other tests
     // is not affected by the test stopwords and stoplabels.
-    ILexicalData lexicalData = preprocessing.lexicalDataFactory
-        .getLexicalData(LanguageCode.MALTESE);
+    ILexicalData lexicalData =
+        preprocessing.lexicalDataFactory.getLexicalData(LanguageCode.MALTESE);
 
     for (String word : wordsToCheck.split(",")) {
-      if (!lexicalData.isCommonWord(new MutableCharArray(word))
-          && !lexicalData.isStopLabel(word)) {
+      if (!lexicalData.isCommonWord(new MutableCharArray(word)) && !lexicalData.isStopLabel(word)) {
         clusters.add(new Cluster(word));
       }
     }

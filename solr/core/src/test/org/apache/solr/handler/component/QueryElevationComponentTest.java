@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
@@ -25,8 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
@@ -50,9 +49,7 @@ import org.slf4j.LoggerFactory;
 
 public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
-  @Rule
-  public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
+  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -88,19 +85,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   }
 
   private void init(String config, String schema) throws Exception {
-    //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
+    // write out elevate-data.xml to the Data dir first by copying it from conf, which we know
+    // exists, this way we can test both conf and data configurations
     File parent = new File(TEST_HOME() + "/collection1", "conf");
     File elevateFile = new File(parent, "elevate.xml");
     File elevateDataFile = new File(initAndGetDataDir(), "elevate-data.xml");
     FileUtils.copyFile(elevateFile, elevateDataFile);
 
-
-    initCore(config,schema);
+    initCore(config, schema);
     clearIndex();
     assertU(commit());
   }
 
-  //TODO should be @After ?
+  // TODO should be @After ?
   private void delete() {
     deleteCore();
   }
@@ -123,16 +120,22 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "9", "text", "AAAA AAAA", "str_s", "a"));
       assertU(commit());
 
-      assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]")
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='7']"
-          , "//result/doc[2]/str[@name='id'][.='9']"
-          , "//result/doc[3]/str[@name='id'][.='8']",
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='7']",
+          "//result/doc[2]/str[@name='id'][.='9']",
+          "//result/doc[3]/str[@name='id'][.='8']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='false']",
-          "//result/doc[3]/bool[@name='[elevated]'][.='false']"
-      );
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']");
     } finally {
       delete();
     }
@@ -162,178 +165,164 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       final String groups = "//arr[@name='groups']";
 
-      assertQ("non-elevated group query",
-              req(CommonParams.Q, "AAAA",
-                  CommonParams.QT, "/elevate",
-                  GroupParams.GROUP_FIELD, "str_s",
-                  GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true",
-                  GroupParams.GROUP_LIMIT, "100",
-                  QueryElevationParams.ENABLE, "false",
-                  CommonParams.FL, "id, score, [elevated]")
-              , "//*[@name='ngroups'][.='3']"
-              , "//*[@name='matches'][.='6']"
+      assertQ(
+          "non-elevated group query",
+          req(
+              CommonParams.Q, "AAAA",
+              CommonParams.QT, "/elevate",
+              GroupParams.GROUP_FIELD, "str_s",
+              GroupParams.GROUP, "true",
+              GroupParams.GROUP_TOTAL_COUNT, "true",
+              GroupParams.GROUP_LIMIT, "100",
+              QueryElevationParams.ENABLE, "false",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@name='ngroups'][.='3']",
+          "//*[@name='matches'][.='6']",
+          groups + "/lst[1]//doc[1]/str[@name='id'][.='6']",
+          groups + "/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[1]//doc[2]/str[@name='id'][.='66']",
+          groups + "/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[1]/str[@name='id'][.='7']",
+          groups + "/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[2]/str[@name='id'][.='77']",
+          groups + "/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[1]/str[@name='id'][.='2']",
+          groups + "/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[2]/str[@name='id'][.='22']",
+          groups + "/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']");
 
-              , groups +"/lst[1]//doc[1]/str[@name='id'][.='6']"
-              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[1]//doc[2]/str[@name='id'][.='66']"
-              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
+      assertQ(
+          "elevated group query",
+          req(
+              CommonParams.Q, "AAAA",
+              CommonParams.QT, "/elevate",
+              GroupParams.GROUP_FIELD, "str_s",
+              GroupParams.GROUP, "true",
+              GroupParams.GROUP_TOTAL_COUNT, "true",
+              GroupParams.GROUP_LIMIT, "100",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@name='ngroups'][.='3']",
+          "//*[@name='matches'][.='6']",
+          groups + "/lst[1]//doc[1]/str[@name='id'][.='7']",
+          groups + "/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']",
+          groups + "/lst[1]//doc[2]/str[@name='id'][.='77']",
+          groups + "/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[1]/str[@name='id'][.='6']",
+          groups + "/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[2]/str[@name='id'][.='66']",
+          groups + "/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[1]/str[@name='id'][.='2']",
+          groups + "/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[2]/str[@name='id'][.='22']",
+          groups + "/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']");
 
-              , groups +"/lst[2]//doc[1]/str[@name='id'][.='7']"
-              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/str[@name='id'][.='77']"
-              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
+      assertQ(
+          "non-elevated because sorted group query",
+          req(
+              CommonParams.Q, "AAAA",
+              CommonParams.QT, "/elevate",
+              CommonParams.SORT, "id asc",
+              GroupParams.GROUP_FIELD, "str_s",
+              GroupParams.GROUP, "true",
+              GroupParams.GROUP_TOTAL_COUNT, "true",
+              GroupParams.GROUP_LIMIT, "100",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@name='ngroups'][.='3']",
+          "//*[@name='matches'][.='6']",
+          groups + "/lst[1]//doc[1]/str[@name='id'][.='2']",
+          groups + "/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[1]//doc[2]/str[@name='id'][.='22']",
+          groups + "/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[1]/str[@name='id'][.='6']",
+          groups + "/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[2]/str[@name='id'][.='66']",
+          groups + "/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[1]/str[@name='id'][.='7']",
+          groups + "/lst[3]//doc[1]/bool[@name='[elevated]'][.='true']",
+          groups + "/lst[3]//doc[2]/str[@name='id'][.='77']",
+          groups + "/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']");
 
-              , groups +"/lst[3]//doc[1]/str[@name='id'][.='2']"
-              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/str[@name='id'][.='22']"
-              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
-              );
+      assertQ(
+          "force-elevated sorted group query",
+          req(
+              CommonParams.Q, "AAAA",
+              CommonParams.QT, "/elevate",
+              CommonParams.SORT, "id asc",
+              QueryElevationParams.FORCE_ELEVATION, "true",
+              GroupParams.GROUP_FIELD, "str_s",
+              GroupParams.GROUP, "true",
+              GroupParams.GROUP_TOTAL_COUNT, "true",
+              GroupParams.GROUP_LIMIT, "100",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@name='ngroups'][.='3']",
+          "//*[@name='matches'][.='6']",
+          groups + "/lst[1]//doc[1]/str[@name='id'][.='7']",
+          groups + "/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']",
+          groups + "/lst[1]//doc[2]/str[@name='id'][.='77']",
+          groups + "/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[1]/str[@name='id'][.='2']",
+          groups + "/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[2]/str[@name='id'][.='22']",
+          groups + "/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[1]/str[@name='id'][.='6']",
+          groups + "/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[2]/str[@name='id'][.='66']",
+          groups + "/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']");
 
-      assertQ("elevated group query",
-              req(CommonParams.Q, "AAAA",
-                  CommonParams.QT, "/elevate",
-                  GroupParams.GROUP_FIELD, "str_s",
-                  GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true",
-                  GroupParams.GROUP_LIMIT, "100",
-                  CommonParams.FL, "id, score, [elevated]")
-              , "//*[@name='ngroups'][.='3']"
-              , "//*[@name='matches'][.='6']"
+      assertQ(
+          "non-elevated because of sort within group query",
+          req(
+              CommonParams.Q, "AAAA",
+              CommonParams.QT, "/elevate",
+              CommonParams.SORT, "id asc",
+              GroupParams.GROUP_SORT, "id desc",
+              GroupParams.GROUP_FIELD, "str_s",
+              GroupParams.GROUP, "true",
+              GroupParams.GROUP_TOTAL_COUNT, "true",
+              GroupParams.GROUP_LIMIT, "100",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@name='ngroups'][.='3']",
+          "//*[@name='matches'][.='6']",
+          groups + "/lst[1]//doc[1]/str[@name='id'][.='22']",
+          groups + "/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[1]//doc[2]/str[@name='id'][.='2']",
+          groups + "/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[1]/str[@name='id'][.='66']",
+          groups + "/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[2]/str[@name='id'][.='6']",
+          groups + "/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[1]/str[@name='id'][.='77']",
+          groups + "/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[2]/str[@name='id'][.='7']",
+          groups + "/lst[3]//doc[2]/bool[@name='[elevated]'][.='true']");
 
-              , groups +"/lst[1]//doc[1]/str[@name='id'][.='7']"
-              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
-              , groups +"/lst[1]//doc[2]/str[@name='id'][.='77']"
-              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[2]//doc[1]/str[@name='id'][.='6']"
-              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/str[@name='id'][.='66']"
-              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[3]//doc[1]/str[@name='id'][.='2']"
-              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/str[@name='id'][.='22']"
-              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
-              );
-
-      assertQ("non-elevated because sorted group query",
-              req(CommonParams.Q, "AAAA",
-                  CommonParams.QT, "/elevate",
-                  CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_FIELD, "str_s",
-                  GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true",
-                  GroupParams.GROUP_LIMIT, "100",
-                  CommonParams.FL, "id, score, [elevated]")
-              , "//*[@name='ngroups'][.='3']"
-              , "//*[@name='matches'][.='6']"
-
-              , groups +"/lst[1]//doc[1]/str[@name='id'][.='2']"
-              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[1]//doc[2]/str[@name='id'][.='22']"
-              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[2]//doc[1]/str[@name='id'][.='6']"
-              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/str[@name='id'][.='66']"
-              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[3]//doc[1]/str[@name='id'][.='7']"
-              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='true']"
-              , groups +"/lst[3]//doc[2]/str[@name='id'][.='77']"
-              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
-              );
-
-      assertQ("force-elevated sorted group query",
-              req(CommonParams.Q, "AAAA",
-                  CommonParams.QT, "/elevate",
-                  CommonParams.SORT, "id asc",
-                  QueryElevationParams.FORCE_ELEVATION, "true",
-                  GroupParams.GROUP_FIELD, "str_s",
-                  GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true",
-                  GroupParams.GROUP_LIMIT, "100",
-                  CommonParams.FL, "id, score, [elevated]")
-              , "//*[@name='ngroups'][.='3']"
-              , "//*[@name='matches'][.='6']"
-
-              , groups +"/lst[1]//doc[1]/str[@name='id'][.='7']"
-              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
-              , groups +"/lst[1]//doc[2]/str[@name='id'][.='77']"
-              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[2]//doc[1]/str[@name='id'][.='2']"
-              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/str[@name='id'][.='22']"
-              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[3]//doc[1]/str[@name='id'][.='6']"
-              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/str[@name='id'][.='66']"
-              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
-              );
-
-
-      assertQ("non-elevated because of sort within group query",
-              req(CommonParams.Q, "AAAA",
-                  CommonParams.QT, "/elevate",
-                  CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_SORT, "id desc",
-                  GroupParams.GROUP_FIELD, "str_s",
-                  GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true",
-                  GroupParams.GROUP_LIMIT, "100",
-                  CommonParams.FL, "id, score, [elevated]")
-              , "//*[@name='ngroups'][.='3']"
-              , "//*[@name='matches'][.='6']"
-
-              , groups +"/lst[1]//doc[1]/str[@name='id'][.='22']"
-              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[1]//doc[2]/str[@name='id'][.='2']"
-              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[2]//doc[1]/str[@name='id'][.='66']"
-              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/str[@name='id'][.='6']"
-              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[3]//doc[1]/str[@name='id'][.='77']"
-              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/str[@name='id'][.='7']"
-              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='true']"
-              );
-
-
-      assertQ("force elevated sort within sorted group query",
-              req(CommonParams.Q, "AAAA",
-                  CommonParams.QT, "/elevate",
-                  CommonParams.SORT, "id asc",
-                  GroupParams.GROUP_SORT, "id desc",
-                  QueryElevationParams.FORCE_ELEVATION, "true",
-                  GroupParams.GROUP_FIELD, "str_s",
-                  GroupParams.GROUP, "true",
-                  GroupParams.GROUP_TOTAL_COUNT, "true",
-                  GroupParams.GROUP_LIMIT, "100",
-                  CommonParams.FL, "id, score, [elevated]")
-              , "//*[@name='ngroups'][.='3']"
-              , "//*[@name='matches'][.='6']"
-
-              , groups +"/lst[1]//doc[1]/str[@name='id'][.='7']"
-              , groups +"/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']"
-              , groups +"/lst[1]//doc[2]/str[@name='id'][.='77']"
-              , groups +"/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[2]//doc[1]/str[@name='id'][.='22']"
-              , groups +"/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[2]//doc[2]/str[@name='id'][.='2']"
-              , groups +"/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']"
-
-              , groups +"/lst[3]//doc[1]/str[@name='id'][.='66']"
-              , groups +"/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']"
-              , groups +"/lst[3]//doc[2]/str[@name='id'][.='6']"
-              , groups +"/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']"
-              );
+      assertQ(
+          "force elevated sort within sorted group query",
+          req(
+              CommonParams.Q, "AAAA",
+              CommonParams.QT, "/elevate",
+              CommonParams.SORT, "id asc",
+              GroupParams.GROUP_SORT, "id desc",
+              QueryElevationParams.FORCE_ELEVATION, "true",
+              GroupParams.GROUP_FIELD, "str_s",
+              GroupParams.GROUP, "true",
+              GroupParams.GROUP_TOTAL_COUNT, "true",
+              GroupParams.GROUP_LIMIT, "100",
+              CommonParams.FL, "id, score, [elevated]"),
+          "//*[@name='ngroups'][.='3']",
+          "//*[@name='matches'][.='6']",
+          groups + "/lst[1]//doc[1]/str[@name='id'][.='7']",
+          groups + "/lst[1]//doc[1]/bool[@name='[elevated]'][.='true']",
+          groups + "/lst[1]//doc[2]/str[@name='id'][.='77']",
+          groups + "/lst[1]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[1]/str[@name='id'][.='22']",
+          groups + "/lst[2]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[2]//doc[2]/str[@name='id'][.='2']",
+          groups + "/lst[2]//doc[2]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[1]/str[@name='id'][.='66']",
+          groups + "/lst[3]//doc[1]/bool[@name='[elevated]'][.='false']",
+          groups + "/lst[3]//doc[2]/str[@name='id'][.='6']",
+          groups + "/lst[3]//doc[2]/bool[@name='[elevated]'][.='false']");
 
     } finally {
       delete();
@@ -346,33 +335,38 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       init("schema.xml");
       clearIndex();
       assertU(commit());
-      assertU(adoc("id", "1", "text", "XXXX XXXX",           "str_s", "a" ));
-      assertU(adoc("id", "2", "text", "YYYY",      "str_s", "b" ));
-      assertU(adoc("id", "3", "text", "ZZZZ", "str_s", "c" ));
+      assertU(adoc("id", "1", "text", "XXXX XXXX", "str_s", "a"));
+      assertU(adoc("id", "2", "text", "YYYY", "str_s", "b"));
+      assertU(adoc("id", "3", "text", "ZZZZ", "str_s", "c"));
 
-      assertU(adoc("id", "4", "text", "XXXX XXXX",                 "str_s", "x" ));
-      assertU(adoc("id", "5", "text", "YYYY YYYY",         "str_s", "y" ));
-      assertU(adoc("id", "6", "text", "XXXX XXXX", "str_s", "z" ));
-      assertU(adoc("id", "7", "text", "AAAA", "str_s", "a" ));
-      assertU(adoc("id", "8", "text", "AAAA", "str_s", "a" ));
-      assertU(adoc("id", "9", "text", "AAAA AAAA", "str_s", "a" ));
+      assertU(adoc("id", "4", "text", "XXXX XXXX", "str_s", "x"));
+      assertU(adoc("id", "5", "text", "YYYY YYYY", "str_s", "y"));
+      assertU(adoc("id", "6", "text", "XXXX XXXX", "str_s", "z"));
+      assertU(adoc("id", "7", "text", "AAAA", "str_s", "a"));
+      assertU(adoc("id", "8", "text", "AAAA", "str_s", "a"));
+      assertU(adoc("id", "9", "text", "AAAA AAAA", "str_s", "a"));
       assertU(commit());
 
-      assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]")
-              ,"//*[@numFound='3']"
-              ,"//result/doc[1]/str[@name='id'][.='7']"
-              ,"//result/doc[2]/str[@name='id'][.='8']"
-              ,"//result/doc[3]/str[@name='id'][.='9']",
-              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
-              "//result/doc[2]/bool[@name='[elevated]'][.='false']",
-              "//result/doc[3]/bool[@name='[elevated]'][.='false']"
-              );
-    } finally{
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='7']",
+          "//result/doc[2]/str[@name='id'][.='8']",
+          "//result/doc[3]/str[@name='id'][.='9']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+          "//result/doc[2]/bool[@name='[elevated]'][.='false']",
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']");
+    } finally {
       delete();
     }
   }
-
 
   @Test
   public void testInterface() throws Exception {
@@ -393,7 +387,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         comp.init(args);
         comp.inform(core);
 
-        QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
+        QueryElevationComponent.ElevationProvider elevationProvider =
+            comp.getElevationProvider(reader, core);
 
         // Make sure the boosts loaded properly
         assertEquals(11, elevationProvider.size());
@@ -413,7 +408,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       try (QueryElevationComponent comp = new QueryElevationComponent()) {
         comp.init(args);
         comp.inform(core);
-        QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
+        QueryElevationComponent.ElevationProvider elevationProvider =
+            comp.getElevationProvider(reader, core);
         assertEquals(11, elevationProvider.size());
         assertEquals(1, elevationProvider.getElevationForQuery("XXXX").elevatedIds.size());
         assertEquals(2, elevationProvider.getElevationForQuery("YYYY").elevatedIds.size());
@@ -425,13 +421,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         assertEquals("xxxx", comp.analyzeQuery("XXXX"));
         assertEquals("xxxxyyyy", comp.analyzeQuery("XXXX YYYY"));
 
-        assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
+        assertQ(
+            "Make sure QEC handles null queries",
+            req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
             "//*[@numFound='0']");
       }
     } finally {
       delete();
     }
-
   }
 
   @Test
@@ -448,31 +445,53 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
       assertU(commit());
 
-      assertQ("", req(CommonParams.Q, "XXXX", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]")
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='1']"
-          , "//result/doc[2]/str[@name='id'][.='4']"
-          , "//result/doc[3]/str[@name='id'][.='6']",
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "XXXX",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='1']",
+          "//result/doc[2]/str[@name='id'][.='4']",
+          "//result/doc[3]/str[@name='id'][.='6']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='false']",
-          "//result/doc[3]/bool[@name='[elevated]'][.='false']"
-      );
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']");
 
-      assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]")
-              ,"//*[@numFound='1']"
-              ,"//result/doc[1]/str[@name='id'][.='7']",
-              "//result/doc[1]/bool[@name='[elevated]'][.='true']"
-              );
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='7']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
 
-      assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elev]")
-          , "//*[@numFound='1']"
-          , "//result/doc[1]/str[@name='id'][.='7']",
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elev]"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='7']",
           "not(//result/doc[1]/bool[@name='[elevated]'][.='false'])",
-          "not(//result/doc[1]/bool[@name='[elev]'][.='false'])" // even though we asked for elev, there is no Transformer registered w/ that, so we shouldn't get a result
-      );
+          "not(//result/doc[1]/bool[@name='[elev]'][.='false'])" // even though we asked for elev,
+          // there is no Transformer
+          // registered w/ that, so we
+          // shouldn't get a result
+          );
     } finally {
       delete();
     }
@@ -497,60 +516,91 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       assertU(commit());
 
-      assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
-          QueryElevationParams.MARK_EXCLUDES, "true",
-          "indent", "true",
-          CommonParams.FL, "id, score, [excluded]")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='5']"
-          , "//result/doc[2]/str[@name='id'][.='1']"
-          , "//result/doc[3]/str[@name='id'][.='4']"
-          , "//result/doc[4]/str[@name='id'][.='6']",
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "XXXX XXXX",
+              CommonParams.QT,
+              "/elevate",
+              QueryElevationParams.MARK_EXCLUDES,
+              "true",
+              "indent",
+              "true",
+              CommonParams.FL,
+              "id, score, [excluded]"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='5']",
+          "//result/doc[2]/str[@name='id'][.='1']",
+          "//result/doc[3]/str[@name='id'][.='4']",
+          "//result/doc[4]/str[@name='id'][.='6']",
           "//result/doc[1]/bool[@name='[excluded]'][.='false']",
           "//result/doc[2]/bool[@name='[excluded]'][.='false']",
           "//result/doc[3]/bool[@name='[excluded]'][.='false']",
-          "//result/doc[4]/bool[@name='[excluded]'][.='true']"
-      );
+          "//result/doc[4]/bool[@name='[excluded]'][.='true']");
 
-      //ask for excluded as a field, but don't actually request the MARK_EXCLUDES
-      //thus, number 6 should not be returned, b/c it is excluded
-      assertQ("", req(CommonParams.Q, "XXXX XXXX", CommonParams.QT, "/elevate",
-          QueryElevationParams.MARK_EXCLUDES, "false",
-          CommonParams.FL, "id, score, [excluded]")
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='5']"
-          , "//result/doc[2]/str[@name='id'][.='1']"
-          , "//result/doc[3]/str[@name='id'][.='4']",
+      // ask for excluded as a field, but don't actually request the MARK_EXCLUDES
+      // thus, number 6 should not be returned, b/c it is excluded
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "XXXX XXXX",
+              CommonParams.QT,
+              "/elevate",
+              QueryElevationParams.MARK_EXCLUDES,
+              "false",
+              CommonParams.FL,
+              "id, score, [excluded]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='5']",
+          "//result/doc[2]/str[@name='id'][.='1']",
+          "//result/doc[3]/str[@name='id'][.='4']",
           "//result/doc[1]/bool[@name='[excluded]'][.='false']",
           "//result/doc[2]/bool[@name='[excluded]'][.='false']",
-          "//result/doc[3]/bool[@name='[excluded]'][.='false']"
-      );
+          "//result/doc[3]/bool[@name='[excluded]'][.='false']");
 
       // test that excluded results are on the same positions in the result list
       // as when elevation component is disabled
       // (i.e. test that elevation component with MARK_EXCLUDES does not boost
       // excluded results)
-      assertQ("", req(CommonParams.Q, "QQQQ", CommonParams.QT, "/elevate",
-          QueryElevationParams.ENABLE, "false",
-          "indent", "true",
-          CommonParams.FL, "id, score")
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='10']"
-          , "//result/doc[2]/str[@name='id'][.='9']"
-          , "//result/doc[3]/str[@name='id'][.='8']"
-      );
-      assertQ("", req(CommonParams.Q, "QQQQ", CommonParams.QT, "/elevate",
-          QueryElevationParams.MARK_EXCLUDES, "true",
-          "indent", "true",
-          CommonParams.FL, "id, score, [excluded]")
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='10']"
-          , "//result/doc[2]/str[@name='id'][.='9']"
-          , "//result/doc[3]/str[@name='id'][.='8']",
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "QQQQ",
+              CommonParams.QT,
+              "/elevate",
+              QueryElevationParams.ENABLE,
+              "false",
+              "indent",
+              "true",
+              CommonParams.FL,
+              "id, score"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='10']",
+          "//result/doc[2]/str[@name='id'][.='9']",
+          "//result/doc[3]/str[@name='id'][.='8']");
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "QQQQ",
+              CommonParams.QT,
+              "/elevate",
+              QueryElevationParams.MARK_EXCLUDES,
+              "true",
+              "indent",
+              "true",
+              CommonParams.FL,
+              "id, score, [excluded]"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='10']",
+          "//result/doc[2]/str[@name='id'][.='9']",
+          "//result/doc[3]/str[@name='id'][.='8']",
           "//result/doc[1]/bool[@name='[excluded]'][.='true']",
           "//result/doc[2]/bool[@name='[excluded]'][.='false']",
-          "//result/doc[3]/bool[@name='[excluded]'][.='false']"
-      );
+          "//result/doc[3]/bool[@name='[excluded]'][.='false']");
     } finally {
       delete();
     }
@@ -564,128 +614,137 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "b", "title", "ipod ipod  trash", "str_s1", "group2"));
       assertU(adoc("id", "c", "title", "ipod ipod  ipod ", "str_s1", "group2"));
 
-      assertU(adoc("id", "x", "title", "boosted",                 "str_s1", "group1"));
-      assertU(adoc("id", "y", "title", "boosted boosted",         "str_s1", "group2"));
+      assertU(adoc("id", "x", "title", "boosted", "str_s1", "group1"));
+      assertU(adoc("id", "y", "title", "boosted boosted", "str_s1", "group2"));
       assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "group2"));
       assertU(commit());
 
       final String query = "title:ipod";
 
-      final SolrParams baseParams = params(
-          "qt", "/elevate",
-          "q", query,
-          "fl", "id,score",
-          "indent", "true");
+      final SolrParams baseParams =
+          params(
+              "qt", "/elevate",
+              "q", query,
+              "fl", "id,score",
+              "indent", "true");
 
-      QueryElevationComponent booster = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
+      QueryElevationComponent booster =
+          (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       IndexReader reader = h.getCore().withSearcher(SolrIndexSearcher::getIndexReader);
 
-      assertQ("Make sure standard sort works as expected", req(baseParams)
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='c']"
-          , "//result/doc[2]/str[@name='id'][.='b']"
-          , "//result/doc[3]/str[@name='id'][.='a']"
-      );
+      assertQ(
+          "Make sure standard sort works as expected",
+          req(baseParams),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='c']",
+          "//result/doc[2]/str[@name='id'][.='b']",
+          "//result/doc[3]/str[@name='id'][.='a']");
 
       // Explicitly set what gets boosted
-      booster.setTopQueryResults(reader, query, false, new String[]{"x", "y", "z"}, null);
+      booster.setTopQueryResults(reader, query, false, new String[] {"x", "y", "z"}, null);
 
-      assertQ("All six should make it", req(baseParams)
-          , "//*[@numFound='6']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='y']"
-          , "//result/doc[3]/str[@name='id'][.='z']"
-          , "//result/doc[4]/str[@name='id'][.='c']"
-          , "//result/doc[5]/str[@name='id'][.='b']"
-          , "//result/doc[6]/str[@name='id'][.='a']"
-      );
+      assertQ(
+          "All six should make it",
+          req(baseParams),
+          "//*[@numFound='6']",
+          "//result/doc[1]/str[@name='id'][.='x']",
+          "//result/doc[2]/str[@name='id'][.='y']",
+          "//result/doc[3]/str[@name='id'][.='z']",
+          "//result/doc[4]/str[@name='id'][.='c']",
+          "//result/doc[5]/str[@name='id'][.='b']",
+          "//result/doc[6]/str[@name='id'][.='a']");
 
       // now switch the order:
-      booster.setTopQueryResults(reader, query, false, new String[]{"a", "x"}, null);
-      assertQ(req(baseParams)
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='a']"
-          , "//result/doc[2]/str[@name='id'][.='x']"
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='b']"
-      );
+      booster.setTopQueryResults(reader, query, false, new String[] {"a", "x"}, null);
+      assertQ(
+          req(baseParams),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='a']",
+          "//result/doc[2]/str[@name='id'][.='x']",
+          "//result/doc[3]/str[@name='id'][.='c']",
+          "//result/doc[4]/str[@name='id'][.='b']");
 
       // Try normal sort by 'id'
       // default 'forceBoost' should be false
       assertFalse(booster.forceElevation);
-      assertQ(req(baseParams, "sort", "id asc")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='a']"
-          , "//result/doc[2]/str[@name='id'][.='b']"
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='x']"
-      );
+      assertQ(
+          req(baseParams, "sort", "id asc"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='a']",
+          "//result/doc[2]/str[@name='id'][.='b']",
+          "//result/doc[3]/str[@name='id'][.='c']",
+          "//result/doc[4]/str[@name='id'][.='x']");
 
-      assertQ("useConfiguredElevatedOrder=false",
-          req(baseParams, "sort", "str_s1 asc,id desc", "useConfiguredElevatedOrder", "false")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='x']"//group1
-          , "//result/doc[2]/str[@name='id'][.='a']"//group1
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='b']"
-      );
-
-      booster.forceElevation = true;
-      assertQ(req(baseParams, "sort", "id asc")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='a']"
-          , "//result/doc[2]/str[@name='id'][.='x']"
-          , "//result/doc[3]/str[@name='id'][.='b']"
-          , "//result/doc[4]/str[@name='id'][.='c']"
-      );
+      assertQ(
+          "useConfiguredElevatedOrder=false",
+          req(baseParams, "sort", "str_s1 asc,id desc", "useConfiguredElevatedOrder", "false"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='x']" // group1
+          ,
+          "//result/doc[2]/str[@name='id'][.='a']" // group1
+          ,
+          "//result/doc[3]/str[@name='id'][.='c']",
+          "//result/doc[4]/str[@name='id'][.='b']");
 
       booster.forceElevation = true;
-      assertQ("useConfiguredElevatedOrder=false and forceElevation",
-          req(baseParams, "sort", "id desc", "useConfiguredElevatedOrder", "false")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='x']" // force elevated
-          , "//result/doc[2]/str[@name='id'][.='a']" // force elevated
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='b']"
-      );
+      assertQ(
+          req(baseParams, "sort", "id asc"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='a']",
+          "//result/doc[2]/str[@name='id'][.='x']",
+          "//result/doc[3]/str[@name='id'][.='b']",
+          "//result/doc[4]/str[@name='id'][.='c']");
 
-      //Test exclusive (not to be confused with exclusion)
-      booster.setTopQueryResults(reader, query, false, new String[]{"x", "a"}, new String[]{});
-      assertQ(req(baseParams, "exclusive", "true")
-          , "//*[@numFound='2']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='a']"
-      );
+      booster.forceElevation = true;
+      assertQ(
+          "useConfiguredElevatedOrder=false and forceElevation",
+          req(baseParams, "sort", "id desc", "useConfiguredElevatedOrder", "false"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='x']" // force elevated
+          ,
+          "//result/doc[2]/str[@name='id'][.='a']" // force elevated
+          ,
+          "//result/doc[3]/str[@name='id'][.='c']",
+          "//result/doc[4]/str[@name='id'][.='b']");
+
+      // Test exclusive (not to be confused with exclusion)
+      booster.setTopQueryResults(reader, query, false, new String[] {"x", "a"}, new String[] {});
+      assertQ(
+          req(baseParams, "exclusive", "true"),
+          "//*[@numFound='2']",
+          "//result/doc[1]/str[@name='id'][.='x']",
+          "//result/doc[2]/str[@name='id'][.='a']");
 
       // Test exclusion
-      booster.setTopQueryResults(reader, query, false, new String[]{"x"}, new String[]{"a"});
-      assertQ(req(baseParams)
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='c']"
-          , "//result/doc[3]/str[@name='id'][.='b']"
-      );
-
+      booster.setTopQueryResults(reader, query, false, new String[] {"x"}, new String[] {"a"});
+      assertQ(
+          req(baseParams),
+          "//*[@numFound='3']",
+          "//result/doc[1]/str[@name='id'][.='x']",
+          "//result/doc[2]/str[@name='id'][.='c']",
+          "//result/doc[3]/str[@name='id'][.='b']");
 
       // Test setting ids and excludes from http parameters
 
       booster.clearElevationProviderCache();
-      assertQ("All five should make it", req(baseParams, "elevateIds", "x,y,z", "excludeIds", "b")
-          , "//*[@numFound='5']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='y']"
-          , "//result/doc[3]/str[@name='id'][.='z']"
-          , "//result/doc[4]/str[@name='id'][.='c']"
-          , "//result/doc[5]/str[@name='id'][.='a']"
-      );
+      assertQ(
+          "All five should make it",
+          req(baseParams, "elevateIds", "x,y,z", "excludeIds", "b"),
+          "//*[@numFound='5']",
+          "//result/doc[1]/str[@name='id'][.='x']",
+          "//result/doc[2]/str[@name='id'][.='y']",
+          "//result/doc[3]/str[@name='id'][.='z']",
+          "//result/doc[4]/str[@name='id'][.='c']",
+          "//result/doc[5]/str[@name='id'][.='a']");
 
-      assertQ("All four should make it", req(baseParams, "elevateIds", "x,z,y", "excludeIds", "b,c")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='z']"
-          , "//result/doc[3]/str[@name='id'][.='y']"
-          , "//result/doc[4]/str[@name='id'][.='a']"
-      );
+      assertQ(
+          "All four should make it",
+          req(baseParams, "elevateIds", "x,z,y", "excludeIds", "b,c"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='x']",
+          "//result/doc[2]/str[@name='id'][.='z']",
+          "//result/doc[3]/str[@name='id'][.='y']",
+          "//result/doc[4]/str[@name='id'][.='a']");
 
     } finally {
       delete();
@@ -694,7 +753,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   // write an elevation config file to boost some docs
   private void writeElevationConfigFile(File file, String query, String... ids) throws Exception {
-    PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+    PrintWriter out =
+        new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
     out.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
     out.println("<elevate>");
     out.println("<query text=\"" + query + "\">");
@@ -719,7 +779,8 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       File configFile = new File(h.getCore().getDataDir(), testfile);
       writeElevationConfigFile(configFile, "aaa", "A");
 
-      QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
+      QueryElevationComponent comp =
+          (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
       NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.CONFIG_FILE, testfile);
       comp.init(args);
@@ -728,18 +789,23 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       QueryElevationComponent.ElevationProvider elevationProvider;
 
       try (SolrQueryRequest req = req()) {
-        elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
-        assertTrue(elevationProvider.getElevationForQuery("aaa").elevatedIds.contains(new BytesRef("A")));
+        elevationProvider =
+            comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
+        assertTrue(
+            elevationProvider.getElevationForQuery("aaa").elevatedIds.contains(new BytesRef("A")));
         assertNull(elevationProvider.getElevationForQuery("bbb"));
       }
 
       // now change the file
       writeElevationConfigFile(configFile, "bbb", "B");
 
-      // With no index change, we get the same index reader, so the elevationProviderCache returns the previous ElevationProvider without the change.
+      // With no index change, we get the same index reader, so the elevationProviderCache returns
+      // the previous ElevationProvider without the change.
       try (SolrQueryRequest req = req()) {
-        elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
-        assertTrue(elevationProvider.getElevationForQuery("aaa").elevatedIds.contains(new BytesRef("A")));
+        elevationProvider =
+            comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
+        assertTrue(
+            elevationProvider.getElevationForQuery("aaa").elevatedIds.contains(new BytesRef("A")));
         assertNull(elevationProvider.getElevationForQuery("bbb"));
       }
 
@@ -747,24 +813,30 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "10000"));
       assertU(commit());
 
-      // Check that we effectively reload a new ElevationProvider for a different index reader (so two entries in elevationProviderCache).
+      // Check that we effectively reload a new ElevationProvider for a different index reader (so
+      // two entries in elevationProviderCache).
       try (SolrQueryRequest req = req()) {
-        elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
+        elevationProvider =
+            comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
         assertNull(elevationProvider.getElevationForQuery("aaa"));
-        assertTrue(elevationProvider.getElevationForQuery("bbb").elevatedIds.contains(new BytesRef("B")));
+        assertTrue(
+            elevationProvider.getElevationForQuery("bbb").elevatedIds.contains(new BytesRef("B")));
       }
 
       // Now change the config file again.
       writeElevationConfigFile(configFile, "ccc", "C");
 
-      // Without index change, but calling a different method that clears the elevationProviderCache, so we should load a new ElevationProvider.
+      // Without index change, but calling a different method that clears the
+      // elevationProviderCache, so we should load a new ElevationProvider.
       int elevationRuleNumber = comp.loadElevationConfiguration(h.getCore());
       assertEquals(1, elevationRuleNumber);
       try (SolrQueryRequest req = req()) {
-        elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
+        elevationProvider =
+            comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
         assertNull(elevationProvider.getElevationForQuery("aaa"));
         assertNull(elevationProvider.getElevationForQuery("bbb"));
-        assertTrue(elevationProvider.getElevationForQuery("ccc").elevatedIds.contains(new BytesRef("C")));
+        assertTrue(
+            elevationProvider.getElevationForQuery("ccc").elevatedIds.contains(new BytesRef("C")));
       }
     } finally {
       delete();
@@ -780,24 +852,42 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "7", "text", "AAAA", "str_s", "a"));
       assertU(commit());
 
-      assertQ("", req(CommonParams.Q, "AAAA", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]")
-          , "//*[@numFound='1']"
-          , "//result/doc[1]/str[@name='id'][.='7']"
-          , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
-      );
-      assertQ("", req(CommonParams.Q, "{!q.op=AND}AAAA", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]")
-          , "//*[@numFound='1']"
-          , "//result/doc[1]/str[@name='id'][.='7']"
-          , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
-      );
-      assertQ("", req(CommonParams.Q, "{!q.op=AND v='AAAA'}", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]")
-          , "//*[@numFound='1']"
-          , "//result/doc[1]/str[@name='id'][.='7']"
-          , "//result/doc[1]/bool[@name='[elevated]'][.='true']"
-      );
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "AAAA",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='7']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "{!q.op=AND}AAAA",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='7']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "{!q.op=AND v='AAAA'}",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/str[@name='id'][.='7']",
+          "//result/doc[1]/bool[@name='[elevated]'][.='true']");
     } finally {
       delete();
     }
@@ -824,26 +914,45 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertU(commit());
 
       // Exact matching.
-      assertQ("", req(CommonParams.Q, "XXXX", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]"),
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "XXXX",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='1']",
           "//result/doc[2]/str[@name='id'][.='4']",
           "//result/doc[3]/str[@name='id'][.='6']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='false']",
-          "//result/doc[3]/bool[@name='[elevated]'][.='false']"
-      );
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']");
 
       // Exact matching.
-      assertQ("", req(CommonParams.Q, "QQQQ EE", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]"),
-          "//*[@numFound='0']"
-      );
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "QQQQ EE",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='0']");
 
       // Subset matching.
-      assertQ("", req(CommonParams.Q, "BB DD CC VV", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]"),
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "BB DD CC VV",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='10']",
           "//result/doc[2]/str[@name='id'][.='12']",
@@ -852,12 +961,18 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']",
-          "//result/doc[4]/bool[@name='[elevated]'][.='false']"
-      );
+          "//result/doc[4]/bool[@name='[elevated]'][.='false']");
 
       // Subset + exact matching.
-      assertQ("", req(CommonParams.Q, "BB CC", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]"),
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "BB CC",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='13']",
           "//result/doc[2]/str[@name='id'][.='10']",
@@ -866,12 +981,18 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']",
-          "//result/doc[4]/bool[@name='[elevated]'][.='true']"
-      );
+          "//result/doc[4]/bool[@name='[elevated]'][.='true']");
 
       // Subset matching.
-      assertQ("", req(CommonParams.Q, "AA BB DD CC AA", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]"),
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "AA BB DD CC AA",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='4']",
           "//result/doc[1]/str[@name='id'][.='10']",
           "//result/doc[2]/str[@name='id'][.='12']",
@@ -880,26 +1001,37 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
           "//result/doc[3]/bool[@name='[elevated]'][.='true']",
-          "//result/doc[4]/bool[@name='[elevated]'][.='true']"
-      );
+          "//result/doc[4]/bool[@name='[elevated]'][.='true']");
 
       // Subset matching.
-      assertQ("", req(CommonParams.Q, "AA RR BB DD AA", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]"),
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "AA RR BB DD AA",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
           "//*[@numFound='3']",
           "//result/doc[1]/str[@name='id'][.='12']",
           "//result/doc[2]/str[@name='id'][.='14']",
           "//result/doc[3]/str[@name='id'][.='10']",
           "//result/doc[1]/bool[@name='[elevated]'][.='true']",
           "//result/doc[2]/bool[@name='[elevated]'][.='true']",
-          "//result/doc[3]/bool[@name='[elevated]'][.='false']"
-      );
+          "//result/doc[3]/bool[@name='[elevated]'][.='false']");
 
       // Subset matching.
-      assertQ("", req(CommonParams.Q, "AA BB EE", CommonParams.QT, "/elevate",
-          CommonParams.FL, "id, score, [elevated]")
-          , "//*[@numFound='0']"
-          );
+      assertQ(
+          "",
+          req(
+              CommonParams.Q,
+              "AA BB EE",
+              CommonParams.QT,
+              "/elevate",
+              CommonParams.FL,
+              "id, score, [elevated]"),
+          "//*[@numFound='0']");
     } finally {
       delete();
     }
@@ -920,13 +1052,20 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
       SolrQueryRequest req = req();
       IndexReader reader = req.getSearcher().getIndexReader();
-      QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
+      QueryElevationComponent.ElevationProvider elevationProvider =
+          comp.getElevationProvider(reader, core);
       req.close();
 
       assertEquals(toIdSet("1"), elevationProvider.getElevationForQuery("xxxx").elevatedIds);
-      assertEquals(toIdSet("10", "11", "12"), elevationProvider.getElevationForQuery("bb DD CC vv").elevatedIds);
-      assertEquals(toIdSet("10", "11", "12", "13"), elevationProvider.getElevationForQuery("BB Cc").elevatedIds);
-      assertEquals(toIdSet("10", "11", "12", "14"), elevationProvider.getElevationForQuery("aa bb dd cc aa").elevatedIds);
+      assertEquals(
+          toIdSet("10", "11", "12"),
+          elevationProvider.getElevationForQuery("bb DD CC vv").elevatedIds);
+      assertEquals(
+          toIdSet("10", "11", "12", "13"),
+          elevationProvider.getElevationForQuery("BB Cc").elevatedIds);
+      assertEquals(
+          toIdSet("10", "11", "12", "14"),
+          elevationProvider.getElevationForQuery("aa bb dd cc aa").elevatedIds);
     } finally {
       delete();
     }

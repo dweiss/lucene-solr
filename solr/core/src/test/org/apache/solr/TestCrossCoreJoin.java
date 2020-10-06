@@ -16,10 +16,9 @@
  */
 package org.apache.solr;
 
+import com.google.common.collect.ImmutableMap;
 import java.io.StringWriter;
 import java.util.Collections;
-
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
@@ -43,7 +42,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-//    initCore("solrconfig.xml","schema12.xml"); 
+    //    initCore("solrconfig.xml","schema12.xml");
 
     // File testHome = createTempDir().toFile();
     // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
@@ -55,18 +54,43 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     assertU(add(doc("id", "1", "name", "john", "title", "Director", "dept_s", "Engineering")));
     assertU(add(doc("id", "2", "name", "mark", "title", "VP", "dept_s", "Marketing")));
     assertU(add(doc("id", "3", "name", "nancy", "title", "MTS", "dept_s", "Sales")));
-    assertU(add(doc("id", "4", "name", "dave", "title", "MTS", "dept_s", "Support", "dept_s", "Engineering")));
+    assertU(
+        add(
+            doc(
+                "id",
+                "4",
+                "name",
+                "dave",
+                "title",
+                "MTS",
+                "dept_s",
+                "Support",
+                "dept_s",
+                "Engineering")));
     assertU(add(doc("id", "5", "name", "tina", "title", "VP", "dept_s", "Engineering")));
     assertU(commit());
 
-    update(fromCore, add(doc("id", "10", "dept_id_s", "Engineering", "text", "These guys develop stuff", "cat", "dev")));
-    update(fromCore, add(doc("id", "11", "dept_id_s", "Marketing", "text", "These guys make you look good")));
+    update(
+        fromCore,
+        add(
+            doc(
+                "id",
+                "10",
+                "dept_id_s",
+                "Engineering",
+                "text",
+                "These guys develop stuff",
+                "cat",
+                "dev")));
+    update(
+        fromCore,
+        add(doc("id", "11", "dept_id_s", "Marketing", "text", "These guys make you look good")));
     update(fromCore, add(doc("id", "12", "dept_id_s", "Sales", "text", "These guys sell stuff")));
-    update(fromCore, add(doc("id", "13", "dept_id_s", "Support", "text", "These guys help customers")));
+    update(
+        fromCore,
+        add(doc("id", "13", "dept_id_s", "Support", "text", "These guys help customers")));
     update(fromCore, commit());
-
   }
-
 
   public static String update(SolrCore core, String xml) throws Exception {
     DirectSolrConnection connection = new DirectSolrConnection(core);
@@ -85,27 +109,39 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   }
 
   void doTestJoin(String joinPrefix) throws Exception {
-    assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev", "fl", "id",
-        "debugQuery", random().nextBoolean() ? "true":"false")
-        , "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
-    );
+    assertJQ(
+        req(
+            "q",
+            joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev",
+            "fl",
+            "id",
+            "debugQuery",
+            random().nextBoolean() ? "true" : "false"),
+        "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}");
 
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
-    assertJQ(req("q", joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev", "fl", "id", "fq", "name:john",
-        "debugQuery", random().nextBoolean() ? "true":"false")
-        , "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'}]}"
-    );
+    assertJQ(
+        req(
+            "q",
+            joinPrefix + " from=dept_id_s to=dept_s fromIndex=fromCore}cat:dev",
+            "fl",
+            "id",
+            "fq",
+            "name:john",
+            "debugQuery",
+            random().nextBoolean() ? "true" : "false"),
+        "/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'}]}");
   }
 
   @Test
   public void testCoresAreDifferent() throws Exception {
     assertQEx("schema12.xml" + " has no \"cat\" field", req("cat:*"), ErrorCode.BAD_REQUEST);
-    final LocalSolrQueryRequest req = new LocalSolrQueryRequest(fromCore, "cat:*", "/select", 0, 100, Collections.emptyMap());
+    final LocalSolrQueryRequest req =
+        new LocalSolrQueryRequest(fromCore, "cat:*", "/select", 0, 100, Collections.emptyMap());
     final String resp = query(fromCore, req);
     assertTrue(resp, resp.contains("numFound=\"1\""));
     assertTrue(resp, resp.contains("<str name=\"id\">10</str>"));
-
   }
 
   public String query(SolrCore core, SolrQueryRequest req) throws Exception {
@@ -113,7 +149,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
     if (req.getParams().get("qt") != null) {
       handler = req.getParams().get("qt");
     }
-    if (req.getParams().get("wt") == null){
+    if (req.getParams().get("wt") == null) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set("wt", "xml");
       req.setParams(params);

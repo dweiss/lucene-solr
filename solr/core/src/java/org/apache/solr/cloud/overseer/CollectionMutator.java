@@ -16,12 +16,16 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -35,11 +39,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -75,13 +74,18 @@ public class CollectionMutator {
       if (shardParentZkSession != null) {
         sliceProps.put("shard_parent_zk_session", shardParentZkSession);
       }
-      if (shardParentNode != null)  {
+      if (shardParentNode != null) {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
-      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
+      collection =
+          updateSlice(
+              collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
       return new ZkWriteCommand(collectionName, collection);
     } else {
-      log.error("Unable to create Shard: {} because it already exists in collection: {}", shardId, collectionName);
+      log.error(
+          "Unable to create Shard: {} because it already exists in collection: {}",
+          shardId,
+          collectionName);
       return ZkStateWriter.NO_OP;
     }
   }
@@ -110,12 +114,14 @@ public class CollectionMutator {
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
       if (message.containsKey(prop)) {
         hasAnyOps = true;
-        if (message.get(prop) == null)  {
+        if (message.get(prop) == null) {
           m.remove(prop);
-        } else  {
+        } else {
           m.put(prop, message.get(prop));
         }
-        if (prop == REPLICATION_FACTOR) { //SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
+        if (prop
+            == REPLICATION_FACTOR) { // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in
+          // sync
           m.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
         }
       }
@@ -136,17 +142,22 @@ public class CollectionMutator {
       return ZkStateWriter.NO_OP;
     }
 
-    return new ZkWriteCommand(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion()));
+    return new ZkWriteCommand(
+        coll.getName(),
+        new DocCollection(
+            coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion()));
   }
 
-  public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
+  public static DocCollection updateSlice(
+      String collectionName, DocCollection collection, Slice slice) {
     DocCollection newCollection = null;
     Map<String, Slice> slices;
 
     if (collection == null) {
-      //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
-      // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
+      //  when updateSlice is called on a collection that doesn't exist, it's currently when a core
+      // is publishing itself
+      // without explicitly creating a collection.  In this current case, we assume custom sharding
+      // with an "implicit" router.
       slices = new LinkedHashMap<>(1);
       slices.put(slice.getName(), slice);
       Map<String, Object> props = new HashMap<>(1);
@@ -168,10 +179,10 @@ public class CollectionMutator {
   static boolean checkKeyExistence(ZkNodeProps message, String key) {
     String value = message.getStr(key);
     if (value == null || value.trim().length() == 0) {
-      log.error("Skipping invalid Overseer message because it has no {} specified '{}'", key, message);
+      log.error(
+          "Skipping invalid Overseer message because it has no {} specified '{}'", key, message);
       return false;
     }
     return true;
   }
 }
-

@@ -16,29 +16,32 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Bits;
 
-import java.util.Map;
-import java.io.IOException;
-
-
-/** A SolrFilter extends the Lucene Filter and adds extra semantics such as passing on
- * weight context info for function queries.
+/**
+ * A SolrFilter extends the Lucene Filter and adds extra semantics such as passing on weight context
+ * info for function queries.
  *
- * Experimental and subject to change.
+ * <p>Experimental and subject to change.
  */
 public abstract class SolrFilter extends Filter {
 
-  /** Implementations should propagate createWeight to sub-ValueSources which can store weight info in the context.
-   * The context object will be passed to getDocIdSet() where this info can be retrieved. */
-  public abstract void createWeight(@SuppressWarnings({"rawtypes"})Map context
-          , IndexSearcher searcher) throws IOException;
-  
-  public abstract DocIdSet getDocIdSet(@SuppressWarnings({"rawtypes"})Map context
-          , LeafReaderContext readerContext, Bits acceptDocs) throws IOException;
+  /**
+   * Implementations should propagate createWeight to sub-ValueSources which can store weight info
+   * in the context. The context object will be passed to getDocIdSet() where this info can be
+   * retrieved.
+   */
+  public abstract void createWeight(
+      @SuppressWarnings({"rawtypes"}) Map context, IndexSearcher searcher) throws IOException;
+
+  public abstract DocIdSet getDocIdSet(
+      @SuppressWarnings({"rawtypes"}) Map context, LeafReaderContext readerContext, Bits acceptDocs)
+      throws IOException;
 
   @Override
   public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {

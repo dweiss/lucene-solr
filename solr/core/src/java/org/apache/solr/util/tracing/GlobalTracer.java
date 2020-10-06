@@ -17,20 +17,21 @@
 
 package org.apache.solr.util.tracing;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.Random;
-
 import com.google.common.annotations.VisibleForTesting;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopTracerFactory;
 import io.opentracing.propagation.Format;
+import java.util.Random;
+import javax.servlet.http.HttpServletRequest;
 
 public class GlobalTracer {
   private static final Tracer NOOP_TRACER = NoopTracerFactory.create();
   private static final Random RANDOM;
+
   static {
-    // We try to make things reproducible in the context of our tests by initializing the random instance
+    // We try to make things reproducible in the context of our tests by initializing the random
+    // instance
     // based on the current seed
     String seed = System.getProperty("tests.seed");
     if (seed == null) {
@@ -42,7 +43,7 @@ public class GlobalTracer {
 
   private static volatile GlobalTracer INS = new GlobalTracer(NOOP_TRACER);
 
-  public synchronized static void setup(Tracer tracer) {
+  public static synchronized void setup(Tracer tracer) {
     if (INS != null) {
       INS.close();
     }
@@ -57,8 +58,7 @@ public class GlobalTracer {
     return INS.tracer();
   }
 
-  @VisibleForTesting
-  final Tracer tracer;
+  @VisibleForTesting final Tracer tracer;
   private double rate;
   private final ThreadLocal<Tracer> threadLocal = new ThreadLocal<>();
 
@@ -82,7 +82,8 @@ public class GlobalTracer {
   }
 
   public SpanContext extract(HttpServletRequest request) {
-    SpanContext spanContext = tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request));
+    SpanContext spanContext =
+        tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request));
     if (spanContext != null) {
       threadLocal.set(tracer);
     }
@@ -91,8 +92,7 @@ public class GlobalTracer {
 
   private Tracer tracer() {
     Tracer tracer = threadLocal.get();
-    if (tracer != null)
-      return tracer;
+    if (tracer != null) return tracer;
 
     if (traced()) {
       threadLocal.set(this.tracer);
@@ -103,9 +103,7 @@ public class GlobalTracer {
     return threadLocal.get();
   }
 
-  /**
-   * Clear tracing context for the current thread
-   */
+  /** Clear tracing context for the current thread */
   public void clearContext() {
     threadLocal.remove();
   }

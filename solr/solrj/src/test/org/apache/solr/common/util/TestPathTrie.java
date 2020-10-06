@@ -17,16 +17,15 @@
 
 package org.apache.solr.common.util;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
-import org.apache.solr.SolrTestCaseJ4;
-
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.api.ApiBag.HANDLER_NAME;
+
+import com.google.common.collect.ImmutableSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.solr.SolrTestCaseJ4;
 
 public class TestPathTrie extends SolrTestCaseJ4 {
 
@@ -52,24 +51,24 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     assertEquals("b", pathTrie.lookup("/aa/bb/hello/world", templateValues, null));
     assertEquals("hello", templateValues.get("cc"));
     assertEquals("world", templateValues.get("xx"));
-    Set<String> subPaths =  new HashSet<>();
+    Set<String> subPaths = new HashSet<>();
     templateValues.clear();
-    pathTrie.lookup("/aa",templateValues, subPaths);
+    pathTrie.lookup("/aa", templateValues, subPaths);
     assertEquals(3, subPaths.size());
 
     pathTrie = new PathTrie<>(ImmutableSet.of("_introspect"));
     pathTrie.insert("/aa/bb/{cc}/tt/*", emptyMap(), "W");
 
     templateValues.clear();
-    assertEquals("W" ,pathTrie.lookup("/aa/bb/somepart/tt/hello", templateValues));
+    assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt/hello", templateValues));
     assertEquals(templateValues.get("*"), "/hello");
 
     templateValues.clear();
-    assertEquals("W" ,pathTrie.lookup("/aa/bb/somepart/tt", templateValues));
+    assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt", templateValues));
     assertEquals(templateValues.get("*"), null);
 
     templateValues.clear();
-    assertEquals("W" ,pathTrie.lookup("/aa/bb/somepart/tt/hello/world/from/solr", templateValues));
+    assertEquals("W", pathTrie.lookup("/aa/bb/somepart/tt/hello/world/from/solr", templateValues));
     assertEquals(templateValues.get("*"), "/hello/world/from/solr");
 
     pathTrie.insert("/1/2/{x}/4", emptyMap(), "a");

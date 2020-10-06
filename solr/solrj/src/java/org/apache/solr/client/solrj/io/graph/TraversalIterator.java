@@ -22,14 +22,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.graph.Traversal.Scatter;
 
 @SuppressWarnings({"rawtypes"})
 class TraversalIterator implements Iterator {
 
-  private List<Map<String,Node>> graph;
+  private List<Map<String, Node>> graph;
   private List<String> collections;
   private List<String> fields;
 
@@ -55,9 +54,9 @@ class TraversalIterator implements Iterator {
     List<Integer> levelNums = new ArrayList<>();
     List<Iterator<Node>> levelIterators = new ArrayList<>();
 
-    if(scatter.contains(Scatter.BRANCHES)) {
-      if(graph.size() > 1) {
-        for(int i=0; i<graph.size()-1; i++) {
+    if (scatter.contains(Scatter.BRANCHES)) {
+      if (graph.size() > 1) {
+        for (int i = 0; i < graph.size() - 1; i++) {
           Map<String, Node> graphLevel = graph.get(i);
           String collection = collections.get(i);
           String field = fields.get(i);
@@ -69,8 +68,8 @@ class TraversalIterator implements Iterator {
       }
     }
 
-    if(scatter.contains(Scatter.LEAVES)) {
-      int leavesLevel = graph.size() > 1 ? graph.size()-1 : 0 ;
+    if (scatter.contains(Scatter.LEAVES)) {
+      int leavesLevel = graph.size() > 1 ? graph.size() - 1 : 0;
       Map<String, Node> graphLevel = graph.get(leavesLevel);
       String collection = collections.get(leavesLevel);
       String field = fields.get(leavesLevel);
@@ -94,10 +93,10 @@ class TraversalIterator implements Iterator {
 
   @Override
   public boolean hasNext() {
-    if(levelIterator.hasNext()) {
+    if (levelIterator.hasNext()) {
       return true;
     } else {
-      if(graphIterator.hasNext()) {
+      if (graphIterator.hasNext()) {
         levelIterator = graphIterator.next();
         outField = fieldIterator.next();
         outCollection = collectionIterator.next();
@@ -111,11 +110,11 @@ class TraversalIterator implements Iterator {
 
   @Override
   public Tuple next() {
-    if(hasNext()) {
+    if (hasNext()) {
       Node node = levelIterator.next();
       return node.toTuple(outCollection, outField, outLevel, traversal);
     } else {
-     return null;
+      return null;
     }
   }
 }

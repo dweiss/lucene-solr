@@ -16,22 +16,16 @@
  */
 package org.apache.solr.util.plugin;
 
-import java.util.Map;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
+import java.util.Map;
 import org.apache.solr.util.DOMUtil;
 import org.w3c.dom.Node;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
+/** @since solr 1.3 */
+public class MapPluginLoader<T extends MapInitializedPlugin> extends AbstractPluginLoader<T> {
+  private final Map<String, T> registry;
 
-/**
- * 
- *
- * @since solr 1.3
- */
-public class MapPluginLoader<T extends MapInitializedPlugin> extends AbstractPluginLoader<T> 
-{
-  private final Map<String,T> registry;
-  
   public MapPluginLoader(String name, Class<T> pluginClassType, Map<String, T> map) {
     super(name, pluginClassType);
     registry = map;
@@ -40,13 +34,13 @@ public class MapPluginLoader<T extends MapInitializedPlugin> extends AbstractPlu
   @Override
   protected void init(T plugin, Node node) throws Exception {
     Map<String, String> params = DOMUtil.toMapExcept(node.getAttributes(), NAME, "class");
-    plugin.init( params );
+    plugin.init(params);
   }
 
   @Override
   protected T register(String name, T plugin) throws Exception {
-    if( registry != null ) {
-      return registry.put( name, plugin );
+    if (registry != null) {
+      return registry.put(name, plugin);
     }
     return null;
   }

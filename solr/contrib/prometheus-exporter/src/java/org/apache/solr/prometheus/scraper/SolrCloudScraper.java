@@ -16,6 +16,8 @@
  */
 package org.apache.solr.prometheus.scraper;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.cloud.DocCollection;
@@ -44,7 +43,8 @@ public class SolrCloudScraper extends SolrScraper {
 
   private Cache<String, HttpSolrClient> hostClientCache = CacheBuilder.newBuilder().build();
 
-  public SolrCloudScraper(CloudSolrClient solrClient, ExecutorService executor, SolrClientFactory solrClientFactory) {
+  public SolrCloudScraper(
+      CloudSolrClient solrClient, ExecutorService executor, SolrClientFactory solrClientFactory) {
     super(executor);
     this.solrClient = solrClient;
     this.solrClientFactory = solrClientFactory;
@@ -54,68 +54,76 @@ public class SolrCloudScraper extends SolrScraper {
   public Map<String, MetricSamples> pingAllCores(MetricsQuery query) throws IOException {
     Map<String, HttpSolrClient> httpSolrClients = createHttpSolrClients();
 
-    Map<String, DocCollection> collectionState = solrClient.getClusterStateProvider().getClusterState().getCollectionsMap();
+    Map<String, DocCollection> collectionState =
+        solrClient.getClusterStateProvider().getClusterState().getCollectionsMap();
 
-    List<Replica> replicas = collectionState.values()
-        .stream()
-        .map(DocCollection::getReplicas)
-        .flatMap(List::stream)
-        .collect(Collectors.toList());
+    List<Replica> replicas =
+        collectionState.values().stream()
+            .map(DocCollection::getReplicas)
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
 
-    List<String> coreNames = replicas
-        .stream()
-        .map(Replica::getCoreName)
-        .collect(Collectors.toList());
+    List<String> coreNames =
+        replicas.stream().map(Replica::getCoreName).collect(Collectors.toList());
 
-    Map<String, HttpSolrClient> coreToClient = replicas
-        .stream()
-        .map(replica -> new Pair<>(replica.getCoreName(), httpSolrClients.get(replica.getBaseUrl())))
-        .collect(Collectors.toMap(Pair::first, Pair::second));
+    Map<String, HttpSolrClient> coreToClient =
+        replicas.stream()
+            .map(
+                replica ->
+                    new Pair<>(replica.getCoreName(), httpSolrClients.get(replica.getBaseUrl())))
+            .collect(Collectors.toMap(Pair::first, Pair::second));
 
-    return sendRequestsInParallel(coreNames, core -> {
-      try {
-        return request(coreToClient.get(core), query.withCore(core));
-      } catch (IOException exception) {
-        throw new RuntimeException(exception);
-      }
-    });
+    return sendRequestsInParallel(
+        coreNames,
+        core -> {
+          try {
+            return request(coreToClient.get(core), query.withCore(core));
+          } catch (IOException exception) {
+            throw new RuntimeException(exception);
+          }
+        });
   }
 
   private Map<String, HttpSolrClient> createHttpSolrClients() throws IOException {
     return getBaseUrls().stream()
-        .map(url -> {
-          try {
-            return hostClientCache.get(url, () -> solrClientFactory.createStandaloneSolrClient(url));
-          } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-          }
-        })
+        .map(
+            url -> {
+              try {
+                return hostClientCache.get(
+                    url, () -> solrClientFactory.createStandaloneSolrClient(url));
+              } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+              }
+            })
         .collect(Collectors.toMap(HttpSolrClient::getBaseURL, Function.identity()));
-
   }
 
   @Override
   public Map<String, MetricSamples> pingAllCollections(MetricsQuery query) throws IOException {
-    return sendRequestsInParallel(getCollections(), (collection) -> {
-      try {
-        return request(solrClient, query.withCollection(collection));
-      } catch (IOException exception) {
-        throw new RuntimeException(exception);
-      }
-    });
+    return sendRequestsInParallel(
+        getCollections(),
+        (collection) -> {
+          try {
+            return request(solrClient, query.withCollection(collection));
+          } catch (IOException exception) {
+            throw new RuntimeException(exception);
+          }
+        });
   }
 
   @Override
   public Map<String, MetricSamples> metricsForAllHosts(MetricsQuery query) throws IOException {
     Map<String, HttpSolrClient> httpSolrClients = createHttpSolrClients();
 
-    return sendRequestsInParallel(httpSolrClients.keySet(), (baseUrl) -> {
-      try {
-        return request(httpSolrClients.get(baseUrl), query);
-      } catch (IOException exception) {
-        throw new RuntimeException(exception);
-      }
-    });
+    return sendRequestsInParallel(
+        httpSolrClients.keySet(),
+        (baseUrl) -> {
+          try {
+            return request(httpSolrClients.get(baseUrl), query);
+          } catch (IOException exception) {
+            throw new RuntimeException(exception);
+          }
+        });
   }
 
   @Override
@@ -129,7 +137,11 @@ public class SolrCloudScraper extends SolrScraper {
   }
 
   private Set<String> getBaseUrls() throws IOException {
-    return solrClient.getClusterStateProvider().getClusterState().getCollectionsMap().values()
+    return solrClient
+        .getClusterStateProvider()
+        .getClusterState()
+        .getCollectionsMap()
+        .values()
         .stream()
         .map(DocCollection::getReplicas)
         .flatMap(List::stream)

@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.feature;
 
 import java.lang.reflect.Method;
-
 import org.apache.lucene.search.Scorer;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
@@ -33,10 +32,11 @@ public class TestFeature extends SolrTestCase {
         // the FilterFeatureScorer's implementation does not influence its parent Weight
         if (scorerClassMethod.getName().equals("getWeight")) continue;
 
-        final Method ffsClassMethod = ffsClass.getDeclaredMethod(
-            scorerClassMethod.getName(),
-            scorerClassMethod.getParameterTypes());
-        assertEquals("getReturnType() difference",
+        final Method ffsClassMethod =
+            ffsClass.getDeclaredMethod(
+                scorerClassMethod.getName(), scorerClassMethod.getParameterTypes());
+        assertEquals(
+            "getReturnType() difference",
             scorerClassMethod.getReturnType(),
             ffsClassMethod.getReturnType());
       } catch (NoSuchMethodException e) {
@@ -44,5 +44,4 @@ public class TestFeature extends SolrTestCase {
       }
     }
   }
-
 }

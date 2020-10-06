@@ -16,15 +16,14 @@
  */
 package org.apache.solr.common.util;
 
+import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.common.util.Utils.toJSONString;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.solr.common.MapWriter;
-
-import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.common.util.Utils.toJSONString;
 
 public class Pair<T1, T2> implements Serializable, MapWriter {
   private final T1 first;
@@ -45,9 +44,9 @@ public class Pair<T1, T2> implements Serializable, MapWriter {
 
   @Override
   public boolean equals(Object that) {
-    return that instanceof Pair &&
-        Objects.equals(this.first, ((Pair) that).first) &&
-        Objects.equals(this.second, ((Pair) that).second);
+    return that instanceof Pair
+        && Objects.equals(this.first, ((Pair) that).first)
+        && Objects.equals(this.second, ((Pair) that).second);
   }
 
   @Override
@@ -70,5 +69,4 @@ public class Pair<T1, T2> implements Serializable, MapWriter {
   public static Pair parse(Map m) {
     return new Pair(m.get("first"), m.get("second"));
   }
-
 }

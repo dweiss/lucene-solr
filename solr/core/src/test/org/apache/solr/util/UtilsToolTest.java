@@ -17,6 +17,9 @@
 
 package org.apache.solr.util;
 
+import static org.apache.solr.util.SolrCLI.findTool;
+import static org.apache.solr.util.SolrCLI.parseCmdLine;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,54 +29,50 @@ import java.time.Period;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.solr.util.SolrCLI.findTool;
-import static org.apache.solr.util.SolrCLI.parseCmdLine;
-
-/**
- * Unit test for SolrCLI's UtilsTool
- */
+/** Unit test for SolrCLI's UtilsTool */
 public class UtilsToolTest extends SolrTestCaseJ4 {
 
   private Path dir;
   private SolrCLI.UtilsTool tool;
-  private List<String> files = Arrays.asList(
-      "solr.log", 
-      "solr.log.1", 
-      "solr.log.2", 
-      "solr.log.3", 
-      "solr.log.9", 
-      "solr.log.10", 
-      "solr.log.11", 
-      "solr_log_20160102", 
-      "solr_log_20160304", 
-      "solr-8983-console.log",
-      "solr_gc_log_20160102", 
-      "solr_gcnotremove", 
-      "solr_gc.log", 
-      "solr_gc.log.0", 
-      "solr_gc.log.0.current", 
-      "solr_gc_log_2");
-  
+  private List<String> files =
+      Arrays.asList(
+          "solr.log",
+          "solr.log.1",
+          "solr.log.2",
+          "solr.log.3",
+          "solr.log.9",
+          "solr.log.10",
+          "solr.log.11",
+          "solr_log_20160102",
+          "solr_log_20160304",
+          "solr-8983-console.log",
+          "solr_gc_log_20160102",
+          "solr_gcnotremove",
+          "solr_gc.log",
+          "solr_gc.log.0",
+          "solr_gc.log.0.current",
+          "solr_gc_log_2");
+
   @Before
   public void setUp() throws Exception {
     super.setUp();
     dir = createTempDir("Utils Tool Test").toAbsolutePath();
-    files.forEach(f -> {
-      try {
-        Files.createFile(dir.resolve(f));
-      } catch (IOException e) {
-        fail("Error when creating temporary file " + dir.resolve(f));
-      }
-    });
+    files.forEach(
+        f -> {
+          try {
+            Files.createFile(dir.resolve(f));
+          } catch (IOException e) {
+            fail("Error when creating temporary file " + dir.resolve(f));
+          }
+        });
   }
-  
+
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -82,63 +81,86 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
       dir = null;
     }
   }
-  
+
   @Test
   public void testEmptyAndQuiet() throws Exception {
-    String[] args = {"utils", "-remove_old_solr_logs", "7",  
-        "-rotate_solr_logs", "9",  
-        "-archive_gc_logs",
-        "-archive_console_logs",
-        "-q",
-        "-l", dir.toString()};
+    String[] args = {
+      "utils",
+      "-remove_old_solr_logs",
+      "7",
+      "-rotate_solr_logs",
+      "9",
+      "-archive_gc_logs",
+      "-archive_console_logs",
+      "-q",
+      "-l",
+      dir.toString()
+    };
     assertEquals(0, runTool(args));
   }
 
   @Test
   public void testNonexisting() throws Exception {
     String nonexisting = dir.resolve("non-existing").toString();
-    String[] args = {"utils", "-remove_old_solr_logs", "7",
-        "-rotate_solr_logs", "9",
-        "-archive_gc_logs",
-        "-archive_console_logs",
-        "-l", nonexisting};
+    String[] args = {
+      "utils",
+      "-remove_old_solr_logs",
+      "7",
+      "-rotate_solr_logs",
+      "9",
+      "-archive_gc_logs",
+      "-archive_console_logs",
+      "-l",
+      nonexisting
+    };
     assertEquals(0, runTool(args));
   }
-  
+
   @Test
   public void testRemoveOldSolrLogs() throws Exception {
     String[] args = {"utils", "-remove_old_solr_logs", "1", "-l", dir.toString()};
     assertEquals(files.size(), fileCount());
     assertEquals(0, runTool(args));
-    assertEquals(files.size(), fileCount());     // No logs older than 1 day
-    Files.setLastModifiedTime(dir.resolve("solr_log_20160102"), FileTime.from(Instant.now().minus(Period.ofDays(2))));
+    assertEquals(files.size(), fileCount()); // No logs older than 1 day
+    Files.setLastModifiedTime(
+        dir.resolve("solr_log_20160102"), FileTime.from(Instant.now().minus(Period.ofDays(2))));
     assertEquals(0, runTool(args));
-    assertEquals(files.size()-1, fileCount());   // One logs older than 1 day
-    Files.setLastModifiedTime(dir.resolve("solr_log_20160304"), FileTime.from(Instant.now().minus(Period.ofDays(3))));
+    assertEquals(files.size() - 1, fileCount()); // One logs older than 1 day
+    Files.setLastModifiedTime(
+        dir.resolve("solr_log_20160304"), FileTime.from(Instant.now().minus(Period.ofDays(3))));
     assertEquals(0, runTool(args));
-    assertEquals(files.size()-2, fileCount());   // Two logs older than 1 day
+    assertEquals(files.size() - 2, fileCount()); // Two logs older than 1 day
   }
 
   @Test
   public void testRelativePath() throws Exception {
-    
+
     // NOTE...
     //
-    // some filesystems have coarse granularity for last modified attribute (ie: multiple milliseconds)
+    // some filesystems have coarse granularity for last modified attribute (ie: multiple
+    // milliseconds)
     // which means if the test runs very quickly after the creation / setLastMod of these file,
     // then "setLastMod(X days ago)" may be equal to (or even greater that) "now - X days" causing
     // "-remove_old_solr_logs X" to ignore them.
     // so make sure we use at least "setLastMod(X+1 days ago)"
-    
-    Files.setLastModifiedTime(dir.resolve("solr_log_20160102"),
-                              FileTime.from(Instant.now().minus(Period.ofDays(1))));
-    Files.setLastModifiedTime(dir.resolve("solr_log_20160304"),
-                              FileTime.from(Instant.now().minus(Period.ofDays(2))));
-    
-    String[] args = {"utils", "-remove_old_solr_logs", "0", "-l", dir.getFileName().toString(), "-s", dir.getParent().toString()};
+
+    Files.setLastModifiedTime(
+        dir.resolve("solr_log_20160102"), FileTime.from(Instant.now().minus(Period.ofDays(1))));
+    Files.setLastModifiedTime(
+        dir.resolve("solr_log_20160304"), FileTime.from(Instant.now().minus(Period.ofDays(2))));
+
+    String[] args = {
+      "utils",
+      "-remove_old_solr_logs",
+      "0",
+      "-l",
+      dir.getFileName().toString(),
+      "-s",
+      dir.getParent().toString()
+    };
     assertEquals(files.size(), fileCount());
     assertEquals(0, runTool(args));
-    assertEquals(files.size()-2, fileCount());
+    assertEquals(files.size() - 2, fileCount());
   }
 
   @Test
@@ -151,13 +173,13 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
     }
     fail("Should have thrown exception if using relative path without -s");
   }
-  
+
   @Test
   public void testRemoveOldGcLogs() throws Exception {
     String[] args = {"utils", "-archive_gc_logs", "-l", dir.toString()};
     assertEquals(files.size(), fileCount());
     assertEquals(0, runTool(args));
-    assertEquals(files.size()-5, fileCount());
+    assertEquals(files.size() - 5, fileCount());
     assertFalse(listFiles().contains("solr_gc_log_2"));
     assertTrue(Files.exists(dir.resolve("archived").resolve("solr_gc_log_2")));
     assertEquals(0, runTool(args));
@@ -169,7 +191,7 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
     String[] args = {"utils", "-archive_console_logs", "-l", dir.toString()};
     assertEquals(files.size(), fileCount());
     assertEquals(0, runTool(args));
-    assertEquals(files.size()-1, fileCount());
+    assertEquals(files.size() - 1, fileCount());
     assertFalse(listFiles().contains("solr-8983-console.log"));
     assertTrue(Files.exists(dir.resolve("archived").resolve("solr-8983-console.log")));
     assertEquals(0, runTool(args));
@@ -182,18 +204,20 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
     assertEquals(files.size(), fileCount());
     assertTrue(listFiles().contains("solr.log"));
     assertEquals(0, runTool(args));
-    assertEquals(files.size()-3, fileCount());
+    assertEquals(files.size() - 3, fileCount());
     assertTrue(listFiles().contains("solr.log.4"));
     assertFalse(listFiles().contains("solr.log"));
     assertFalse(listFiles().contains("solr.log.9"));
     assertFalse(listFiles().contains("solr.log.10"));
     assertFalse(listFiles().contains("solr.log.11"));
   }
-  
+
   private List<String> listFiles() throws IOException {
-    return Files.find(dir, 1, (p, a) -> a.isRegularFile()).map(p -> p.getFileName().toString()).collect(Collectors.toList());
+    return Files.find(dir, 1, (p, a) -> a.isRegularFile())
+        .map(p -> p.getFileName().toString())
+        .collect(Collectors.toList());
   }
-  
+
   private long fileCount() throws IOException {
     return listFiles().size();
   }

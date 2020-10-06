@@ -23,26 +23,25 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
 /**
- * A size limited distributed map maintained in zk.
- * Oldest znodes (as per modification time) are evicted as newer ones come in.
+ * A size limited distributed map maintained in zk. Oldest znodes (as per modification time) are
+ * evicted as newer ones come in.
  *
- * When the map hits the specified maximum size, the oldest <code>maxSize / 10</code> items
- * are evicted on the next {@link #put(String, byte[])} invocation.
+ * <p>When the map hits the specified maximum size, the oldest <code>maxSize / 10</code> items are
+ * evicted on the next {@link #put(String, byte[])} invocation.
  */
 public class SizeLimitedDistributedMap extends DistributedMap {
 
   private final int maxSize;
 
-  /**
-   * This observer will be called when this map overflows, and deletes the excess of elements
-   */
+  /** This observer will be called when this map overflows, and deletes the excess of elements */
   private final OnOverflowObserver onOverflowObserver;
 
   public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, int maxSize) {
     this(zookeeper, dir, maxSize, null);
   }
-  
-  public SizeLimitedDistributedMap(SolrZkClient zookeeper, String dir, int maxSize, OnOverflowObserver onOverflowObserver) {
+
+  public SizeLimitedDistributedMap(
+      SolrZkClient zookeeper, String dir, int maxSize, OnOverflowObserver onOverflowObserver) {
     super(zookeeper, dir);
     this.maxSize = maxSize;
     this.onOverflowObserver = onOverflowObserver;
@@ -56,12 +55,13 @@ public class SizeLimitedDistributedMap extends DistributedMap {
 
       int cleanupSize = maxSize / 10;
 
-      final PriorityQueue<Long> priorityQueue = new PriorityQueue<Long>(cleanupSize) {
-        @Override
-        protected boolean lessThan(Long a, Long b) {
-          return (a > b);
-        }
-      };
+      final PriorityQueue<Long> priorityQueue =
+          new PriorityQueue<Long>(cleanupSize) {
+            @Override
+            protected boolean lessThan(Long a, Long b) {
+              return (a > b);
+            }
+          };
 
       for (String child : children) {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
@@ -74,14 +74,15 @@ public class SizeLimitedDistributedMap extends DistributedMap {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
         if (stat.getMzxid() <= topElementMzxId) {
           zookeeper.delete(dir + "/" + child, -1, true);
-          if (onOverflowObserver != null) onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
+          if (onOverflowObserver != null)
+            onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
         }
       }
     }
 
     super.put(trackingId, data);
   }
-  
+
   interface OnOverflowObserver {
     void onChildDelete(String child) throws KeeperException, InterruptedException;
   }

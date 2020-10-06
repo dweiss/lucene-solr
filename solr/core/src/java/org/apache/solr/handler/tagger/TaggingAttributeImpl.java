@@ -1,15 +1,10 @@
 /*
- * This software was produced for the U. S. Government
- * under Contract No. W15P7T-11-C-F600, and is
- * subject to the Rights in Noncommercial Computer Software
- * and Noncommercial Computer Software Documentation
- * Clause 252.227-7014 (JUN 1995)
- *
- * Copyright 2013 The MITRE Corporation. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,14 +20,10 @@ package org.apache.solr.handler.tagger;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
-/**
- * Implementation of the {@link TaggingAttribute}
- */
+/** Implementation of the {@link TaggingAttribute} */
 public class TaggingAttributeImpl extends AttributeImpl implements TaggingAttribute {
 
-  /**
-   * the private field initialised with {@link TaggingAttribute#DEFAULT_TAGGABLE}
-   */
+  /** the private field initialised with {@link TaggingAttribute#DEFAULT_TAGGABLE} */
   private boolean taggable = TaggingAttribute.DEFAULT_TAGGABLE;
 
   /*
@@ -75,5 +66,4 @@ public class TaggingAttributeImpl extends AttributeImpl implements TaggingAttrib
   public void reflectWith(AttributeReflector reflector) {
     reflector.reflect(TaggingAttribute.class, "taggable", isTaggable());
   }
-
 }

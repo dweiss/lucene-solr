@@ -22,12 +22,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-
 
 public class NodeConfig {
   // all Path fields here are absolute and normalized.
@@ -39,7 +37,7 @@ public class NodeConfig {
   private final Path solrDataHome;
 
   private final Integer booleanQueryMaxClauseCount;
-  
+
   private final Path configSetBaseDirectory;
 
   private final Set<Path> allowPaths;
@@ -84,21 +82,42 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
-  // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper connection later
-  // If it becomes necessary to track multiple potential sources in the future, replace this with an Enum
+  // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
+  // connection later
+  // If it becomes necessary to track multiple potential sources in the future, replace this with an
+  // Enum
   private final boolean fromZookeeper;
 
-  private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Integer booleanQueryMaxClauseCount,
-                     Path configSetBaseDirectory, String sharedLibDirectory,
-                     PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
-                     String coreAdminHandlerClass, String collectionsAdminHandlerClass,
-                     String healthCheckHandlerClass, String infoHandlerClass, String configSetsHandlerClass,
-                     LogWatcherConfig logWatcherConfig, CloudConfig cloudConfig, Integer coreLoadThreads, int replayUpdatesThreads,
-                     int transientCacheSize, boolean useSchemaCache, String managementPath,
-                     Path solrHome, SolrResourceLoader loader,
-                     Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
-                     MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
-                     boolean fromZookeeper, Set<Path> allowPaths) {
+  private NodeConfig(
+      String nodeName,
+      Path coreRootDirectory,
+      Path solrDataHome,
+      Integer booleanQueryMaxClauseCount,
+      Path configSetBaseDirectory,
+      String sharedLibDirectory,
+      PluginInfo shardHandlerFactoryConfig,
+      UpdateShardHandlerConfig updateShardHandlerConfig,
+      String coreAdminHandlerClass,
+      String collectionsAdminHandlerClass,
+      String healthCheckHandlerClass,
+      String infoHandlerClass,
+      String configSetsHandlerClass,
+      LogWatcherConfig logWatcherConfig,
+      CloudConfig cloudConfig,
+      Integer coreLoadThreads,
+      int replayUpdatesThreads,
+      int transientCacheSize,
+      boolean useSchemaCache,
+      String managementPath,
+      Path solrHome,
+      SolrResourceLoader loader,
+      Properties solrProperties,
+      PluginInfo[] backupRepositoryPlugins,
+      MetricsConfig metricsConfig,
+      PluginInfo transientCacheConfig,
+      PluginInfo tracerConfig,
+      boolean fromZookeeper,
+      Set<Path> allowPaths) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
@@ -131,8 +150,11 @@ public class NodeConfig {
     this.allowPaths = allowPaths;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "SolrCloud requires a value of at least 2 for coreLoadThreads (configured value = " + this.coreLoadThreads + ")");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "SolrCloud requires a value of at least 2 for coreLoadThreads (configured value = "
+              + this.coreLoadThreads
+              + ")");
     }
   }
 
@@ -150,7 +172,7 @@ public class NodeConfig {
     return solrDataHome;
   }
 
-  /** 
+  /**
    * If null, the lucene default will not be overridden
    *
    * @see IndexSearcher#setMaxClauseCount
@@ -158,7 +180,7 @@ public class NodeConfig {
   public Integer getBooleanQueryMaxClauseCount() {
     return booleanQueryMaxClauseCount;
   }
-  
+
   public PluginInfo getShardHandlerFactoryPluginInfo() {
     return shardHandlerFactoryConfig;
   }
@@ -168,8 +190,10 @@ public class NodeConfig {
   }
 
   public int getCoreLoadThreadCount(boolean zkAware) {
-    return coreLoadThreads == null ?
-        (zkAware ? NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD : NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS)
+    return coreLoadThreads == null
+        ? (zkAware
+            ? NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS_IN_CLOUD
+            : NodeConfigBuilder.DEFAULT_CORE_LOAD_THREADS)
         : coreLoadThreads;
   }
 
@@ -178,10 +202,11 @@ public class NodeConfig {
   }
 
   /**
-   * Returns a directory, optionally a comma separated list of directories
-   * that will be added to Solr's class path for searching for classes and plugins.
-   * The path is either absolute or relative to SOLR_HOME. Note that SOLR_HOME/lib
-   * will always be added to the search path even if not included in this list.
+   * Returns a directory, optionally a comma separated list of directories that will be added to
+   * Solr's class path for searching for classes and plugins. The path is either absolute or
+   * relative to SOLR_HOME. Note that SOLR_HOME/lib will always be added to the search path even if
+   * not included in this list.
+   *
    * @return a comma separated list of path strings or null if no paths defined
    */
   public String getSharedLibDirectory() {
@@ -191,7 +216,7 @@ public class NodeConfig {
   public String getCoreAdminHandlerClass() {
     return coreAdminHandlerClass;
   }
-  
+
   public String getCollectionsHandlerClass() {
     return collectionsAdminHandlerClass;
   }
@@ -257,7 +282,9 @@ public class NodeConfig {
     return metricsConfig;
   }
 
-  public PluginInfo getTransientCachePluginInfo() { return transientCacheConfig; }
+  public PluginInfo getTransientCachePluginInfo() {
+    return transientCacheConfig;
+  }
 
   public PluginInfo getTracerConfiguratorPluginInfo() {
     return tracerConfig;
@@ -268,10 +295,12 @@ public class NodeConfig {
   }
 
   /**
-   * Extra file paths that will be allowed for core creation, in addition to
-   * SOLR_HOME, SOLR_DATA_HOME and coreRootDir
+   * Extra file paths that will be allowed for core creation, in addition to SOLR_HOME,
+   * SOLR_DATA_HOME and coreRootDir
    */
-  public Set<Path> getAllowPaths() { return allowPaths; }
+  public Set<Path> getAllowPaths() {
+    return allowPaths;
+  }
 
   public static class NodeConfigBuilder {
     // all Path fields here are absolute and normalized.
@@ -292,9 +321,11 @@ public class NodeConfig {
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
+
     @Deprecated
-    //Remove in 7.0 and put it all in the transientCache element in solrconfig.xml
+    // Remove in 7.0 and put it all in the transientCache element in solrconfig.xml
     private int transientCacheSize = DEFAULT_TRANSIENT_CACHE_SIZE;
+
     private boolean useSchemaCache = false;
     private String managementPath;
     private Properties solrProperties = new Properties();
@@ -309,24 +340,30 @@ public class NodeConfig {
     private final String nodeName;
 
     public static final int DEFAULT_CORE_LOAD_THREADS = 3;
-    //No:of core load threads in cloud mode is set to a default of 8
+    // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
     public static final int DEFAULT_TRANSIENT_CACHE_SIZE = Integer.MAX_VALUE;
 
-    private static final String DEFAULT_ADMINHANDLERCLASS = "org.apache.solr.handler.admin.CoreAdminHandler";
-    private static final String DEFAULT_INFOHANDLERCLASS = "org.apache.solr.handler.admin.InfoHandler";
-    private static final String DEFAULT_COLLECTIONSHANDLERCLASS = "org.apache.solr.handler.admin.CollectionsHandler";
-    private static final String DEFAULT_HEALTHCHECKHANDLERCLASS = "org.apache.solr.handler.admin.HealthCheckHandler";
-    private static final String DEFAULT_CONFIGSETSHANDLERCLASS = "org.apache.solr.handler.admin.ConfigSetsHandler";
+    private static final String DEFAULT_ADMINHANDLERCLASS =
+        "org.apache.solr.handler.admin.CoreAdminHandler";
+    private static final String DEFAULT_INFOHANDLERCLASS =
+        "org.apache.solr.handler.admin.InfoHandler";
+    private static final String DEFAULT_COLLECTIONSHANDLERCLASS =
+        "org.apache.solr.handler.admin.CollectionsHandler";
+    private static final String DEFAULT_HEALTHCHECKHANDLERCLASS =
+        "org.apache.solr.handler.admin.HealthCheckHandler";
+    private static final String DEFAULT_CONFIGSETSHANDLERCLASS =
+        "org.apache.solr.handler.admin.ConfigSetsHandler";
 
-    public static final Set<String> DEFAULT_HIDDEN_SYS_PROPS = new HashSet<>(Arrays.asList(
-        "javax.net.ssl.keyStorePassword",
-        "javax.net.ssl.trustStorePassword",
-        "basicauth",
-        "zkDigestPassword",
-        "zkDigestReadonlyPassword"
-    ));
+    public static final Set<String> DEFAULT_HIDDEN_SYS_PROPS =
+        new HashSet<>(
+            Arrays.asList(
+                "javax.net.ssl.keyStorePassword",
+                "javax.net.ssl.trustStorePassword",
+                "basicauth",
+                "zkDigestPassword",
+                "zkDigestReadonlyPassword"));
 
     public NodeConfigBuilder(String nodeName, Path solrHome) {
       this.nodeName = nodeName;
@@ -350,7 +387,7 @@ public class NodeConfig {
       }
       return this;
     }
-    
+
     public NodeConfigBuilder setBooleanQueryMaxClauseCount(Integer booleanQueryMaxClauseCount) {
       this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
       return this;
@@ -371,7 +408,8 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setUpdateShardHandlerConfig(UpdateShardHandlerConfig updateShardHandlerConfig) {
+    public NodeConfigBuilder setUpdateShardHandlerConfig(
+        UpdateShardHandlerConfig updateShardHandlerConfig) {
       this.updateShardHandlerConfig = updateShardHandlerConfig;
       return this;
     }
@@ -452,7 +490,7 @@ public class NodeConfig {
       this.metricsConfig = metricsConfig;
       return this;
     }
-    
+
     public NodeConfigBuilder setSolrCoreCacheFactoryConfig(PluginInfo transientCacheConfig) {
       this.transientCacheConfig = transientCacheConfig;
       return this;
@@ -474,16 +512,41 @@ public class NodeConfig {
     }
 
     public NodeConfig build() {
-      // if some things weren't set then set them now.  Simple primitives are set on the field declaration
+      // if some things weren't set then set them now.  Simple primitives are set on the field
+      // declaration
       if (loader == null) {
         loader = new SolrResourceLoader(solrHome);
       }
-      return new NodeConfig(nodeName, coreRootDirectory, solrDataHome, booleanQueryMaxClauseCount,
-                            configSetBaseDirectory, sharedLibDirectory, shardHandlerFactoryConfig,
-                            updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
-                            logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
-                            solrHome, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper, allowPaths);
+      return new NodeConfig(
+          nodeName,
+          coreRootDirectory,
+          solrDataHome,
+          booleanQueryMaxClauseCount,
+          configSetBaseDirectory,
+          sharedLibDirectory,
+          shardHandlerFactoryConfig,
+          updateShardHandlerConfig,
+          coreAdminHandlerClass,
+          collectionsAdminHandlerClass,
+          healthCheckHandlerClass,
+          infoHandlerClass,
+          configSetsHandlerClass,
+          logWatcherConfig,
+          cloudConfig,
+          coreLoadThreads,
+          replayUpdatesThreads,
+          transientCacheSize,
+          useSchemaCache,
+          managementPath,
+          solrHome,
+          loader,
+          solrProperties,
+          backupRepositoryPlugins,
+          metricsConfig,
+          transientCacheConfig,
+          tracerConfig,
+          fromZookeeper,
+          allowPaths);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {
@@ -492,4 +555,3 @@ public class NodeConfig {
     }
   }
 }
-

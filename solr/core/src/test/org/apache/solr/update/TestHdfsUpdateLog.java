@@ -16,10 +16,10 @@
  */
 package org.apache.solr.update;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -34,23 +34,23 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
 public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
   private static MiniDFSCluster dfsCluster;
   private static String hdfsUri;
   private static FileSystem fs;
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
     hdfsUri = HdfsTestUtil.getURI(dfsCluster);
-    
+
     try {
       URI uri = new URI(hdfsUri);
       Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
@@ -60,10 +60,10 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     }
 
     System.setProperty("solr.ulog.dir", hdfsUri + "/solr/shard1");
-    
-    initCore("solrconfig-tlog.xml","schema15.xml");
+
+    initCore("solrconfig-tlog.xml", "schema15.xml");
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     IOUtils.closeQuietly(fs);
@@ -90,47 +90,49 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     ((DirectUpdateHandler2) uhandler).getCommitTracker().setTimeUpperBound(100);
     ((DirectUpdateHandler2) uhandler).getCommitTracker().setOpenSearcher(false);
     final UpdateLog ulog = uhandler.getUpdateLog();
-    
+
     clearIndex();
     assertU(commit());
-    
+
     // we hammer on init in a background thread to make
     // sure we don't run into any filesystem already closed
     // problems (SOLR-7113)
-    
-    Thread thread = new Thread() {
-      public void run() {
-        int cnt = 0;
-        while (true) {
-          ulog.init(uhandler, req.getCore());
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException e) {
 
-          }
-          if (cnt++ > 50) {
-            break;
-          }
-        }
-      }
-    };
-    
-    Thread thread2 = new Thread() {
-      public void run() {
-        int cnt = 0;
-        while (true) {
-          assertU(adoc("id", Integer.toString(cnt)));
-          try {
-            Thread.sleep(10);
-          } catch (InterruptedException e) {
+    Thread thread =
+        new Thread() {
+          public void run() {
+            int cnt = 0;
+            while (true) {
+              ulog.init(uhandler, req.getCore());
+              try {
+                Thread.sleep(100);
+              } catch (InterruptedException e) {
 
+              }
+              if (cnt++ > 50) {
+                break;
+              }
+            }
           }
-          if (cnt++ > 500) {
-            break;
+        };
+
+    Thread thread2 =
+        new Thread() {
+          public void run() {
+            int cnt = 0;
+            while (true) {
+              assertU(adoc("id", Integer.toString(cnt)));
+              try {
+                Thread.sleep(10);
+              } catch (InterruptedException e) {
+
+              }
+              if (cnt++ > 500) {
+                break;
+              }
+            }
           }
-        }
-      }
-    };
+        };
 
     thread.start();
     thread2.start();
@@ -138,4 +140,3 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
     thread2.join();
   }
 }
-

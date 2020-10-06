@@ -17,7 +17,6 @@
 package org.apache.solr.legacy;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
@@ -27,8 +26,8 @@ import org.locationtech.spatial4j.distance.DistanceCalculator;
 import org.locationtech.spatial4j.shape.Point;
 
 /**
- * An implementation of the Lucene ValueSource model that returns the distance
- * for a {@link PointVectorStrategy}.
+ * An implementation of the Lucene ValueSource model that returns the distance for a {@link
+ * PointVectorStrategy}.
  *
  * @lucene.internal
  */
@@ -39,49 +38,45 @@ public class DistanceValueSource extends DoubleValuesSource {
   private final double multiplier;
   private final double nullValue;
 
-
-  /**
-   * Constructor.
-   */
+  /** Constructor. */
   public DistanceValueSource(PointVectorStrategy strategy, Point from, double multiplier) {
     this.strategy = strategy;
     this.from = from;
     this.multiplier = multiplier;
-    this.nullValue =
-        (strategy.getSpatialContext().isGeo() ? 180 * multiplier : Double.MAX_VALUE);
+    this.nullValue = (strategy.getSpatialContext().isGeo() ? 180 * multiplier : Double.MAX_VALUE);
   }
 
-  /**
-   * Returns the ValueSource description.
-   */
+  /** Returns the ValueSource description. */
   @Override
   public String toString() {
-    return "DistanceValueSource("+strategy+", "+from+")";
+    return "DistanceValueSource(" + strategy + ", " + from + ")";
   }
 
-  /**
-   * Returns the FunctionValues used by the function query.
-   */
+  /** Returns the FunctionValues used by the function query. */
   @Override
-  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores)
+      throws IOException {
 
-    final DoubleValues ptX = DoubleValuesSource.fromDoubleField(strategy.getFieldNameX()).getValues(readerContext, null);
-    final DoubleValues ptY = DoubleValuesSource.fromDoubleField(strategy.getFieldNameY()).getValues(readerContext, null);
+    final DoubleValues ptX =
+        DoubleValuesSource.fromDoubleField(strategy.getFieldNameX()).getValues(readerContext, null);
+    final DoubleValues ptY =
+        DoubleValuesSource.fromDoubleField(strategy.getFieldNameY()).getValues(readerContext, null);
     final DistanceCalculator calculator = strategy.getSpatialContext().getDistCalc();
 
-    return DoubleValues.withDefault(new DoubleValues() {
+    return DoubleValues.withDefault(
+        new DoubleValues() {
 
-      @Override
-      public double doubleValue() throws IOException {
-        return calculator.distance(from, ptX.doubleValue(), ptY.doubleValue()) * multiplier;
-      }
+          @Override
+          public double doubleValue() throws IOException {
+            return calculator.distance(from, ptX.doubleValue(), ptY.doubleValue()) * multiplier;
+          }
 
-      @Override
-      public boolean advanceExact(int doc) throws IOException {
-        return ptX.advanceExact(doc) && ptY.advanceExact(doc);
-      }
-    }, nullValue);
-
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return ptX.advanceExact(doc) && ptY.advanceExact(doc);
+          }
+        },
+        nullValue);
   }
 
   @Override

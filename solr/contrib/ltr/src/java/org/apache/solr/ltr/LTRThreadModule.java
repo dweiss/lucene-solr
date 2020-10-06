@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
-
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
@@ -29,37 +28,40 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
- * The LTRThreadModule is optionally used by the {@link org.apache.solr.ltr.search.LTRQParserPlugin} and
- * {@link org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory LTRFeatureLoggerTransformerFactory}
- * classes to parallelize the creation of {@link org.apache.solr.ltr.feature.Feature.FeatureWeight Feature.FeatureWeight}
- * objects.
- * <p>
- * Example configuration:
- * <pre>
-  &lt;queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"&gt;
-     &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
-     &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
-  &lt;/queryParser&gt;
-
-  &lt;transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory"&gt;
-     &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
-     &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
-  &lt;/transformer&gt;
-</pre>
- * If an individual solr instance is expected to receive no more than one query at a time, it is best
- * to set <code>totalPoolThreads</code> and <code>numThreadsPerRequest</code> to the same value.
+ * The LTRThreadModule is optionally used by the {@link org.apache.solr.ltr.search.LTRQParserPlugin}
+ * and {@link org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory
+ * LTRFeatureLoggerTransformerFactory} classes to parallelize the creation of {@link
+ * org.apache.solr.ltr.feature.Feature.FeatureWeight Feature.FeatureWeight} objects.
  *
- * If multiple queries need to be serviced simultaneously then <code>totalPoolThreads</code> and
+ * <p>Example configuration:
+ *
+ * <pre>
+ * &lt;queryParser name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"&gt;
+ * &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
+ * &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
+ * &lt;/queryParser&gt;
+ *
+ * &lt;transformer name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory"&gt;
+ * &lt;int name="threadModule.totalPoolThreads"&gt;10&lt;/int&gt;
+ * &lt;int name="threadModule.numThreadsPerRequest"&gt;5&lt;/int&gt;
+ * &lt;/transformer&gt;
+ * </pre>
+ *
+ * If an individual solr instance is expected to receive no more than one query at a time, it is
+ * best to set <code>totalPoolThreads</code> and <code>numThreadsPerRequest</code> to the same
+ * value.
+ *
+ * <p>If multiple queries need to be serviced simultaneously then <code>totalPoolThreads</code> and
  * <code>numThreadsPerRequest</code> can be adjusted based on the expected response times.
  *
- * If the value of <code>numThreadsPerRequest</code> is higher, the response time for a single query
- * will be improved up to a point. If multiple queries are serviced simultaneously, the value of
- * <code>totalPoolThreads</code> imposes a contention between the queries if
- * <code>(totalPoolThreads &lt; numThreadsPerRequest * total parallel queries)</code>.
+ * <p>If the value of <code>numThreadsPerRequest</code> is higher, the response time for a single
+ * query will be improved up to a point. If multiple queries are serviced simultaneously, the value
+ * of <code>totalPoolThreads</code> imposes a contention between the queries if <code>
+ * (totalPoolThreads &lt; numThreadsPerRequest * total parallel queries)</code>.
  */
-final public class LTRThreadModule extends CloseHook implements NamedListInitializedPlugin  {
+public final class LTRThreadModule extends CloseHook implements NamedListInitializedPlugin {
 
-  public static LTRThreadModule getInstance(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public static LTRThreadModule getInstance(@SuppressWarnings({"rawtypes"}) NamedList args) {
 
     final LTRThreadModule threadManager;
     @SuppressWarnings({"rawtypes"})
@@ -83,9 +85,8 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
 
     // gather the thread module args from amongst the general args
     final NamedList extractedArgs = new NamedList();
-    for (Iterator<Map.Entry<String,Object>> it = args.iterator();
-        it.hasNext(); ) {
-      final Map.Entry<String,Object> entry = it.next();
+    for (Iterator<Map.Entry<String, Object>> it = args.iterator(); it.hasNext(); ) {
+      final Map.Entry<String, Object> entry = it.next();
       final String key = entry.getKey();
       if (key.startsWith(CONFIG_PREFIX)) {
         extractedArgs.add(key.substring(CONFIG_PREFIX.length()), entry.getValue());
@@ -95,7 +96,7 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
     // remove consumed keys only once iteration is complete
     // since NamedList iterator does not support 'remove'
     for (Object key : extractedArgs.asShallowMap().keySet()) {
-      args.remove(CONFIG_PREFIX+key);
+      args.remove(CONFIG_PREFIX + key);
     }
 
     return extractedArgs;
@@ -109,8 +110,7 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
   private Semaphore ltrSemaphore;
   private volatile ExecutorService createWeightScoreExecutor;
 
-  public LTRThreadModule() {
-  }
+  public LTRThreadModule() {}
 
   // For test use only.
   LTRThreadModule(int totalPoolThreads, int numThreadsPerRequest) {
@@ -121,12 +121,12 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
     if (args != null) {
       SolrPluginUtils.invokeSetters(this, args);
     }
     validate();
-    if  (this.totalPoolThreads > 1 ){
+    if (this.totalPoolThreads > 1) {
       ltrSemaphore = new Semaphore(totalPoolThreads);
     } else {
       ltrSemaphore = null;
@@ -134,14 +134,15 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
   }
 
   private void validate() {
-    if (totalPoolThreads <= 0){
+    if (totalPoolThreads <= 0) {
       throw new IllegalArgumentException("totalPoolThreads cannot be less than 1");
     }
-    if (numThreadsPerRequest <= 0){
+    if (numThreadsPerRequest <= 0) {
       throw new IllegalArgumentException("numThreadsPerRequest cannot be less than 1");
     }
-    if (totalPoolThreads < numThreadsPerRequest){
-      throw new IllegalArgumentException("numThreadsPerRequest cannot be greater than totalPoolThreads");
+    if (totalPoolThreads < numThreadsPerRequest) {
+      throw new IllegalArgumentException(
+          "numThreadsPerRequest cannot be greater than totalPoolThreads");
     }
   }
 
@@ -175,12 +176,9 @@ final public class LTRThreadModule extends CloseHook implements NamedListInitial
   }
 
   @Override
-  public void postClose(SolrCore core) {
-  
-  }
+  public void postClose(SolrCore core) {}
 
   public void setExecutor(ExecutorService sharedExecutor) {
     this.createWeightScoreExecutor = sharedExecutor;
   }
-
 }

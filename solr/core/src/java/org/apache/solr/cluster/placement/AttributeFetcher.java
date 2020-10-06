@@ -17,61 +17,90 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Set;
 import org.apache.solr.cluster.Node;
 
-import java.util.Set;
-
 /**
- * <p>Instances of this interface are used to fetch various attributes from nodes (and other sources) in the cluster.</p>
+ * Instances of this interface are used to fetch various attributes from nodes (and other sources)
+ * in the cluster.
  */
 public interface AttributeFetcher {
-  /** Request the number of cores on each node. To get the value use {@link AttributeValues#getCoresCount(Node)} */
+  /**
+   * Request the number of cores on each node. To get the value use {@link
+   * AttributeValues#getCoresCount(Node)}
+   */
   AttributeFetcher requestNodeCoreCount();
 
-  /** Request the disk hardware type on each node. To get the value use {@link AttributeValues#getDiskType(Node)} */
+  /**
+   * Request the disk hardware type on each node. To get the value use {@link
+   * AttributeValues#getDiskType(Node)}
+   */
   AttributeFetcher requestNodeDiskType();
 
-  /** Request the free disk size on each node. To get the value use {@link AttributeValues#getFreeDisk(Node)} */
+  /**
+   * Request the free disk size on each node. To get the value use {@link
+   * AttributeValues#getFreeDisk(Node)}
+   */
   AttributeFetcher requestNodeFreeDisk();
 
-  /** Request the total disk size on each node. To get the value use {@link AttributeValues#getTotalDisk(Node)} */
+  /**
+   * Request the total disk size on each node. To get the value use {@link
+   * AttributeValues#getTotalDisk(Node)}
+   */
   AttributeFetcher requestNodeTotalDisk();
 
-  /** Request the heap usage on each node. To get the value use {@link AttributeValues#getHeapUsage(Node)} */
+  /**
+   * Request the heap usage on each node. To get the value use {@link
+   * AttributeValues#getHeapUsage(Node)}
+   */
   AttributeFetcher requestNodeHeapUsage();
 
-  /** Request the system load average on each node. To get the value use {@link AttributeValues#getSystemLoadAverage(Node)} */
+  /**
+   * Request the system load average on each node. To get the value use {@link
+   * AttributeValues#getSystemLoadAverage(Node)}
+   */
   AttributeFetcher requestNodeSystemLoadAverage();
 
-  /** Request a given system property on each node. To get the value use {@link AttributeValues#getSystemProperty(Node, String)} */
+  /**
+   * Request a given system property on each node. To get the value use {@link
+   * AttributeValues#getSystemProperty(Node, String)}
+   */
   AttributeFetcher requestNodeSystemProperty(String name);
 
-  /** Request an environment variable on each node. To get the value use {@link AttributeValues#getEnvironmentVariable(Node, String)} */
+  /**
+   * Request an environment variable on each node. To get the value use {@link
+   * AttributeValues#getEnvironmentVariable(Node, String)}
+   */
   AttributeFetcher requestNodeEnvironmentVariable(String name);
 
-  /** Request a node metric from each node. To get the value use {@link AttributeValues#getMetric(Node, String, NodeMetricRegistry)} */
+  /**
+   * Request a node metric from each node. To get the value use {@link
+   * AttributeValues#getMetric(Node, String, NodeMetricRegistry)}
+   */
   AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry);
 
-
   /**
-   * The set of nodes from which to fetch all node related attributes. Calling this method is mandatory if any of the {@code requestNode*}
-   * methods got called.
+   * The set of nodes from which to fetch all node related attributes. Calling this method is
+   * mandatory if any of the {@code requestNode*} methods got called.
    */
   AttributeFetcher fetchFrom(Set<Node> nodes);
 
-  /** Requests a (non node) metric of a given scope and name. To get the value use {@link AttributeValues#getMetric(String, String)} */
+  /**
+   * Requests a (non node) metric of a given scope and name. To get the value use {@link
+   * AttributeValues#getMetric(String, String)}
+   */
   AttributeFetcher requestMetric(String scope, String metricName);
 
   /**
-   * Fetches all requested node attributes from all nodes passed to {@link #fetchFrom(Set)} as well as non node attributes
-   * (those requested for example using {@link #requestMetric(String, String)}.
+   * Fetches all requested node attributes from all nodes passed to {@link #fetchFrom(Set)} as well
+   * as non node attributes (those requested for example using {@link #requestMetric(String,
+   * String)}.
+   *
    * @return An instance allowing retrieval of all attributed that could be fetched.
    */
   AttributeValues fetchAttributes();
 
-  /**
-   * Registry options for {@link Node} metrics.
-   */
+  /** Registry options for {@link Node} metrics. */
   enum NodeMetricRegistry {
     /** corresponds to solr.node */
     SOLR_NODE,
@@ -80,6 +109,7 @@ public interface AttributeFetcher {
   }
 
   enum DiskHardwareType {
-    SSD, ROTATIONAL
+    SSD,
+    ROTATIONAL
   }
 }

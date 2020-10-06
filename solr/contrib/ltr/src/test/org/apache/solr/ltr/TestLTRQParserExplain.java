@@ -35,11 +35,12 @@ public class TestLTRQParserExplain extends TestRerankBase {
     aftertest();
   }
 
-
   @Test
   public void testRerankedExplain() throws Exception {
-    loadModel("linear2", LinearModel.class.getName(), new String[] {
-        "constant1", "constant2", "pop"},
+    loadModel(
+        "linear2",
+        LinearModel.class.getName(),
+        new String[] {"constant1", "constant2", "pop"},
         "{\"weights\":{\"pop\":1.0,\"constant1\":1.5,\"constant2\":3.5}}");
 
     final SolrQuery query = new SolrQuery();
@@ -67,22 +68,21 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.add("fl", "*,score");
     query.add("wt", "json");
     final String expectedExplainNormalizer = "normalized using MinMaxNormalizer(min=0.0,max=10.0)";
-    final String expectedExplain = "\n3.5116758 = LinearModel(name=6029760550880411648,featureWeights=["
-        + "title=0.0,"
-        + "description=0.1,"
-        + "keywords=0.2,"
-        + "popularity=0.3,"
-        + "text=0.4,"
-        + "queryIntentPerson=0.1231231,"
-        + "queryIntentCompany=0.12121211"
-        + "]) model applied to features, sum of:\n  0.0 = prod of:\n    0.0 = weight on feature\n    1.0 = ValueFeature [name=title, params={value=1}]\n  0.2 = prod of:\n    0.1 = weight on feature\n    2.0 = ValueFeature [name=description, params={value=2}]\n  0.4 = prod of:\n    0.2 = weight on feature\n    2.0 = ValueFeature [name=keywords, params={value=2}]\n  0.09 = prod of:\n    0.3 = weight on feature\n    0.3 = "+expectedExplainNormalizer+"\n      3.0 = ValueFeature [name=popularity, params={value=3}]\n  1.6 = prod of:\n    0.4 = weight on feature\n    4.0 = ValueFeature [name=text, params={value=4}]\n  0.6156155 = prod of:\n    0.1231231 = weight on feature\n    5.0 = ValueFeature [name=queryIntentPerson, params={value=5}]\n  0.60606056 = prod of:\n    0.12121211 = weight on feature\n    5.0 = ValueFeature [name=queryIntentCompany, params={value=5}]\n";
+    final String expectedExplain =
+        "\n3.5116758 = LinearModel(name=6029760550880411648,featureWeights=["
+            + "title=0.0,"
+            + "description=0.1,"
+            + "keywords=0.2,"
+            + "popularity=0.3,"
+            + "text=0.4,"
+            + "queryIntentPerson=0.1231231,"
+            + "queryIntentCompany=0.12121211"
+            + "]) model applied to features, sum of:\n  0.0 = prod of:\n    0.0 = weight on feature\n    1.0 = ValueFeature [name=title, params={value=1}]\n  0.2 = prod of:\n    0.1 = weight on feature\n    2.0 = ValueFeature [name=description, params={value=2}]\n  0.4 = prod of:\n    0.2 = weight on feature\n    2.0 = ValueFeature [name=keywords, params={value=2}]\n  0.09 = prod of:\n    0.3 = weight on feature\n    0.3 = "
+            + expectedExplainNormalizer
+            + "\n      3.0 = ValueFeature [name=popularity, params={value=3}]\n  1.6 = prod of:\n    0.4 = weight on feature\n    4.0 = ValueFeature [name=text, params={value=4}]\n  0.6156155 = prod of:\n    0.1231231 = weight on feature\n    5.0 = ValueFeature [name=queryIntentPerson, params={value=5}]\n  0.60606056 = prod of:\n    0.12121211 = weight on feature\n    5.0 = ValueFeature [name=queryIntentCompany, params={value=5}]\n";
 
-    assertJQ(
-        "/query" + query.toQueryString(),
-        "/debug/explain/7=='"+expectedExplain+"'}");
-    assertJQ(
-        "/query" + query.toQueryString(),
-        "/debug/explain/9=='"+expectedExplain+"'}");
+    assertJQ("/query" + query.toQueryString(), "/debug/explain/7=='" + expectedExplain + "'}");
+    assertJQ("/query" + query.toQueryString(), "/debug/explain/9=='" + expectedExplain + "'}");
   }
 
   @Test
@@ -98,28 +98,34 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.add("fl", "*,score");
     query.add("wt", "xml");
 
-    final String linearModelEfiString = "LinearModel(name=linear-efi,featureWeights=["
-      + "sampleConstant=1.0,"
-      + "search_number_of_nights=2.0])";
+    final String linearModelEfiString =
+        "LinearModel(name=linear-efi,featureWeights=["
+            + "sampleConstant=1.0,"
+            + "search_number_of_nights=2.0])";
 
     query.remove("wt");
     query.add("wt", "json");
     assertJQ(
         "/query" + query.toQueryString(),
-        "/debug/explain/7=='\n5.0 = "+linearModelEfiString+" model applied to features, sum of:\n  5.0 = prod of:\n    1.0 = weight on feature\n    5.0 = ValueFeature [name=sampleConstant, params={value=5}]\n" +
-            "  0.0 = prod of:\n" +
-            "    2.0 = weight on feature\n" +
-            "    0.0 = The feature has no value\n'}");
+        "/debug/explain/7=='\n5.0 = "
+            + linearModelEfiString
+            + " model applied to features, sum of:\n  5.0 = prod of:\n    1.0 = weight on feature\n    5.0 = ValueFeature [name=sampleConstant, params={value=5}]\n"
+            + "  0.0 = prod of:\n"
+            + "    2.0 = weight on feature\n"
+            + "    0.0 = The feature has no value\n'}");
     assertJQ(
         "/query" + query.toQueryString(),
-        "/debug/explain/9=='\n5.0 = "+linearModelEfiString+" model applied to features, sum of:\n  5.0 = prod of:\n    1.0 = weight on feature\n    5.0 = ValueFeature [name=sampleConstant, params={value=5}]\n" +
-            "  0.0 = prod of:\n" +
-            "    2.0 = weight on feature\n" +
-            "    0.0 = The feature has no value\n'}");
+        "/debug/explain/9=='\n5.0 = "
+            + linearModelEfiString
+            + " model applied to features, sum of:\n  5.0 = prod of:\n    1.0 = weight on feature\n    5.0 = ValueFeature [name=sampleConstant, params={value=5}]\n"
+            + "  0.0 = prod of:\n"
+            + "    2.0 = weight on feature\n"
+            + "    0.0 = The feature has no value\n'}");
   }
 
   @Test
-  public void multipleAdditiveTreesScoreExplainMissingEfiFeatureShouldReturnDefaultScore() throws Exception {
+  public void multipleAdditiveTreesScoreExplainMissingEfiFeatureShouldReturnDefaultScore()
+      throws Exception {
     loadFeatures("external_features_for_sparse_processing.json");
     loadModels("multipleadditivetreesmodel_external_binary_features.json");
 
@@ -127,26 +133,32 @@ public class TestLTRQParserExplain extends TestRerankBase {
     query.setQuery("title:bloomberg");
     query.setParam("debugQuery", "on");
     query.add("rows", "4");
-    query.add("rq", "{!ltr reRankDocs=4 model=external_model_binary_feature efi.user_device_tablet=1}");
+    query.add(
+        "rq", "{!ltr reRankDocs=4 model=external_model_binary_feature efi.user_device_tablet=1}");
     query.add("fl", "*,score");
 
-    final String tree1 = "(weight=1.0,root=(feature=user_device_smartphone,threshold=0.5,left=0.0,right=50.0))";
-    final String tree2 = "(weight=1.0,root=(feature=user_device_tablet,threshold=0.5,left=0.0,right=65.0))";
-    final String trees = "["+tree1+","+tree2+"]";
+    final String tree1 =
+        "(weight=1.0,root=(feature=user_device_smartphone,threshold=0.5,left=0.0,right=50.0))";
+    final String tree2 =
+        "(weight=1.0,root=(feature=user_device_tablet,threshold=0.5,left=0.0,right=65.0))";
+    final String trees = "[" + tree1 + "," + tree2 + "]";
 
     query.add("wt", "json");
     assertJQ(
         "/query" + query.toQueryString(),
-        "/debug/explain/7=='\n" +
-            "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="+trees+") model applied to features, sum of:\n" +
-            "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n" +
-            "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
+        "/debug/explain/7=='\n"
+            + "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="
+            + trees
+            + ") model applied to features, sum of:\n"
+            + "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n"
+            + "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
     assertJQ(
         "/query" + query.toQueryString(),
-        "/debug/explain/9=='\n" +
-            "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="+trees+") model applied to features, sum of:\n" +
-            "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n" +
-            "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
+        "/debug/explain/9=='\n"
+            + "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="
+            + trees
+            + ") model applied to features, sum of:\n"
+            + "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n"
+            + "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
   }
-
 }

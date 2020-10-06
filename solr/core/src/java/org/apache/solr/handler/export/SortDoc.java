@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 class SortDoc {
@@ -33,8 +32,7 @@ class SortDoc {
     this.sortValues = sortValues;
   }
 
-  public SortDoc() {
-  }
+  public SortDoc() {}
 
   public SortValue getSortValue(String field) {
     for (SortValue value : sortValues) {
@@ -92,7 +90,7 @@ class SortDoc {
     if (docId == -1) {
       return true;
     }
-    SortDoc sd = (SortDoc)o;
+    SortDoc sd = (SortDoc) o;
     SortValue[] sortValues1 = sd.sortValues;
     for (int i = 0; i < sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sortValues1[i]);
@@ -102,11 +100,11 @@ class SortDoc {
         return false;
       }
     }
-    return docId + docBase > sd.docId + sd.docBase; //index order
+    return docId + docBase > sd.docId + sd.docBase; // index order
   }
 
   public int compareTo(Object o) {
-    SortDoc sd = (SortDoc)o;
+    SortDoc sd = (SortDoc) o;
     for (int i = 0; i < sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sd.sortValues[i]);
       if (comp != 0) {
@@ -115,7 +113,6 @@ class SortDoc {
     }
     return 0;
   }
-
 
   public String toString() {
     StringBuilder builder = new StringBuilder();

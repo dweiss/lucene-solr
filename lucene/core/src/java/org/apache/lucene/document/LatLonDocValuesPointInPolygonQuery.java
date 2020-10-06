@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.LatLonGeometry;
@@ -42,7 +41,6 @@ public class LatLonDocValuesPointInPolygonQuery extends Query {
 
   private final String field;
   private final Polygon[] polygons;
-
 
   LatLonDocValuesPointInPolygonQuery(String field, Polygon... polygons) {
     if (field == null) {
@@ -80,8 +78,7 @@ public class LatLonDocValuesPointInPolygonQuery extends Query {
       return false;
     }
     LatLonDocValuesPointInPolygonQuery other = (LatLonDocValuesPointInPolygonQuery) obj;
-    return field.equals(other.field) &&
-           Arrays.equals(polygons, other.polygons);
+    return field.equals(other.field) && Arrays.equals(polygons, other.polygons);
   }
 
   @Override
@@ -100,12 +97,14 @@ public class LatLonDocValuesPointInPolygonQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
 
     return new ConstantScoreWeight(this, boost) {
 
       final Component2D tree = LatLonGeometry.create(polygons);
-      final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createComponentPredicate(tree);
+      final GeoEncodingUtils.PolygonPredicate polygonPredicate =
+          GeoEncodingUtils.createComponentPredicate(tree);
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -114,26 +113,27 @@ public class LatLonDocValuesPointInPolygonQuery extends Query {
           return null;
         }
 
-        final TwoPhaseIterator iterator = new TwoPhaseIterator(values) {
+        final TwoPhaseIterator iterator =
+            new TwoPhaseIterator(values) {
 
-          @Override
-          public boolean matches() throws IOException {
-            for (int i = 0, count = values.docValueCount(); i < count; ++i) {
-              final long value = values.nextValue();
-              final int lat = (int) (value >>> 32);
-              final int lon = (int) (value & 0xFFFFFFFF);
-              if (polygonPredicate.test(lat, lon)) {
-                return true;
+              @Override
+              public boolean matches() throws IOException {
+                for (int i = 0, count = values.docValueCount(); i < count; ++i) {
+                  final long value = values.nextValue();
+                  final int lat = (int) (value >>> 32);
+                  final int lon = (int) (value & 0xFFFFFFFF);
+                  if (polygonPredicate.test(lat, lon)) {
+                    return true;
+                  }
+                }
+                return false;
               }
-            }
-            return false;
-          }
 
-          @Override
-          public float matchCost() {
-            return 1000f; // TODO: what should it be?
-          }
-        };
+              @Override
+              public float matchCost() {
+                return 1000f; // TODO: what should it be?
+              }
+            };
         return new ConstantScoreScorer(this, boost, scoreMode, iterator);
       }
 
@@ -141,7 +141,6 @@ public class LatLonDocValuesPointInPolygonQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return DocValues.isCacheable(ctx, field);
       }
-
     };
   }
 }

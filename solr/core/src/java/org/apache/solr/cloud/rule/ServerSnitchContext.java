@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.rule.SnitchContext;
 import org.apache.solr.common.util.Utils;
@@ -33,27 +32,26 @@ public class ServerSnitchContext extends SnitchContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   SolrCloudManager cloudManager;
-  public ServerSnitchContext(SnitchInfo perSnitch,
-                             String node, Map<String, Object> session,
-                             SolrCloudManager cloudManager) {
+
+  public ServerSnitchContext(
+      SnitchInfo perSnitch,
+      String node,
+      Map<String, Object> session,
+      SolrCloudManager cloudManager) {
     super(perSnitch, node, session);
     this.cloudManager = cloudManager;
   }
 
-
   @SuppressWarnings({"rawtypes"})
   public Map getZkJson(String path) throws KeeperException, InterruptedException {
     try {
-      return Utils.getJson(cloudManager.getDistribStateManager(), path) ;
+      return Utils.getJson(cloudManager.getDistribStateManager(), path);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-
   }
 
-  public Map<String, Object> getNodeValues(String node, Collection<String> tags){
+  public Map<String, Object> getNodeValues(String node, Collection<String> tags) {
     return cloudManager.getNodeStateProvider().getNodeValues(node, tags);
   }
-
-
 }

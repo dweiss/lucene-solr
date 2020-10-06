@@ -29,9 +29,7 @@ public class ZkWriteCommand {
     this.noop = false;
   }
 
-  /**
-   * Returns a no-op
-   */
+  /** Returns a no-op */
   protected ZkWriteCommand() {
     this.noop = true;
     this.name = null;
@@ -47,4 +45,3 @@ public class ZkWriteCommand {
     return getClass().getSimpleName() + ": " + (noop ? "no-op" : name + "=" + collection);
   }
 }
-

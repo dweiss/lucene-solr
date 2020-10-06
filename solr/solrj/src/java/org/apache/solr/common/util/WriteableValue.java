@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
-
 import org.apache.solr.common.util.JavaBinCodec.ObjectResolver;
 
 public abstract class WriteableValue implements ObjectResolver {

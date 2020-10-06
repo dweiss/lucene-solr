@@ -16,16 +16,14 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * A Test case for the {@link AnalysisResponseBase} class.
- *
  *
  * @since solr 1.4
  */
@@ -33,7 +31,8 @@ import java.util.List;
 public class AnlysisResponseBaseTest extends SolrTestCase {
 
   /**
-   * Tests the {@link AnalysisResponseBase#buildTokenInfo(org.apache.solr.common.util.NamedList)} method.
+   * Tests the {@link AnalysisResponseBase#buildTokenInfo(org.apache.solr.common.util.NamedList)}
+   * method.
    */
   @Test
   public void testBuildTokenInfo() throws Exception {
@@ -71,12 +70,14 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
   }
 
   /**
-   * Tests the {@link AnalysisResponseBase#buildPhases(org.apache.solr.common.util.NamedList)} )} method.
+   * Tests the {@link AnalysisResponseBase#buildPhases(org.apache.solr.common.util.NamedList)} )}
+   * method.
    */
   @Test
   public void testBuildPhases() throws Exception {
 
-    final AnalysisResponseBase.TokenInfo tokenInfo = new AnalysisResponseBase.TokenInfo("text", null, "type", 0, 3, 1, false);
+    final AnalysisResponseBase.TokenInfo tokenInfo =
+        new AnalysisResponseBase.TokenInfo("text", null, "type", 0, 3, 1, false);
     @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
     nl.add("Tokenizer", buildFakeTokenInfoList(6));
@@ -84,12 +85,13 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
     nl.add("Filter2", buildFakeTokenInfoList(4));
     nl.add("Filter3", buildFakeTokenInfoList(3));
 
-    AnalysisResponseBase response = new AnalysisResponseBase() {
-      @Override
-      protected TokenInfo buildTokenInfo(@SuppressWarnings({"rawtypes"})NamedList tokenNL) {
-        return tokenInfo;
-      }
-    };
+    AnalysisResponseBase response =
+        new AnalysisResponseBase() {
+          @Override
+          protected TokenInfo buildTokenInfo(@SuppressWarnings({"rawtypes"}) NamedList tokenNL) {
+            return tokenInfo;
+          }
+        };
 
     List<AnalysisResponseBase.AnalysisPhase> phases = response.buildPhases(nl);
 
@@ -108,13 +110,14 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
   public void testCharFilterBuildPhases() throws Exception {
     @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
-    nl.add("CharFilter1", "CharFilterOutput"); //not list of tokens
+    nl.add("CharFilter1", "CharFilterOutput"); // not list of tokens
     AnalysisResponseBase response = new AnalysisResponseBase();
     List<AnalysisResponseBase.AnalysisPhase> phases = response.buildPhases(nl);
     assertEquals(1, phases.size());
   }
 
-  //================================================ Helper Methods ==================================================
+  // ================================================ Helper Methods
+  // ==================================================
 
   @SuppressWarnings({"rawtypes"})
   private List<NamedList> buildFakeTokenInfoList(int numberOfTokens) {
@@ -125,7 +128,11 @@ public class AnlysisResponseBaseTest extends SolrTestCase {
     return list;
   }
 
-  private void assertPhase(AnalysisResponseBase.AnalysisPhase phase, String expectedClassName, int expectedTokenCount, AnalysisResponseBase.TokenInfo expectedToken) {
+  private void assertPhase(
+      AnalysisResponseBase.AnalysisPhase phase,
+      String expectedClassName,
+      int expectedTokenCount,
+      AnalysisResponseBase.TokenInfo expectedToken) {
 
     assertEquals(expectedClassName, phase.getClassName());
     List<AnalysisResponseBase.TokenInfo> tokens = phase.getTokens();

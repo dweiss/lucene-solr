@@ -16,11 +16,7 @@
  */
 package org.apache.solr.util;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -44,16 +40,17 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**A utility class to verify signatures
- *
- */
+/** A utility class to verify signatures */
 public final class CryptoKeys {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keys;
@@ -63,14 +60,11 @@ public final class CryptoKeys {
     HashMap<String, PublicKey> m = new HashMap<>();
     for (Map.Entry<String, byte[]> e : trustedKeys.entrySet()) {
       m.put(e.getKey(), getX509PublicKey(e.getValue()));
-
     }
     this.keys = ImmutableMap.copyOf(m);
   }
 
-  /**
-   * Try with all signatures and return the name of the signature that matched
-   */
+  /** Try with all signatures and return the name of the signature that matched */
   public String verify(String sig, ByteBuffer data) {
     exception = null;
     for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
@@ -83,7 +77,6 @@ public final class CryptoKeys {
         exception = e;
         log.debug("NOT verified  ");
       }
-
     }
 
     return null;
@@ -101,20 +94,13 @@ public final class CryptoKeys {
         exception = e;
         log.debug("NOT verified  ");
       }
-
     }
 
     return null;
   }
 
-
-
-
-  /**
-   * Create PublicKey from a .DER file
-   */
-  public static PublicKey getX509PublicKey(byte[] buf)
-      throws InvalidKeySpecException {
+  /** Create PublicKey from a .DER file */
+  public static PublicKey getX509PublicKey(byte[] buf) throws InvalidKeySpecException {
     X509EncodedKeySpec spec = new X509EncodedKeySpec(buf);
     try {
       KeyFactory kf = KeyFactory.getInstance("RSA");
@@ -128,10 +114,11 @@ public final class CryptoKeys {
    * Verify the signature of a file
    *
    * @param publicKey the public key used to sign this
-   * @param sig       the signature
-   * @param data      The data tha is signed
+   * @param sig the signature
+   * @param data The data tha is signed
    */
-  public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data) throws InvalidKeyException, SignatureException {
+  public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data)
+      throws InvalidKeyException, SignatureException {
     data = ByteBuffer.wrap(data.array(), data.arrayOffset(), data.limit());
     try {
       Signature signature = Signature.getInstance("SHA1withRSA");
@@ -139,10 +126,9 @@ public final class CryptoKeys {
       signature.update(data);
       return signature.verify(sig);
     } catch (NoSuchAlgorithmException e) {
-      //wil not happen
+      // wil not happen
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-
   }
 
   public static boolean verify(PublicKey publicKey, byte[] sig, InputStream is)
@@ -162,15 +148,13 @@ public final class CryptoKeys {
         return false;
       }
     } catch (NoSuchAlgorithmException e) {
-      //will not happen
+      // will not happen
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-
   }
 
-
-  private static byte[][] evpBytesTokey(int key_len, int iv_len, MessageDigest md,
-                                        byte[] salt, byte[] data, int count) {
+  private static byte[][] evpBytesTokey(
+      int key_len, int iv_len, MessageDigest md, byte[] salt, byte[] data, int count) {
     byte[][] both = new byte[2][];
     byte[] key = new byte[key_len];
     int key_ix = 0;
@@ -204,10 +188,8 @@ public final class CryptoKeys {
       i = 0;
       if (nkey > 0) {
         for (; ; ) {
-          if (nkey == 0)
-            break;
-          if (i == md_buf.length)
-            break;
+          if (nkey == 0) break;
+          if (i == md_buf.length) break;
           key[key_ix++] = md_buf[i];
           nkey--;
           i++;
@@ -215,10 +197,8 @@ public final class CryptoKeys {
       }
       if (niv > 0 && i != md_buf.length) {
         for (; ; ) {
-          if (niv == 0)
-            break;
-          if (i == md_buf.length)
-            break;
+          if (niv == 0) break;
+          if (i == md_buf.length) break;
           iv[iv_ix++] = md_buf[i];
           niv--;
           i++;
@@ -235,7 +215,7 @@ public final class CryptoKeys {
   }
 
   public static String decodeAES(String base64CipherTxt, String pwd) {
-    int[] strengths = new int[]{256, 192, 128};
+    int[] strengths = new int[] {256, 192, 128};
     Exception e = null;
     for (int strength : strengths) {
       try {
@@ -246,7 +226,6 @@ public final class CryptoKeys {
     }
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error decoding ", e);
   }
-
 
   public static String decodeAES(String base64CipherTxt, String pwd, final int keySizeBits) {
     final Charset ASCII = StandardCharsets.US_ASCII;
@@ -262,10 +241,11 @@ public final class CryptoKeys {
 
       // --- extract salt & encrypted ---
       // header is "Salted__", ASCII encoded, if salt is being used (the default)
-      byte[] salt = Arrays.copyOfRange(
-          headerSaltAndCipherText, SALT_OFFSET, SALT_OFFSET + SALT_SIZE);
-      byte[] encrypted = Arrays.copyOfRange(
-          headerSaltAndCipherText, CIPHERTEXT_OFFSET, headerSaltAndCipherText.length);
+      byte[] salt =
+          Arrays.copyOfRange(headerSaltAndCipherText, SALT_OFFSET, SALT_OFFSET + SALT_SIZE);
+      byte[] encrypted =
+          Arrays.copyOfRange(
+              headerSaltAndCipherText, CIPHERTEXT_OFFSET, headerSaltAndCipherText.length);
 
       // --- specify cipher and digest for evpBytesTokey method ---
 
@@ -275,13 +255,14 @@ public final class CryptoKeys {
       // --- create key and IV  ---
 
       // the IV is useless, OpenSSL might as well have use zero's
-      final byte[][] keyAndIV = evpBytesTokey(
-          keySizeBits / Byte.SIZE,
-          aesCBC.getBlockSize(),
-          md5,
-          salt,
-          pwd.getBytes(ASCII),
-          ITERATIONS);
+      final byte[][] keyAndIV =
+          evpBytesTokey(
+              keySizeBits / Byte.SIZE,
+              aesCBC.getBlockSize(),
+              md5,
+              salt,
+              pwd.getBytes(ASCII),
+              ITERATIONS);
 
       SecretKeySpec key = new SecretKeySpec(keyAndIV[INDEX_KEY], "AES");
       IvParameterSpec iv = new IvParameterSpec(keyAndIV[INDEX_IV]);
@@ -294,11 +275,11 @@ public final class CryptoKeys {
     } catch (BadPaddingException e) {
       // AKA "something went wrong"
       throw new IllegalStateException(
-          "Bad password, algorithm, mode or padding;" +
-              " no salt, wrong number of iterations or corrupted ciphertext.", e);
+          "Bad password, algorithm, mode or padding;"
+              + " no salt, wrong number of iterations or corrupted ciphertext.",
+          e);
     } catch (IllegalBlockSizeException e) {
-      throw new IllegalStateException(
-          "Bad algorithm, mode or corrupted (resized) ciphertext.", e);
+      throw new IllegalStateException("Bad algorithm, mode or corrupted (resized) ciphertext.", e);
     } catch (GeneralSecurityException e) {
       throw new IllegalStateException(e);
     }
@@ -310,16 +291,17 @@ public final class CryptoKeys {
       X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(Base64.base64ToByteArray(pubKey));
       return keyFactory.generatePublic(publicKeySpec);
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
-  public static byte[] decryptRSA(byte[] buffer, PublicKey pubKey) throws InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+  public static byte[] decryptRSA(byte[] buffer, PublicKey pubKey)
+      throws InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
     Cipher rsaCipher;
     try {
       rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     rsaCipher.init(Cipher.DECRYPT_MODE, pubKey);
     return rsaCipher.doFinal(buffer, 0, buffer.length);
@@ -335,9 +317,7 @@ public final class CryptoKeys {
     // into security.json. Also see SOLR-12103.
     private static final int DEFAULT_KEYPAIR_LENGTH = 2048;
 
-    /**
-     * Create an RSA key pair with newly generated keys.
-     */
+    /** Create an RSA key pair with newly generated keys. */
     public RSAKeyPair() {
       KeyPairGenerator keyGen;
       try {
@@ -353,19 +333,23 @@ public final class CryptoKeys {
     }
 
     /**
-     * Initialize an RSA key pair from previously saved keys. The formats listed below have been tested, other formats may
-     * also be acceptable but are not guaranteed to work.
+     * Initialize an RSA key pair from previously saved keys. The formats listed below have been
+     * tested, other formats may also be acceptable but are not guaranteed to work.
+     *
      * @param privateKeyResourceName path to private key file, encoded as a PKCS#8 in a PEM file
      * @param publicKeyResourceName path to public key file, encoded as X509 in a DER file
      * @throws IOException if an I/O error occurs reading either key file
      * @throws InvalidKeySpecException if either key file is inappropriate for an RSA key
      */
-    public RSAKeyPair(URL privateKeyResourceName, URL publicKeyResourceName) throws IOException, InvalidKeySpecException {
+    public RSAKeyPair(URL privateKeyResourceName, URL publicKeyResourceName)
+        throws IOException, InvalidKeySpecException {
       try (InputStream inPrivate = privateKeyResourceName.openStream()) {
-        String privateString = new String(inPrivate.readAllBytes(), StandardCharsets.UTF_8)
-            .replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "");
+        String privateString =
+            new String(inPrivate.readAllBytes(), StandardCharsets.UTF_8)
+                .replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "");
 
-        PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(java.util.Base64.getMimeDecoder().decode(privateString));
+        PKCS8EncodedKeySpec privateSpec =
+            new PKCS8EncodedKeySpec(java.util.Base64.getMimeDecoder().decode(privateString));
         KeyFactory rsaFactory = KeyFactory.getInstance("RSA");
         privateKey = rsaFactory.generatePrivate(privateSpec);
       } catch (NoSuchAlgorithmException e) {
@@ -389,14 +373,16 @@ public final class CryptoKeys {
     public byte[] encrypt(ByteBuffer buffer) {
       try {
         // This is better than nothing, but still not very secure
-        // See: https://crypto.stackexchange.com/questions/20085/which-attacks-are-possible-against-raw-textbook-rsa
+        // See:
+        // https://crypto.stackexchange.com/questions/20085/which-attacks-are-possible-against-raw-textbook-rsa
         Cipher rsaCipher = Cipher.getInstance("RSA/ECB/nopadding");
         rsaCipher.init(Cipher.ENCRYPT_MODE, privateKey);
-        return rsaCipher.doFinal(buffer.array(),buffer.position(), buffer.limit());
+        return rsaCipher.doFinal(buffer.array(), buffer.position(), buffer.limit());
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
+
     public byte[] signSha256(byte[] bytes) throws InvalidKeyException, SignatureException {
       Signature dsa = null;
       try {
@@ -405,10 +391,8 @@ public final class CryptoKeys {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       dsa.initSign(privateKey);
-      dsa.update(bytes,0,bytes.length);
+      dsa.update(bytes, 0, bytes.length);
       return dsa.sign();
-
     }
-
   }
 }

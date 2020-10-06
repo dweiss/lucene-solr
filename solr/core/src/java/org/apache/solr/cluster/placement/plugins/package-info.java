@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Sample plugin implementations.
- */
+/** Sample plugin implementations. */
 package org.apache.solr.cluster.placement.plugins;

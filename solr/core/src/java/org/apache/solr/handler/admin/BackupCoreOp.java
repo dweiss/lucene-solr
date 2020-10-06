@@ -17,17 +17,15 @@
 
 package org.apache.solr.handler.admin;
 
-import java.net.URI;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
+import java.net.URI;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.SnapShooter;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
   @Override
@@ -42,8 +40,10 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
     String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
     if (location == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
-          + " parameter or as a default repository property");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "'location' is not specified as a query"
+              + " parameter or as a default repository property");
     }
 
     // An optional parameter to describe the snapshot to be backed-up. If this
@@ -55,19 +55,25 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
       SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);
       // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
       //  But we want to throw. One reason is that
-      //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
+      //  this dir really should, in fact must, already exist here if triggered via a collection
+      // backup on a shared
       //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
       if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation() + ". " +
-            "Note that Backup/Restore of a SolrCloud collection " +
-            "requires a shared file system mounted at the same path on all nodes!");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Directory to contain snapshots doesn't exist: "
+                + snapShooter.getLocation()
+                + ". "
+                + "Note that Backup/Restore of a SolrCloud collection "
+                + "requires a shared file system mounted at the same path on all nodes!");
       }
       snapShooter.validateCreateSnapshot();
       snapShooter.createSnapshot();
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Failed to backup core=" + cname + " because " + e, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to backup core=" + cname + " because " + e,
+          e);
     }
   }
 }

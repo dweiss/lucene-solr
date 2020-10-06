@@ -16,24 +16,23 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.MatchesIterator;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
- * This strategy applies to fields with stored positions but no offsets. We re-analyze
- * the field's value to find out offsets of match positions.
- * <p>
- * Note that this may fail if index data (positions stored in the index) is out of sync
- * with the field values or the analyzer. This strategy assumes it'll never happen.
+ * This strategy applies to fields with stored positions but no offsets. We re-analyze the field's
+ * value to find out offsets of match positions.
+ *
+ * <p>Note that this may fail if index data (positions stored in the index) is out of sync with the
+ * field values or the analyzer. This strategy assumes it'll never happen.
  */
 public final class OffsetsFromPositions implements OffsetsRetrievalStrategy {
   private final String field;
@@ -45,7 +44,8 @@ public final class OffsetsFromPositions implements OffsetsRetrievalStrategy {
   }
 
   @Override
-  public List<OffsetRange> get(MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc)
+  public List<OffsetRange> get(
+      MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc)
       throws IOException {
     ArrayList<OffsetRange> ranges = new ArrayList<>();
     while (matchesIterator.next()) {
@@ -69,10 +69,7 @@ public final class OffsetsFromPositions implements OffsetsRetrievalStrategy {
   }
 
   private static ArrayList<OffsetRange> convertPositionsToOffsets(
-      ArrayList<OffsetRange> ranges,
-      Analyzer analyzer,
-      String fieldName,
-      List<CharSequence> values)
+      ArrayList<OffsetRange> ranges, Analyzer analyzer, String fieldName, List<CharSequence> values)
       throws IOException {
 
     if (ranges.isEmpty()) {

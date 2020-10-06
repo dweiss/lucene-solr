@@ -17,6 +17,10 @@
 
 package org.apache.solr.api;
 
+import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
+import static org.apache.solr.common.util.Utils.makeMap;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -28,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -51,9 +53,6 @@ import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
-import static org.apache.solr.common.util.Utils.makeMap;
-
 public class CustomContainerPlugins implements ClusterPropertiesListener, MapWriter {
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -68,6 +67,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     refresh();
     return false;
   }
+
   public CustomContainerPlugins(CoreContainer coreContainer, ApiBag apiBag) {
     this.coreContainer = coreContainer;
     this.containerApiBag = apiBag;
@@ -86,11 +86,10 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       log.error("Could not read plugins data", e);
       return;
     }
-    Map<String,PluginMeta> newState = new HashMap<>(pluginInfos.size());
+    Map<String, PluginMeta> newState = new HashMap<>(pluginInfos.size());
     for (Map.Entry<String, Object> e : pluginInfos.entrySet()) {
       try {
-        newState.put(e.getKey(),
-            mapper.readValue(Utils.toJSON(e.getValue()), PluginMeta.class));
+        newState.put(e.getKey(), mapper.readValue(Utils.toJSON(e.getValue()), PluginMeta.class));
       } catch (Exception exp) {
         log.error("Invalid apiInfo configuration :", exp);
       }
@@ -101,21 +100,23 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       currentState.put(e.getKey(), e.getValue().info);
     }
     Map<String, Diff> diff = compareMaps(currentState, newState);
-    if (diff == null) return;//nothing has changed
+    if (diff == null) return; // nothing has changed
     for (Map.Entry<String, Diff> e : diff.entrySet()) {
       if (e.getValue() == Diff.UNCHANGED) continue;
       if (e.getValue() == Diff.REMOVED) {
         ApiInfo apiInfo = currentPlugins.remove(e.getKey());
         if (apiInfo == null) continue;
         for (ApiHolder holder : apiInfo.holders) {
-          Api old = containerApiBag.unregister(holder.api.getEndPoint().method()[0],
-              getActualPath(apiInfo, holder.api.getEndPoint().path()[0]));
+          Api old =
+              containerApiBag.unregister(
+                  holder.api.getEndPoint().method()[0],
+                  getActualPath(apiInfo, holder.api.getEndPoint().path()[0]));
           if (old instanceof Closeable) {
             closeWhileHandlingException((Closeable) old);
           }
         }
       } else {
-        //ADDED or UPDATED
+        // ADDED or UPDATED
         PluginMeta info = newState.get(e.getKey());
         ApiInfo apiInfo = null;
         List<String> errs = new ArrayList<>();
@@ -137,29 +138,29 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
           }
           currentPlugins.put(e.getKey(), apiInfo);
         } else {
-          //this plugin is being updated
+          // this plugin is being updated
           ApiInfo old = currentPlugins.put(e.getKey(), apiInfo);
           for (ApiHolder holder : apiInfo.holders) {
-            //register all new paths
+            // register all new paths
             containerApiBag.register(holder, getTemplateVars(apiInfo.info));
           }
           if (old != null) {
-            //this is an update of the plugin. But, it is possible that
+            // this is an update of the plugin. But, it is possible that
             // some paths are remved in the newer version of the plugin
             for (ApiHolder oldHolder : old.holders) {
-              if(apiInfo.get(oldHolder.api.getEndPoint()) == null) {
-                //there was a path in the old plugin which is not present in the new one
-                containerApiBag.unregister(oldHolder.getMethod(),getActualPath(old, oldHolder.getPath()));
+              if (apiInfo.get(oldHolder.api.getEndPoint()) == null) {
+                // there was a path in the old plugin which is not present in the new one
+                containerApiBag.unregister(
+                    oldHolder.getMethod(), getActualPath(old, oldHolder.getPath()));
               }
             }
             if (old instanceof Closeable) {
-              //close the old instance of the plugin
+              // close the old instance of the plugin
               closeWhileHandlingException((Closeable) old);
             }
           }
         }
       }
-
     }
   }
 
@@ -170,7 +171,7 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  private static  Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
+  private static Map<String, String> getTemplateVars(PluginMeta pluginMeta) {
     Map result = makeMap("plugin-name", pluginMeta.name, "path-prefix", pluginMeta.pathPrefix);
     return result;
   }
@@ -188,21 +189,19 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       api.call(req, rsp);
     }
 
-    public String getPath(){
+    public String getPath() {
       return api.getEndPoint().path()[0];
     }
 
-    public SolrRequest.METHOD getMethod(){
+    public SolrRequest.METHOD getMethod() {
       return api.getEndPoint().method()[0];
-
     }
   }
 
   @SuppressWarnings({"rawtypes"})
   public class ApiInfo implements ReflectMapWriter {
     List<ApiHolder> holders;
-    @JsonProperty
-    private final PluginMeta info;
+    @JsonProperty private final PluginMeta info;
 
     @JsonProperty(value = "package")
     public final String pkg;
@@ -214,26 +213,26 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
     ApiHolder get(EndPoint endPoint) {
       for (ApiHolder holder : holders) {
         EndPoint e = holder.api.getEndPoint();
-        if(Objects.equals(endPoint.method()[0] , e.method()[0]) &&
-            Objects.equals(endPoint.path()[0], e.path()[0])) {
+        if (Objects.equals(endPoint.method()[0], e.method()[0])
+            && Objects.equals(endPoint.path()[0], e.path()[0])) {
           return holder;
         }
       }
       return null;
     }
 
-
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public ApiInfo(PluginMeta info, List<String> errs) {
       this.info = info;
       PluginInfo.ClassName klassInfo = new PluginInfo.ClassName(info.klass);
       pkg = klassInfo.pkg;
       if (pkg != null) {
-        Optional<PackageLoader.Package.Version> ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
+        Optional<PackageLoader.Package.Version> ver =
+            coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         if (ver.isEmpty()) {
-          //may be we are a bit early. Do a refresh and try again
-         coreContainer.getPackageLoader().getPackageAPI().refreshPackages(null);
-         ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
+          // may be we are a bit early. Do a refresh and try again
+          coreContainer.getPackageLoader().getPackageAPI().refreshPackages(null);
+          ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         }
         if (ver.isEmpty()) {
           PackageLoader.Package p = coreContainer.getPackageLoader().getPackage(pkg);
@@ -241,7 +240,13 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
             errs.add("Invalid package " + klassInfo.pkg);
             return;
           } else {
-            errs.add("No such package version:" + pkg + ":" + info.version + " . available versions :" + p.allVersions());
+            errs.add(
+                "No such package version:"
+                    + pkg
+                    + ":"
+                    + info.version
+                    + " . available versions :"
+                    + p.allVersions());
             return;
           }
         }
@@ -280,9 +285,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
           List<String> pathSegments = StrUtils.splitSmart(endPoint.path()[0], '/', true);
           PathTrie.replaceTemplates(pathSegments, getTemplateVars(info));
           if (V2HttpCall.knownPrefixes.contains(pathSegments.get(0))) {
-            errs.add("path must not have a prefix: "+pathSegments.get(0));
+            errs.add("path must not have a prefix: " + pathSegments.get(0));
           }
-
         }
       } catch (Exception e) {
         errs.add(e.toString());
@@ -290,9 +294,11 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       if (!errs.isEmpty()) return;
 
       Constructor constructor = klas.getConstructors()[0];
-      if (constructor.getParameterTypes().length > 1 ||
-          (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] != CoreContainer.class)) {
-        errs.add("Must have a no-arg constructor or CoreContainer constructor and it must not be a non static inner class");
+      if (constructor.getParameterTypes().length > 1
+          || (constructor.getParameterTypes().length == 1
+              && constructor.getParameterTypes()[0] != CoreContainer.class)) {
+        errs.add(
+            "Must have a no-arg constructor or CoreContainer constructor and it must not be a non static inner class");
         return;
       }
       if (!Modifier.isPublic(constructor.getModifiers())) {
@@ -307,7 +313,8 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
       Constructor constructor = klas.getConstructors()[0];
       if (constructor.getParameterTypes().length == 0) {
         instance = constructor.newInstance();
-      } else if (constructor.getParameterTypes().length == 1 && constructor.getParameterTypes()[0] == CoreContainer.class) {
+      } else if (constructor.getParameterTypes().length == 1
+          && constructor.getParameterTypes()[0] == CoreContainer.class) {
         instance = constructor.newInstance(coreContainer);
       } else {
         throw new RuntimeException("Must have a no-arg constructor or CoreContainer constructor ");
@@ -328,30 +335,33 @@ public class CustomContainerPlugins implements ClusterPropertiesListener, MapWri
 
   public ApiInfo createInfo(PluginMeta info, List<String> errs) {
     return new ApiInfo(info, errs);
-
   }
 
   public enum Diff {
-    ADDED, REMOVED, UNCHANGED, UPDATED;
+    ADDED,
+    REMOVED,
+    UNCHANGED,
+    UPDATED;
   }
 
-  public static Map<String, Diff> compareMaps(Map<String,? extends Object> a, Map<String,? extends Object> b) {
-    if(a.isEmpty() && b.isEmpty()) return null;
+  public static Map<String, Diff> compareMaps(
+      Map<String, ? extends Object> a, Map<String, ? extends Object> b) {
+    if (a.isEmpty() && b.isEmpty()) return null;
     Map<String, Diff> result = new HashMap<>(Math.max(a.size(), b.size()));
-    a.forEach((k, v) -> {
-      Object newVal = b.get(k);
-      if (newVal == null) {
-        result.put(k, Diff.REMOVED);
-        return;
-      }
-      result.put(k, Objects.equals(v, newVal) ?
-          Diff.UNCHANGED :
-          Diff.UPDATED);
-    });
+    a.forEach(
+        (k, v) -> {
+          Object newVal = b.get(k);
+          if (newVal == null) {
+            result.put(k, Diff.REMOVED);
+            return;
+          }
+          result.put(k, Objects.equals(v, newVal) ? Diff.UNCHANGED : Diff.UPDATED);
+        });
 
-    b.forEach((k, v) -> {
-      if (a.get(k) == null) result.put(k, Diff.ADDED);
-    });
+    b.forEach(
+        (k, v) -> {
+          if (a.get(k) == null) result.put(k, Diff.ADDED);
+        });
 
     for (Diff value : result.values()) {
       if (value != Diff.UNCHANGED) return result;

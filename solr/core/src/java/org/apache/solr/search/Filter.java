@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.DocIdSet;
@@ -33,55 +32,52 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 
 /**
- *  Convenient base class for building queries that only perform matching, but
- *  no scoring. The scorer produced by such queries always returns 0 as score.
+ * Convenient base class for building queries that only perform matching, but no scoring. The scorer
+ * produced by such queries always returns 0 as score.
  */
 public abstract class Filter extends Query {
 
   private final boolean applyLazily;
 
-  /** Filter constructor. When {@code applyLazily} is true and the produced
-   *  {@link DocIdSet}s support {@link DocIdSet#bits() random-access}, Lucene
-   *  will only apply this filter after other clauses. */
+  /**
+   * Filter constructor. When {@code applyLazily} is true and the produced {@link DocIdSet}s support
+   * {@link DocIdSet#bits() random-access}, Lucene will only apply this filter after other clauses.
+   */
   protected Filter(boolean applyLazily) {
     this.applyLazily = applyLazily;
   }
 
-  /** Default Filter constructor that will use the
-   *  {@link DocIdSet#iterator() doc id set iterator} when consumed through
-   *  the {@link Query} API. */
+  /**
+   * Default Filter constructor that will use the {@link DocIdSet#iterator() doc id set iterator}
+   * when consumed through the {@link Query} API.
+   */
   protected Filter() {
     this(false);
   }
 
   /**
-   * Creates a {@link DocIdSet} enumerating the documents that should be
-   * permitted in search results. <b>NOTE:</b> null can be
-   * returned if no documents are accepted by this Filter.
-   * <p>
-   * Note: This method will be called once per segment in
-   * the index during searching.  The returned {@link DocIdSet}
-   * must refer to document IDs for that segment, not for
-   * the top-level reader.
+   * Creates a {@link DocIdSet} enumerating the documents that should be permitted in search
+   * results. <b>NOTE:</b> null can be returned if no documents are accepted by this Filter.
    *
-   * @param context a {@link org.apache.lucene.index.LeafReaderContext} instance opened on the index currently
-   *         searched on. Note, it is likely that the provided reader info does not
-   *         represent the whole underlying index i.e. if the index has more than
-   *         one segment the given reader only represents a single segment.
-   *         The provided context is always an atomic context, so you can call
-   *         {@link org.apache.lucene.index.LeafReader#terms(String)}
-   *         on the context's reader, for example.
+   * <p>Note: This method will be called once per segment in the index during searching. The
+   * returned {@link DocIdSet} must refer to document IDs for that segment, not for the top-level
+   * reader.
    *
-   * @param acceptDocs
-   *          Bits that represent the allowable docs to match (typically deleted docs
-   *          but possibly filtering other documents)
-   *
-   * @return a DocIdSet that provides the documents which should be permitted or
-   *         prohibited in search results. <b>NOTE:</b> <code>null</code> should be returned if
-   *         the filter doesn't accept any documents otherwise internal optimization might not apply
-   *         in the case an <i>empty</i> {@link DocIdSet} is returned.
+   * @param context a {@link org.apache.lucene.index.LeafReaderContext} instance opened on the index
+   *     currently searched on. Note, it is likely that the provided reader info does not represent
+   *     the whole underlying index i.e. if the index has more than one segment the given reader
+   *     only represents a single segment. The provided context is always an atomic context, so you
+   *     can call {@link org.apache.lucene.index.LeafReader#terms(String)} on the context's reader,
+   *     for example.
+   * @param acceptDocs Bits that represent the allowable docs to match (typically deleted docs but
+   *     possibly filtering other documents)
+   * @return a DocIdSet that provides the documents which should be permitted or prohibited in
+   *     search results. <b>NOTE:</b> <code>null</code> should be returned if the filter doesn't
+   *     accept any documents otherwise internal optimization might not apply in the case an
+   *     <i>empty</i> {@link DocIdSet} is returned.
    */
-  public abstract DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException;
+  public abstract DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs)
+      throws IOException;
 
   //
   // Query compatibility
@@ -112,17 +108,18 @@ public abstract class Filter extends Query {
         if (applyLazily && set.bits() != null) {
           final Bits bits = set.bits();
           final DocIdSetIterator approximation = DocIdSetIterator.all(context.reader().maxDoc());
-          final TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
-            @Override
-            public boolean matches() throws IOException {
-              return bits.get(approximation.docID());
-            }
+          final TwoPhaseIterator twoPhase =
+              new TwoPhaseIterator(approximation) {
+                @Override
+                public boolean matches() throws IOException {
+                  return bits.get(approximation.docID());
+                }
 
-            @Override
-            public float matchCost() {
-              return 10; // TODO use cost of bits.get()
-            }
-          };
+                @Override
+                public float matchCost() {
+                  return 10; // TODO use cost of bits.get()
+                }
+              };
           return new ConstantScoreScorer(this, 0f, scoreMode, twoPhase);
         }
         final DocIdSetIterator iterator = set.iterator();

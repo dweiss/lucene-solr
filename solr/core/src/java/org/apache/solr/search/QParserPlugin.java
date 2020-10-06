@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
@@ -38,11 +37,10 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   public static final String DEFAULT_QTYPE = LuceneQParserPlugin.NAME;
 
   /**
-   * Internal use - name to parser for the builtin parsers.
-   * Each query parser plugin extending {@link QParserPlugin} has own instance of standardPlugins.
-   * This leads to cyclic dependencies of static fields and to case when NAME field is not yet initialized.
-   * This result to NPE during initialization.
-   * For every plugin, listed here, NAME field has to be final and static.
+   * Internal use - name to parser for the builtin parsers. Each query parser plugin extending
+   * {@link QParserPlugin} has own instance of standardPlugins. This leads to cyclic dependencies of
+   * static fields and to case when NAME field is not yet initialized. This result to NPE during
+   * initialization. For every plugin, listed here, NAME field has to be final and static.
    */
   public static final Map<String, QParserPlugin> standardPlugins;
 
@@ -93,11 +91,11 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   }
 
   /** return a {@link QParser} */
-  public abstract QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
+  public abstract QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
 
   @Override
-  public void init( @SuppressWarnings({"rawtypes"})NamedList args ) {
-  }
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {}
 
   @Override
   public String getName() {
@@ -108,7 +106,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
 
   @Override
   public String getDescription() {
-    return "";  // UI required non-null to work
+    return ""; // UI required non-null to work
   }
 
   @Override
@@ -127,5 +125,3 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     return null;
   }
 }
-
-

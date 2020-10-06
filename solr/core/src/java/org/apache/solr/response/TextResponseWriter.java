@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Calendar;
 import java.util.Iterator;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.TotalHits;
@@ -36,10 +35,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 
-/** Base class for text-oriented response writers.
- *
- *
- */
+/** Base class for text-oriented response writers. */
 public abstract class TextResponseWriter implements TextWriter {
 
   protected final FastWriter writer;
@@ -53,24 +49,23 @@ public abstract class TextResponseWriter implements TextWriter {
   protected int level;
   protected boolean doIndent;
 
-  protected Calendar cal;  // reusable calendar instance
-
+  protected Calendar cal; // reusable calendar instance
 
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    this.writer = writer == null ? null: FastWriter.wrap(writer);
+    this.writer = writer == null ? null : FastWriter.wrap(writer);
     this.schema = req.getSchema();
     this.req = req;
     this.rsp = rsp;
     String indent = req.getParams().get("indent");
-    if (null == indent || !("off".equals(indent) || "false".equals(indent))){
-      doIndent=true;
+    if (null == indent || !("off".equals(indent) || "false".equals(indent))) {
+      doIndent = true;
     }
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
   }
-  //only for test purposes
-   TextResponseWriter(Writer writer, boolean indent) {
-    this.writer = writer == null ? null: FastWriter.wrap(writer);
+  // only for test purposes
+  TextResponseWriter(Writer writer, boolean indent) {
+    this.writer = writer == null ? null : FastWriter.wrap(writer);
     this.schema = null;
     this.req = null;
     this.rsp = null;
@@ -80,7 +75,7 @@ public abstract class TextResponseWriter implements TextWriter {
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
   public void close() throws IOException {
-    if(writer != null) writer.flushBuffer();
+    if (writer != null) writer.flushBuffer();
   }
 
   @Override
@@ -89,22 +84,34 @@ public abstract class TextResponseWriter implements TextWriter {
   }
 
   /** returns the Writer that the response is being written to */
-  public Writer getWriter() { return writer; }
-
+  public Writer getWriter() {
+    return writer;
+  }
 
   //
   // Functions to manipulate the current logical nesting level.
   // Any indentation will be partially based on level.
   //
-  public void setLevel(int level) { this.level = level; }
-  public int level() { return level; }
-  public int incLevel() { return ++level; }
-  public int decLevel() { return --level; }
+  public void setLevel(int level) {
+    this.level = level;
+  }
+
+  public int level() {
+    return level;
+  }
+
+  public int incLevel() {
+    return ++level;
+  }
+
+  public int decLevel() {
+    return --level;
+  }
+
   public TextResponseWriter setIndent(boolean doIndent) {
     this.doIndent = doIndent;
     return this;
   }
-
 
   public final void writeVal(String name, Object val) throws IOException {
 
@@ -112,23 +119,24 @@ public abstract class TextResponseWriter implements TextWriter {
     // to get a handler might be faster (but types must be exact to do that...)
     //    (see a patch on LUCENE-3041 for inspiration)
 
-    // go in order of most common to least common, however some of the more general types like Map belong towards the end
+    // go in order of most common to least common, however some of the more general types like Map
+    // belong towards the end
     if (val == null) {
       writeNull(name);
       return;
     }
 
-    if(val instanceof IndexableField) {
-      IndexableField f = (IndexableField)val;
-      SchemaField sf = schema.getFieldOrNull( f.name() );
-      if( sf != null ) {
+    if (val instanceof IndexableField) {
+      IndexableField f = (IndexableField) val;
+      SchemaField sf = schema.getFieldOrNull(f.name());
+      if (sf != null) {
         sf.getType().write(this, name, f);
-      }
-      else {
+      } else {
         writeStr(name, f.stringValue(), true);
       }
     } else if (val instanceof Document) {
-      SolrDocument doc = DocsStreamer.convertLuceneDocToSolrDoc((Document) val, schema, returnFields);
+      SolrDocument doc =
+          DocsStreamer.convertLuceneDocToSolrDoc((Document) val, schema, returnFields);
       writeSolrDocument(name, doc, returnFields, 0);
     } else if (val instanceof SolrDocument) {
       writeSolrDocument(name, (SolrDocument) val, returnFields, 0);
@@ -137,17 +145,17 @@ public abstract class TextResponseWriter implements TextWriter {
       writeDocuments(name, (ResultContext) val);
     } else if (val instanceof DocList) {
       // Should not happen normally
-      ResultContext ctx = new BasicResultContext((DocList)val, returnFields, null, null, req);
+      ResultContext ctx = new BasicResultContext((DocList) val, returnFields, null, null, req);
       writeDocuments(name, ctx);
-    // }
-    // else if (val instanceof DocSet) {
-    // how do we know what fields to read?
-    // todo: have a DocList/DocSet wrapper that
-    // restricts the fields to write...?
+      // }
+      // else if (val instanceof DocSet) {
+      // how do we know what fields to read?
+      // todo: have a DocList/DocSet wrapper that
+      // restricts the fields to write...?
     } else if (val instanceof SolrDocumentList) {
-      writeSolrDocumentList(name, (SolrDocumentList)val, returnFields);
+      writeSolrDocumentList(name, (SolrDocumentList) val, returnFields);
     } else if (val instanceof BytesRef) {
-      BytesRef arr = (BytesRef)val;
+      BytesRef arr = (BytesRef) val;
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
     } else {
       TextWriter.super.writeVal(name, val);
@@ -157,28 +165,41 @@ public abstract class TextResponseWriter implements TextWriter {
   // types of formats, including those where the name may come after the value (like
   // some XML formats).
 
-  public abstract void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException;
+  public abstract void writeStartDocumentList(
+      String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact)
+      throws IOException;
 
-  public abstract void writeSolrDocument(String name, SolrDocument doc, ReturnFields fields, int idx) throws IOException;
-  
+  public abstract void writeSolrDocument(
+      String name, SolrDocument doc, ReturnFields fields, int idx) throws IOException;
+
   public abstract void writeEndDocumentList() throws IOException;
-  
+
   // Assume each SolrDocument is already transformed
-  public final void writeSolrDocumentList(String name, SolrDocumentList docs, ReturnFields fields) throws IOException
-  {
-    writeStartDocumentList(name, docs.getStart(), docs.size(), docs.getNumFound(), docs.getMaxScore(), docs.getNumFoundExact());
-    for( int i=0; i<docs.size(); i++ ) {
-      writeSolrDocument( null, docs.get(i), fields, i );
+  public final void writeSolrDocumentList(String name, SolrDocumentList docs, ReturnFields fields)
+      throws IOException {
+    writeStartDocumentList(
+        name,
+        docs.getStart(),
+        docs.size(),
+        docs.getNumFound(),
+        docs.getMaxScore(),
+        docs.getNumFoundExact());
+    for (int i = 0; i < docs.size(); i++) {
+      writeSolrDocument(null, docs.get(i), fields, i);
     }
     writeEndDocumentList();
   }
 
-
   public final void writeDocuments(String name, ResultContext res) throws IOException {
     DocList ids = res.getDocList();
     Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
-    writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(),
-        res.wantsScores() ? ids.maxScore() : null, ids.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
+    writeStartDocumentList(
+        name,
+        ids.offset(),
+        ids.size(),
+        ids.matches(),
+        res.wantsScores() ? ids.maxScore() : null,
+        ids.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
 
     int idx = 0;
     while (docsStreamer.hasNext()) {

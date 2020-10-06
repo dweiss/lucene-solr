@@ -18,18 +18,20 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * <p>Configuration passed by Solr to {@link PlacementPluginFactory#createPluginInstance(PlacementPluginConfig)} so that plugin instances
- * ({@link PlacementPlugin}) created by the factory can easily retrieve their configuration.</p>
+ * Configuration passed by Solr to {@link
+ * PlacementPluginFactory#createPluginInstance(PlacementPluginConfig)} so that plugin instances
+ * ({@link PlacementPlugin}) created by the factory can easily retrieve their configuration.
  *
- * <p>A plugin writer decides the names and the types of the configurable parameters it needs. Available types are
- * {@link String}, {@link Long}, {@link Boolean}, {@link Double}. This configuration currently lives in the {@code /clusterprops.json}
- * file in Zookeeper (this could change in the future, the plugin code will not change but the way to store its configuration
- * in the cluster might). {@code clusterprops.json} also contains the name of the plugin factory class implementing
- * {@link org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory}.</p>
+ * <p>A plugin writer decides the names and the types of the configurable parameters it needs.
+ * Available types are {@link String}, {@link Long}, {@link Boolean}, {@link Double}. This
+ * configuration currently lives in the {@code /clusterprops.json} file in Zookeeper (this could
+ * change in the future, the plugin code will not change but the way to store its configuration in
+ * the cluster might). {@code clusterprops.json} also contains the name of the plugin factory class
+ * implementing {@link org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory}.
  *
- * <p>In order to configure a plugin to be used for placement decisions, the following {@code curl} command (or something
- * equivalent) has to be executed once the cluster is already running to set the configuration.
- * Replace {@code localhost:8983} by one of your servers' IP address and port.</p>
+ * <p>In order to configure a plugin to be used for placement decisions, the following {@code curl}
+ * command (or something equivalent) has to be executed once the cluster is already running to set
+ * the configuration. Replace {@code localhost:8983} by one of your servers' IP address and port.
  *
  * <pre>
  *
@@ -44,8 +46,8 @@ package org.apache.solr.cluster.placement;
  * }' http://localhost:8983/api/cluster
  * </pre>
  *
- * <p>The consequence will be the creation (or replacement if it exists) of an element in the Zookeeper file
- * {@code /clusterprops.json} as follows:</p>
+ * <p>The consequence will be the creation (or replacement if it exists) of an element in the
+ * Zookeeper file {@code /clusterprops.json} as follows:
  *
  * <pre>
  *
@@ -57,8 +59,8 @@ package org.apache.solr.cluster.placement;
  *     "shouldIStay": true}
  * </pre>
  *
- * <p>In order to delete the placement-plugin section from {@code /clusterprops.json} (and to fallback to either Legacy
- * or rule based placement if so configured for a collection), execute:</p>
+ * <p>In order to delete the placement-plugin section from {@code /clusterprops.json} (and to
+ * fallback to either Legacy or rule based placement if so configured for a collection), execute:
  *
  * <pre>
  *
@@ -69,47 +71,50 @@ package org.apache.solr.cluster.placement;
  */
 public interface PlacementPluginConfig {
   /**
-   * @return the configured {@link String} value corresponding to {@code configName} if one exists (could be the empty
-   * string) and {@code null} otherwise.
+   * @return the configured {@link String} value corresponding to {@code configName} if one exists
+   *     (could be the empty string) and {@code null} otherwise.
    */
   String getStringConfig(String configName);
 
   /**
-   * @return the configured {@link String} value corresponding to {@code configName} if one exists (could be the empty
-   * string) and {@code defaultValue} otherwise.
+   * @return the configured {@link String} value corresponding to {@code configName} if one exists
+   *     (could be the empty string) and {@code defaultValue} otherwise.
    */
   String getStringConfig(String configName, String defaultValue);
 
   /**
-   * @return the configured {@link Boolean} value corresponding to {@code configName} if one exists, {@code null} otherwise.
+   * @return the configured {@link Boolean} value corresponding to {@code configName} if one exists,
+   *     {@code null} otherwise.
    */
   Boolean getBooleanConfig(String configName);
 
   /**
-   * @return the configured {@link Boolean} value corresponding to {@code configName} if one exists, a boxed {@code defaultValue}
-   * otherwise (this method never returns {@code null}.
+   * @return the configured {@link Boolean} value corresponding to {@code configName} if one exists,
+   *     a boxed {@code defaultValue} otherwise (this method never returns {@code null}.
    */
   Boolean getBooleanConfig(String configName, boolean defaultValue);
 
   /**
-   * @return the configured {@link Long} value corresponding to {@code configName} if one exists, {@code null} otherwise.
+   * @return the configured {@link Long} value corresponding to {@code configName} if one exists,
+   *     {@code null} otherwise.
    */
   Long getLongConfig(String configName);
 
   /**
-   * @return the configured {@link Long} value corresponding to {@code configName} if one exists, a boxed {@code defaultValue}
-   * otherwise (this method never returns {@code null}.
+   * @return the configured {@link Long} value corresponding to {@code configName} if one exists, a
+   *     boxed {@code defaultValue} otherwise (this method never returns {@code null}.
    */
   Long getLongConfig(String configName, long defaultValue);
 
   /**
-   * @return the configured {@link Double} value corresponding to {@code configName} if one exists, {@code null} otherwise.
+   * @return the configured {@link Double} value corresponding to {@code configName} if one exists,
+   *     {@code null} otherwise.
    */
   Double getDoubleConfig(String configName);
 
   /**
-   * @return the configured {@link Double} value corresponding to {@code configName} if one exists, a boxed {@code defaultValue}
-   * otherwise (this method never returns {@code null}.
+   * @return the configured {@link Double} value corresponding to {@code configName} if one exists,
+   *     a boxed {@code defaultValue} otherwise (this method never returns {@code null}.
    */
   Double getDoubleConfig(String configName, double defaultValue);
 }

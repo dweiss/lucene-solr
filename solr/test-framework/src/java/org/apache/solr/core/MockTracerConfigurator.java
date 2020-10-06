@@ -22,14 +22,12 @@ import io.opentracing.mock.MockTracer;
 import org.apache.solr.common.util.NamedList;
 
 public class MockTracerConfigurator extends TracerConfigurator {
-  
+
   @Override
   public Tracer getTracer() {
     return new MockTracer();
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-
-  }
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {}
 }

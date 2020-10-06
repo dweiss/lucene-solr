@@ -17,7 +17,6 @@
 package org.apache.solr.highlight;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -28,9 +27,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 
- * Highlighter impl that uses {@link UnifiedHighlighter} configured to operate as it's ancestor/predecessor, the
- * {code PostingsHighlighter}.
+/**
+ * Highlighter impl that uses {@link UnifiedHighlighter} configured to operate as it's
+ * ancestor/predecessor, the {code PostingsHighlighter}.
  *
  * @deprecated Use {@link UnifiedSolrHighlighter} instead
  */
@@ -57,13 +56,13 @@ public class PostingsSolrHighlighter extends UnifiedSolrHighlighter {
     defaults.set(HighlightParams.DEFAULT_SUMMARY, true);
     defaults.set(HighlightParams.TAG_ELLIPSIS, "... ");
 
-    SolrParams newParams = SolrParams.wrapDefaults(
-        invariants,// this takes precedence
+    SolrParams newParams =
         SolrParams.wrapDefaults(
-            req.getParams(), // then this (original)
-            defaults // finally our defaults
-        )
-    );
+            invariants, // this takes precedence
+            SolrParams.wrapDefaults(
+                req.getParams(), // then this (original)
+                defaults // finally our defaults
+                ));
     try (LocalSolrQueryRequest fakeReq = new LocalSolrQueryRequest(req.getCore(), newParams)) {
       return super.getHighlighter(fakeReq);
     }

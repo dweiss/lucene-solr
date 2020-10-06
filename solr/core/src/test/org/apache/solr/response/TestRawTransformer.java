@@ -26,7 +26,7 @@ import org.junit.Test;
 /**
  * Tests Raw JSON output for fields when used with and without the unique key field.
  *
- * See SOLR-7993
+ * <p>See SOLR-7993
  */
 public class TestRawTransformer extends SolrTestCaseJ4 {
 
@@ -48,7 +48,9 @@ public class TestRawTransformer extends SolrTestCaseJ4 {
     for (int i = 0; i < max; i++) {
       SolrInputDocument sdoc = new SolrInputDocument();
       sdoc.addField("id", i);
-      sdoc.addField("subject", "{poffL:[{offL:[{oGUID:\"79D5A31D-B3E4-4667-B812-09DF4336B900\",oID:\"OO73XRX\",prmryO:1,oRank:1,addTp:\"Office\",addCd:\"AA4GJ5T\",ad1:\"102 S 3rd St Ste 100\",city:\"Carson City\",st:\"MI\",zip:\"48811\",lat:43.176885,lng:-84.842919,phL:[\"(989) 584-1308\"],faxL:[\"(989) 584-6453\"]}]}]}");
+      sdoc.addField(
+          "subject",
+          "{poffL:[{offL:[{oGUID:\"79D5A31D-B3E4-4667-B812-09DF4336B900\",oID:\"OO73XRX\",prmryO:1,oRank:1,addTp:\"Office\",addCd:\"AA4GJ5T\",ad1:\"102 S 3rd St Ste 100\",city:\"Carson City\",st:\"MI\",zip:\"48811\",lat:43.176885,lng:-84.842919,phL:[\"(989) 584-1308\"],faxL:[\"(989) 584-6453\"]}]}]}");
       sdoc.addField("title", "title_" + i);
       updateJ(jsonAdd(sdoc), null);
     }
@@ -57,14 +59,14 @@ public class TestRawTransformer extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = req("q", "*:*", "fl", "subject:[json]", "wt", "json");
     String strResponse = h.query(req);
-    assertTrue("response does not contain right JSON encoding: " + strResponse,
+    assertTrue(
+        "response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("\"subject\":[{poffL:[{offL:[{oGUID:\"7"));
 
     req = req("q", "*:*", "fl", "id,subject", "wt", "json");
     strResponse = h.query(req);
-    assertTrue("response does not contain right JSON encoding: " + strResponse,
+    assertTrue(
+        "response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("subject\":[\""));
   }
-
 }
-

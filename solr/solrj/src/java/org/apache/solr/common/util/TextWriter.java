@@ -29,14 +29,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 
-//Base interface for all text based writers
+// Base interface for all text based writers
 public interface TextWriter extends PushWriter {
 
   default void writeVal(String name, Object val) throws IOException {
@@ -45,7 +44,8 @@ public interface TextWriter extends PushWriter {
     // to get a handler might be faster (but types must be exact to do that...)
     //    (see a patch on LUCENE-3041 for inspiration)
 
-    // go in order of most common to least common, however some of the more general types like Map belong towards the end
+    // go in order of most common to least common, however some of the more general types like Map
+    // belong towards the end
     if (val == null) {
       writeNull(name);
     } else if (val instanceof CharSequence) {
@@ -55,12 +55,12 @@ public interface TextWriter extends PushWriter {
       writeNumber(name, (Number) val);
     } else if (val instanceof Boolean) {
       writeBool(name, (Boolean) val);
-    } else if (val instanceof AtomicBoolean)  {
+    } else if (val instanceof AtomicBoolean) {
       writeBool(name, ((AtomicBoolean) val).get());
     } else if (val instanceof Date) {
       writeDate(name, (Date) val);
     } else if (val instanceof NamedList) {
-      writeNamedList(name, (NamedList)val);
+      writeNamedList(name, (NamedList) val);
     } else if (val instanceof Path) {
       writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
     } else if (val instanceof IteratorWriter) {
@@ -68,23 +68,23 @@ public interface TextWriter extends PushWriter {
     } else if (val instanceof MapWriter) {
       writeMap(name, (MapWriter) val);
     } else if (val instanceof MapSerializable) {
-      //todo find a better way to reuse the map more efficiently
+      // todo find a better way to reuse the map more efficiently
       writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
     } else if (val instanceof Map) {
-      writeMap(name, (Map)val, false, true);
+      writeMap(name, (Map) val, false, true);
     } else if (val instanceof Iterator) { // very generic; keep towards the end
       writeArray(name, (Iterator) val);
     } else if (val instanceof Iterable) { // very generic; keep towards the end
-      writeArray(name,((Iterable)val).iterator());
+      writeArray(name, ((Iterable) val).iterator());
     } else if (val instanceof Object[]) {
-      writeArray(name,(Object[])val);
+      writeArray(name, (Object[]) val);
     } else if (val instanceof byte[]) {
-      byte[] arr = (byte[])val;
+      byte[] arr = (byte[]) val;
       writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof EnumFieldValue) {
       writeStr(name, val.toString(), true);
     } else if (val instanceof WriteableValue) {
-      ((WriteableValue)val).write(name, this);
+      ((WriteableValue) val).write(name, this);
     } else {
       // default... for debugging only.  Would be nice to "assert false" ?
       writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
@@ -93,16 +93,19 @@ public interface TextWriter extends PushWriter {
 
   void writeStr(String name, String val, boolean needsEscaping) throws IOException;
 
-  void writeMap(String name, @SuppressWarnings({"rawtypes"})Map val, boolean excludeOuter, boolean isFirstVal) throws IOException;
+  void writeMap(
+      String name,
+      @SuppressWarnings({"rawtypes"}) Map val,
+      boolean excludeOuter,
+      boolean isFirstVal)
+      throws IOException;
 
-  void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException;
+  void writeArray(String name, @SuppressWarnings({"rawtypes"}) Iterator val) throws IOException;
 
   void writeNull(String name) throws IOException;
 
-
   /** if this form of the method is called, val is the Java string form of an int */
   void writeInt(String name, String val) throws IOException;
-
 
   /** if this form of the method is called, val is the Java string form of a long */
   void writeLong(String name, String val) throws IOException;
@@ -113,15 +116,14 @@ public interface TextWriter extends PushWriter {
   /** if this form of the method is called, val is the Java string form of a float */
   void writeFloat(String name, String val) throws IOException;
 
-
   /** if this form of the method is called, val is the Java string form of a double */
   void writeDouble(String name, String val) throws IOException;
-
 
   /** if this form of the method is called, val is the Solr ISO8601 based date format */
   void writeDate(String name, String val) throws IOException;
 
-  void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException;
+  void writeNamedList(String name, @SuppressWarnings({"rawtypes"}) NamedList val)
+      throws IOException;
 
   Writer getWriter();
 
@@ -154,10 +156,9 @@ public interface TextWriter extends PushWriter {
     writeArray(name, Arrays.asList(val));
   }
 
-  default void writeArray(String name, @SuppressWarnings({"rawtypes"})List l) throws IOException {
+  default void writeArray(String name, @SuppressWarnings({"rawtypes"}) List l) throws IOException {
     writeArray(name, l.iterator());
   }
-
 
   default void writeDate(String name, Date val) throws IOException {
     writeDate(name, val.toInstant().toString());
@@ -168,48 +169,46 @@ public interface TextWriter extends PushWriter {
   }
 
   default void writeInt(String name, int val) throws IOException {
-    writeInt(name,Integer.toString(val));
+    writeInt(name, Integer.toString(val));
   }
 
   default void writeLong(String name, long val) throws IOException {
-    writeLong(name,Long.toString(val));
+    writeLong(name, Long.toString(val));
   }
-
 
   default void writeBool(String name, boolean val) throws IOException {
-    writeBool(name,Boolean.toString(val));
+    writeBool(name, Boolean.toString(val));
   }
-
 
   default void writeFloat(String name, float val) throws IOException {
     String s = Float.toString(val);
     // If it's not a normal number, write the value as a string instead.
     // The following test also handles NaN since comparisons are always false.
     if (val > Float.NEGATIVE_INFINITY && val < Float.POSITIVE_INFINITY) {
-      writeFloat(name,s);
+      writeFloat(name, s);
     } else {
-      writeStr(name,s,false);
+      writeStr(name, s, false);
     }
   }
-
 
   default void writeDouble(String name, double val) throws IOException {
     String s = Double.toString(val);
     // If it's not a normal number, write the value as a string instead.
     // The following test also handles NaN since comparisons are always false.
     if (val > Double.NEGATIVE_INFINITY && val < Double.POSITIVE_INFINITY) {
-      writeDouble(name,s);
+      writeDouble(name, s);
     } else {
-      writeStr(name,s,false);
+      writeStr(name, s, false);
     }
   }
-  default void writeBool(String name , Boolean val) throws IOException {
+
+  default void writeBool(String name, Boolean val) throws IOException {
     writeBool(name, val.toString());
   }
 
   @Override
   default void writeMap(MapWriter mw) throws IOException {
-    //todo
+    // todo
   }
 
   default void writeMap(String name, MapWriter mw) throws IOException {
@@ -228,13 +227,22 @@ public interface TextWriter extends PushWriter {
   default void indent() throws IOException {
     if (doIndent()) indent(level());
   }
-  int incLevel();
-  int decLevel();
-  TextWriter setIndent(boolean doIndent);
-  int level();
-  boolean doIndent();
-  default void indent(int lev) throws IOException {
-    getWriter().write(SolrJSONWriter.indentChars, 0, Math.min((lev<<1)+1, SolrJSONWriter.indentChars.length));
-  }
 
+  int incLevel();
+
+  int decLevel();
+
+  TextWriter setIndent(boolean doIndent);
+
+  int level();
+
+  boolean doIndent();
+
+  default void indent(int lev) throws IOException {
+    getWriter()
+        .write(
+            SolrJSONWriter.indentChars,
+            0,
+            Math.min((lev << 1) + 1, SolrJSONWriter.indentChars.length));
+  }
 }

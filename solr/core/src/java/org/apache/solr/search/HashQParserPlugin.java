@@ -16,11 +16,10 @@
  */
 package org.apache.solr.search;
 
+import com.google.common.primitives.Longs;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
-import com.google.common.primitives.Longs;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -48,35 +47,35 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.StrField;
 
-/**
-* syntax fq={!hash workers=11 worker=4 keys=field1,field2}
-* */
-
+/** syntax fq={!hash workers=11 worker=4 keys=field1,field2} */
 public class HashQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "hash";
 
-
-  public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+  public QParser createParser(
+      String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new HashQParser(query, localParams, params, request);
   }
 
   private static class HashQParser extends QParser {
 
-    public HashQParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+    public HashQParser(
+        String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
       super(query, localParams, params, request);
     }
 
     public Query parse() {
       int workers = localParams.getInt("workers", 0);
       if (workers < 2) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "workers needs to be more than 1");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "workers needs to be more than 1");
       }
       int worker = localParams.getInt("worker", 0);
       String keyParam = params.get("partitionKeys");
       String[] keys = keyParam.replace(" ", "").split(",");
       if (keys.length > 4) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "HashQuery supports upto 4 partitionKeys");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "HashQuery supports upto 4 partitionKeys");
       }
       return new HashQuery(keys, workers, worker);
     }
@@ -89,7 +88,7 @@ public class HashQParserPlugin extends QParserPlugin {
     private int worker;
 
     public boolean getCache() {
-      if(getCost() > 99) {
+      if (getCost() > 99) {
         return false;
       } else {
         return super.getCache();
@@ -97,21 +96,15 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return classHash() + 
-          31 * keys.hashCode() +
-          31 * workers + 
-          31 * worker;
+      return classHash() + 31 * keys.hashCode() + 31 * workers + 31 * worker;
     }
 
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(HashQuery other) {
-      return keys.equals(other.keys) &&
-             workers == other.workers && 
-             worker == other.worker;
+      return keys.equals(other.keys) && workers == other.workers && worker == other.worker;
     }
 
     @Override
@@ -126,30 +119,35 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
 
-      SolrIndexSearcher solrIndexSearcher = (SolrIndexSearcher)searcher;
+      SolrIndexSearcher solrIndexSearcher = (SolrIndexSearcher) searcher;
       IndexReaderContext context = solrIndexSearcher.getTopReaderContext();
 
-      List<LeafReaderContext> leaves =  context.leaves();
+      List<LeafReaderContext> leaves = context.leaves();
       FixedBitSet[] fixedBitSets = new FixedBitSet[leaves.size()];
 
-      for(LeafReaderContext leaf : leaves) {
+      for (LeafReaderContext leaf : leaves) {
         try {
-          SegmentPartitioner segmentPartitioner = new SegmentPartitioner(leaf,worker,workers, keys, solrIndexSearcher);
+          SegmentPartitioner segmentPartitioner =
+              new SegmentPartitioner(leaf, worker, workers, keys, solrIndexSearcher);
           segmentPartitioner.run();
           fixedBitSets[segmentPartitioner.context.ord] = segmentPartitioner.docs;
-        } catch(Exception e) {
+        } catch (Exception e) {
           throw new IOException(e);
         }
       }
 
       ConstantScoreQuery constantScoreQuery = new ConstantScoreQuery(new BitsFilter(fixedBitSets));
-      return searcher.rewrite(constantScoreQuery).createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
+      return searcher
+          .rewrite(constantScoreQuery)
+          .createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
     }
 
     public static class BitsFilter extends Filter {
       private FixedBitSet[] bitSets;
+
       public BitsFilter(FixedBitSet[] bitSets) {
         this.bitSets = bitSets;
       }
@@ -164,8 +162,7 @@ public class HashQParserPlugin extends QParserPlugin {
 
       @Override
       public boolean equals(Object other) {
-        return sameClassAs(other) &&
-               equalsTo(getClass().cast(other));
+        return sameClassAs(other) && equalsTo(getClass().cast(other));
       }
 
       private boolean equalsTo(BitsFilter other) {
@@ -178,7 +175,6 @@ public class HashQParserPlugin extends QParserPlugin {
       }
     }
 
-
     static class SegmentPartitioner implements Runnable {
 
       public LeafReaderContext context;
@@ -186,22 +182,24 @@ public class HashQParserPlugin extends QParserPlugin {
       private int workers;
       private HashKey k;
       public FixedBitSet docs;
-      public SegmentPartitioner(LeafReaderContext context,
-                                int worker,
-                                int workers,
-                                String[] keys,
-                                SolrIndexSearcher solrIndexSearcher) {
+
+      public SegmentPartitioner(
+          LeafReaderContext context,
+          int worker,
+          int workers,
+          String[] keys,
+          SolrIndexSearcher solrIndexSearcher) {
         this.context = context;
         this.worker = worker;
         this.workers = workers;
 
         HashKey[] hashKeys = new HashKey[keys.length];
         IndexSchema schema = solrIndexSearcher.getSchema();
-        for(int i=0; i<keys.length; i++) {
+        for (int i = 0; i < keys.length; i++) {
           String key = keys[i];
           FieldType ft = schema.getField(key).getType();
           HashKey h = null;
-          if(ft instanceof StrField) {
+          if (ft instanceof StrField) {
             h = new BytesHash(key, ft);
           } else {
             h = new NumericHash(key);
@@ -219,26 +217,26 @@ public class HashQParserPlugin extends QParserPlugin {
           k.setNextReader(context);
           this.docs = new FixedBitSet(reader.maxDoc());
           int maxDoc = reader.maxDoc();
-          for(int i=0; i<maxDoc; i++) {
-            if((k.hashCode(i) & 0x7FFFFFFF) % workers == worker) {
+          for (int i = 0; i < maxDoc; i++) {
+            if ((k.hashCode(i) & 0x7FFFFFFF) % workers == worker) {
               docs.set(i);
             }
           }
-        }catch(Exception e) {
-         throw new RuntimeException(e);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       }
     }
 
     public DelegatingCollector getFilterCollector(IndexSearcher indexSearcher) {
       HashKey[] hashKeys = new HashKey[keys.length];
-      SolrIndexSearcher searcher = (SolrIndexSearcher)indexSearcher;
+      SolrIndexSearcher searcher = (SolrIndexSearcher) indexSearcher;
       IndexSchema schema = searcher.getSchema();
-      for(int i=0; i<keys.length; i++) {
+      for (int i = 0; i < keys.length; i++) {
         String key = keys[i];
         FieldType ft = schema.getField(key).getType();
         HashKey h = null;
-        if(ft instanceof StrField) {
+        if (ft instanceof StrField) {
           h = new BytesHash(key, ft);
         } else {
           h = new NumericHash(key);
@@ -262,7 +260,7 @@ public class HashQParserPlugin extends QParserPlugin {
       this.worker = worker;
     }
 
-    public void setScorer(Scorable scorer) throws IOException{
+    public void setScorer(Scorable scorer) throws IOException {
       leafCollector.setScorer(scorer);
     }
 
@@ -272,7 +270,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
     public void collect(int doc) throws IOException {
-      if((hashKey.hashCode(doc) & 0x7FFFFFFF) % workers == worker) {
+      if ((hashKey.hashCode(doc) & 0x7FFFFFFF) % workers == worker) {
         leafCollector.collect(doc);
       }
     }
@@ -280,6 +278,7 @@ public class HashQParserPlugin extends QParserPlugin {
 
   private interface HashKey {
     public void setNextReader(LeafReaderContext reader) throws IOException;
+
     public long hashCode(int doc) throws IOException;
   }
 
@@ -337,7 +336,7 @@ public class HashQParserPlugin extends QParserPlugin {
       if (valuesDocID == doc) {
         l = values.longValue();
       } else {
-        l = 0; //worker=0 will always process empty values
+        l = 0; // worker=0 will always process empty values
       }
       return Longs.hashCode(l);
     }
@@ -349,9 +348,7 @@ public class HashQParserPlugin extends QParserPlugin {
       return 0;
     }
 
-    public void setNextReader(LeafReaderContext context) {
-
-    }
+    public void setNextReader(LeafReaderContext context) {}
   }
 
   private static class CompositeHash implements HashKey {
@@ -376,7 +373,7 @@ public class HashQParserPlugin extends QParserPlugin {
     }
 
     public long hashCode(int doc) throws IOException {
-      return key1.hashCode(doc)+key2.hashCode(doc)+key3.hashCode(doc)+key4.hashCode(doc);
+      return key1.hashCode(doc) + key2.hashCode(doc) + key3.hashCode(doc) + key4.hashCode(doc);
     }
   }
 }

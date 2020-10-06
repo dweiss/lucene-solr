@@ -16,8 +16,8 @@
  */
 package org.apache.solr.index.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -40,14 +40,16 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
-// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
+// commented out on: 24-Dec-2018
+// @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+// 12-Jun-2018
 public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
   private static MiniDFSCluster dfsCluster;
   private static Path path;
@@ -96,7 +98,7 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
         directory.close();
       }
     } finally {
-      try(FileSystem fs = FileSystem.get(HdfsTestUtil.getClientConfiguration(dfsCluster))) {
+      try (FileSystem fs = FileSystem.get(HdfsTestUtil.getClientConfiguration(dfsCluster))) {
         fs.delete(path, true);
       } finally {
         super.tearDown();
@@ -121,7 +123,8 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
     String[] args;
     {
       SolrClient client = clients.get(0);
-      NamedList<Object> response = client.query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
+      NamedList<Object> response =
+          client.query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
       @SuppressWarnings({"unchecked"})
       NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
       @SuppressWarnings({"unchecked"})

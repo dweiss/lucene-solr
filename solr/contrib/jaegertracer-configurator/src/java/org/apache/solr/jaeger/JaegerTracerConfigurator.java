@@ -38,10 +38,11 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
     Object host = args.get(AGENT_HOST);
     if (!(host instanceof String)) {
-      throw new IllegalArgumentException("Expected a required string for param '" + AGENT_HOST + "'");
+      throw new IllegalArgumentException(
+          "Expected a required string for param '" + AGENT_HOST + "'");
     }
 
     Object portArg = args.get(AGENT_PORT);
@@ -51,39 +52,39 @@ public class JaegerTracerConfigurator extends TracerConfigurator {
     int port = (Integer) portArg;
 
     Boolean logSpans = args.getBooleanArg(LOG_SPANS);
-    if (logSpans == null)
-      logSpans = true;
+    if (logSpans == null) logSpans = true;
 
     Object flushIntervalArg = args.get(FLUSH_INTERVAL);
     if (flushIntervalArg != null && !(flushIntervalArg instanceof Integer)) {
-      throw new IllegalArgumentException("Expected a required int for param '" + FLUSH_INTERVAL +"'");
+      throw new IllegalArgumentException(
+          "Expected a required int for param '" + FLUSH_INTERVAL + "'");
     }
     int flushInterval = flushIntervalArg == null ? 1000 : (Integer) flushIntervalArg;
 
     Object maxQueueArgs = args.get(MAX_QUEUE_SIZE);
     if (maxQueueArgs != null && !(maxQueueArgs instanceof Integer)) {
-      throw new IllegalArgumentException("Expected a required int for param '" + MAX_QUEUE_SIZE +"'");
+      throw new IllegalArgumentException(
+          "Expected a required int for param '" + MAX_QUEUE_SIZE + "'");
     }
     int maxQueue = maxQueueArgs == null ? 10000 : (Integer) maxQueueArgs;
 
-    Configuration.SamplerConfiguration samplerConfig = new Configuration.SamplerConfiguration()
-        .withType(ConstSampler.TYPE)
-        .withParam(1);
+    Configuration.SamplerConfiguration samplerConfig =
+        new Configuration.SamplerConfiguration().withType(ConstSampler.TYPE).withParam(1);
 
-    Configuration.ReporterConfiguration reporterConfig = Configuration.ReporterConfiguration.fromEnv();
-    Configuration.SenderConfiguration senderConfig = reporterConfig.getSenderConfiguration()
-        .withAgentHost(host.toString())
-        .withAgentPort(port);
+    Configuration.ReporterConfiguration reporterConfig =
+        Configuration.ReporterConfiguration.fromEnv();
+    Configuration.SenderConfiguration senderConfig =
+        reporterConfig.getSenderConfiguration().withAgentHost(host.toString()).withAgentPort(port);
 
-    reporterConfig.withLogSpans(logSpans)
+    reporterConfig
+        .withLogSpans(logSpans)
         .withFlushInterval(flushInterval)
         .withMaxQueueSize(maxQueue)
         .withSender(senderConfig);
-    tracer = new Configuration("solr")
-        .withSampler(samplerConfig)
-        .withReporter(reporterConfig)
-        .getTracer();
+    tracer =
+        new Configuration("solr")
+            .withSampler(samplerConfig)
+            .withReporter(reporterConfig)
+            .getTracer();
   }
-
-
 }

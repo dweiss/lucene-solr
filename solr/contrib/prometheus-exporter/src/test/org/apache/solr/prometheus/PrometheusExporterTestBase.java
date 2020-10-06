@@ -34,18 +34,19 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
   public static final int NUM_NODES = NUM_SHARDS * NUM_REPLICAS;
   public static final int TIMEOUT = 60;
 
-  public static final ImmutableMap<String, Double> FACET_VALUES = ImmutableMap.<String, Double>builder()
-      .put("electronics", 14.0)
-      .put("currency", 4.0)
-      .put("memory", 3.0)
-      .put("and", 2.0)
-      .put("card", 2.0)
-      .put("connector", 2.0)
-      .put("drive", 2.0)
-      .put("graphics", 2.0)
-      .put("hard", 2.0)
-      .put("search", 2.0)
-      .build();
+  public static final ImmutableMap<String, Double> FACET_VALUES =
+      ImmutableMap.<String, Double>builder()
+          .put("electronics", 14.0)
+          .put("currency", 4.0)
+          .put("memory", 3.0)
+          .put("and", 2.0)
+          .put("card", 2.0)
+          .put("connector", 2.0)
+          .put("drive", 2.0)
+          .put("graphics", 2.0)
+          .put("hard", 2.0)
+          .put("search", 2.0)
+          .build();
 
   @Override
   public void setUp() throws Exception {
@@ -59,19 +60,14 @@ public class PrometheusExporterTestBase extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(NUM_NODES)
-        .addConfig(CONF_NAME, getFile(CONF_DIR).toPath())
-        .configure();
+    configureCluster(NUM_NODES).addConfig(CONF_NAME, getFile(CONF_DIR).toPath()).configure();
 
-    CollectionAdminRequest
-        .createCollection(COLLECTION, CONF_NAME, NUM_SHARDS, NUM_REPLICAS)
+    CollectionAdminRequest.createCollection(COLLECTION, CONF_NAME, NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
-    AbstractDistribZkTestBase
-        .waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), true, true, TIMEOUT);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+        COLLECTION, cluster.getSolrClient().getZkStateReader(), true, true, TIMEOUT);
 
     Helpers.indexAllDocs(cluster.getSolrClient());
   }
-
-
 }

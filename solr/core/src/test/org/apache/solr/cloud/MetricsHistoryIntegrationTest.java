@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import javax.imageio.ImageIO;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -44,9 +42,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
+/** */
 @LuceneTestCase.Slow
 @LuceneTestCase.Nightly
 @LogLevel("org.apache.solr.handler.admin=DEBUG")
@@ -59,17 +55,20 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
-    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+    cloudManager =
+        cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     solrClient = cluster.getSolrClient();
     timeSource = cloudManager.getTimeSource();
     // create .system
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(solrClient);
-    CloudUtil.waitForState(cloudManager, CollectionAdminParams.SYSTEM_COLL,
-        30, TimeUnit.SECONDS, CloudUtil.clusterShape(1, 1));
+    CloudUtil.waitForState(
+        cloudManager,
+        CollectionAdminParams.SYSTEM_COLL,
+        30,
+        TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 1));
     solrClient.query(CollectionAdminParams.SYSTEM_COLL, params(CommonParams.Q, "*:*"));
     // sleep until next generation of kids grow up to allow the handler to collect some metrics
     timeSource.sleep(100000);
@@ -83,7 +82,8 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testList() throws Exception {
-    NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(CommonParams.ACTION, "list")));
+    NamedList<Object> rsp =
+        solrClient.request(createHistoryRequest(params(CommonParams.ACTION, "list")));
     assertNotNull(rsp);
     // expected solr.jvm, solr.node and solr.collection..system
     @SuppressWarnings({"unchecked"})
@@ -98,20 +98,22 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   @Test
   @SuppressWarnings({"unchecked"})
   public void testStatus() throws Exception {
-    NamedList<Object> rsp = solrClient.request(createHistoryRequest(
-        params(CommonParams.ACTION, "status", CommonParams.NAME, "solr.jvm")));
+    NamedList<Object> rsp =
+        solrClient.request(
+            createHistoryRequest(
+                params(CommonParams.ACTION, "status", CommonParams.NAME, "solr.jvm")));
     assertNotNull(rsp);
-    NamedList<Object> map = (NamedList<Object>)rsp.get("metrics");
+    NamedList<Object> map = (NamedList<Object>) rsp.get("metrics");
     assertEquals(map.toString(), 1, map.size());
-    map = (NamedList<Object>)map.get("solr.jvm");
+    map = (NamedList<Object>) map.get("solr.jvm");
     assertNotNull(map);
-    NamedList<Object> status = (NamedList<Object>)map.get("status");
+    NamedList<Object> status = (NamedList<Object>) map.get("status");
     assertNotNull(status);
     assertEquals(status.toString(), 7, status.size());
-    List<Object> lst = (List<Object>)status.get("datasources");
+    List<Object> lst = (List<Object>) status.get("datasources");
     assertNotNull(lst);
     assertEquals(lst.toString(), 3, lst.size());
-    lst = (List<Object>)status.get("archives");
+    lst = (List<Object>) status.get("archives");
     assertNotNull(lst);
     assertEquals(lst.toString(), 5, lst.size());
   }
@@ -119,71 +121,88 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   @Test
   @SuppressWarnings({"unchecked"})
   public void testGet() throws Exception {
-    NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(
-        CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm")));
+    NamedList<Object> rsp =
+        solrClient.request(
+            createHistoryRequest(
+                params(CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm")));
     assertNotNull(rsp);
     // default format is LIST
-    NamedList<Object> data = (NamedList<Object>)rsp.findRecursive("metrics", "solr.jvm", "data");
+    NamedList<Object> data = (NamedList<Object>) rsp.findRecursive("metrics", "solr.jvm", "data");
     assertNotNull(data);
-    data.forEach((k, v) -> {
-      NamedList<Object> entry = (NamedList<Object>)v;
-      List<Object> lst = entry.getAll("timestamps");
-      assertNotNull(lst);
-      assertTrue("timestamps", lst.size() > 0);
-      // 3 metrics, so the total size of values is 3 * the size of timestamps
-      entry = (NamedList<Object>)entry.get("values");
-      assertNotNull(entry);
-      assertEquals(lst.size() * 3, entry.size());
-    });
+    data.forEach(
+        (k, v) -> {
+          NamedList<Object> entry = (NamedList<Object>) v;
+          List<Object> lst = entry.getAll("timestamps");
+          assertNotNull(lst);
+          assertTrue("timestamps", lst.size() > 0);
+          // 3 metrics, so the total size of values is 3 * the size of timestamps
+          entry = (NamedList<Object>) entry.get("values");
+          assertNotNull(entry);
+          assertEquals(lst.size() * 3, entry.size());
+        });
 
     // get STRING
-    rsp = solrClient.request(createHistoryRequest(params(
-        CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm", "format", "string")));
-    data = (NamedList<Object>)rsp.findRecursive("metrics", "solr.jvm", "data");
+    rsp =
+        solrClient.request(
+            createHistoryRequest(
+                params(
+                    CommonParams.ACTION,
+                    "get",
+                    CommonParams.NAME,
+                    "solr.jvm",
+                    "format",
+                    "string")));
+    data = (NamedList<Object>) rsp.findRecursive("metrics", "solr.jvm", "data");
     assertNotNull(data);
-    data.forEach((k, v) -> {
-      NamedList<Object> entry = (NamedList<Object>)v;
-      List<Object> lst = entry.getAll("timestamps");
-      assertNotNull(lst);
-      assertEquals("timestamps", 1, lst.size());
-      String timestampString = (String)lst.get(0);
-      String[] timestamps = timestampString.split(("\n"));
-      assertTrue(timestampString, timestamps.length > 1);
-      entry = (NamedList<Object>)entry.get("values");
-      assertNotNull(entry);
-      assertEquals(3, entry.size());
-      entry.forEach((vk, vv) -> {
-        String valString = (String)vv;
-        String[] values = valString.split("\n");
-        assertEquals(valString, timestamps.length, values.length);
-      });
-    });
+    data.forEach(
+        (k, v) -> {
+          NamedList<Object> entry = (NamedList<Object>) v;
+          List<Object> lst = entry.getAll("timestamps");
+          assertNotNull(lst);
+          assertEquals("timestamps", 1, lst.size());
+          String timestampString = (String) lst.get(0);
+          String[] timestamps = timestampString.split(("\n"));
+          assertTrue(timestampString, timestamps.length > 1);
+          entry = (NamedList<Object>) entry.get("values");
+          assertNotNull(entry);
+          assertEquals(3, entry.size());
+          entry.forEach(
+              (vk, vv) -> {
+                String valString = (String) vv;
+                String[] values = valString.split("\n");
+                assertEquals(valString, timestamps.length, values.length);
+              });
+        });
 
     // get GRAPH
-    rsp = solrClient.request(createHistoryRequest(params(
-        CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm", "format", "graph")));
-    data = (NamedList<Object>)rsp.findRecursive("metrics", "solr.jvm", "data");
+    rsp =
+        solrClient.request(
+            createHistoryRequest(
+                params(
+                    CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm", "format", "graph")));
+    data = (NamedList<Object>) rsp.findRecursive("metrics", "solr.jvm", "data");
     assertNotNull(data);
-    data.forEach((k, v) -> {
-      NamedList<Object> entry = (NamedList<Object>) v;
-      entry = (NamedList<Object>)entry.get("values");
-      assertNotNull(entry);
-      assertEquals(3, entry.size());
-      entry.forEach((vk, vv) -> {
-        String valString = (String)vv;
-        byte[] img = Base64.base64ToByteArray(valString);
-        try {
-          ImageIO.read(new ByteArrayInputStream(img));
-        } catch (IOException e) {
-          fail("Error reading image data: " + e.toString());
-        }
-      });
-    });
+    data.forEach(
+        (k, v) -> {
+          NamedList<Object> entry = (NamedList<Object>) v;
+          entry = (NamedList<Object>) entry.get("values");
+          assertNotNull(entry);
+          assertEquals(3, entry.size());
+          entry.forEach(
+              (vk, vv) -> {
+                String valString = (String) vv;
+                byte[] img = Base64.base64ToByteArray(valString);
+                try {
+                  ImageIO.read(new ByteArrayInputStream(img));
+                } catch (IOException e) {
+                  fail("Error reading image data: " + e.toString());
+                }
+              });
+        });
   }
 
   @SuppressWarnings({"rawtypes"})
   public static SolrRequest createHistoryRequest(SolrParams params) {
     return new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics/history", params);
   }
-
 }

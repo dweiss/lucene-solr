@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -40,15 +39,11 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.ReturnFields;
 
-/**
- * Response writer for csv data
- */
-
+/** Response writer for csv data */
 public class CSVResponseWriter implements QueryResponseWriter {
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
-  }
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList n) {}
 
   @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
@@ -67,7 +62,6 @@ public class CSVResponseWriter implements QueryResponseWriter {
   }
 }
 
-
 class CSVWriter extends TabularResponseWriter {
   static String SEPARATOR = "separator";
   static String ENCAPSULATOR = "encapsulator";
@@ -78,7 +72,7 @@ class CSVWriter extends TabularResponseWriter {
   static String CSV_ENCAPSULATOR = CSV + ENCAPSULATOR;
   static String CSV_ESCAPE = CSV + ESCAPE;
 
-  static String MV = CSV+"mv.";
+  static String MV = CSV + "mv.";
   static String MV_SEPARATOR = MV + SEPARATOR;
   static String MV_ENCAPSULATOR = MV + ENCAPSULATOR;
   static String MV_ESCAPE = MV + ESCAPE;
@@ -105,7 +99,9 @@ class CSVWriter extends TabularResponseWriter {
 
   // allows access to internal buf w/o copying it
   static class OpenCharArrayWriter extends CharArrayWriter {
-    public char[]  getInternalBuf() { return buf; }
+    public char[] getInternalBuf() {
+      return buf;
+    }
   }
 
   // Writes all data to a char array,
@@ -117,12 +113,12 @@ class CSVWriter extends TabularResponseWriter {
 
     public ResettableFastWriter() {
       super(new OpenCharArrayWriter());
-      cw = (OpenCharArrayWriter)sink;
+      cw = (OpenCharArrayWriter) sink;
     }
 
     public void reset() {
       cw.reset();
-      pos=0;
+      pos = 0;
     }
 
     public void freeze() throws IOException {
@@ -136,32 +132,36 @@ class CSVWriter extends TabularResponseWriter {
       }
     }
 
-    public int getFrozenSize() { return resultLen; }
-    public char[] getFrozenBuf() { return result; }
-  }
+    public int getFrozenSize() {
+      return resultLen;
+    }
 
+    public char[] getFrozenBuf() {
+      return result;
+    }
+  }
 
   static class CSVField {
     String name;
     SchemaField sf;
-    CSVSharedBufPrinter mvPrinter;  // printer used to encode multiple values in a single CSV value
+    CSVSharedBufPrinter mvPrinter; // printer used to encode multiple values in a single CSV value
 
     // used to collect values
-    List<IndexableField> values = new ArrayList<>(1);  // low starting amount in case there are many fields
+    List<IndexableField> values =
+        new ArrayList<>(1); // low starting amount in case there are many fields
     int tmp;
   }
 
   int pass;
-  Map<String,CSVField> csvFields = new LinkedHashMap<>();
+  Map<String, CSVField> csvFields = new LinkedHashMap<>();
 
-  Calendar cal;  // for formatting date objects
+  Calendar cal; // for formatting date objects
 
-  CSVStrategy strategy;  // strategy for encoding the fields of documents
+  CSVStrategy strategy; // strategy for encoding the fields of documents
   CSVPrinter printer;
-  ResettableFastWriter mvWriter = new ResettableFastWriter();  // writer used for multi-valued fields
+  ResettableFastWriter mvWriter = new ResettableFastWriter(); // writer used for multi-valued fields
 
   String NullValue;
-
 
   public CSVWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
@@ -170,34 +170,51 @@ class CSVWriter extends TabularResponseWriter {
   public void writeResponse() throws IOException {
     SolrParams params = req.getParams();
 
-    strategy = new CSVStrategy
-        (',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true, "\n");
+    strategy =
+        new CSVStrategy(
+            ',',
+            '"',
+            CSVStrategy.COMMENTS_DISABLED,
+            CSVStrategy.ESCAPE_DISABLED,
+            false,
+            false,
+            false,
+            true,
+            "\n");
     CSVStrategy strat = strategy;
 
     String sep = params.get(CSV_SEPARATOR);
-    if (sep!=null) {
-      if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid separator:'"+sep+"'");
+    if (sep != null) {
+      if (sep.length() != 1)
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid separator:'" + sep + "'");
       strat.setDelimiter(sep.charAt(0));
     }
 
     String nl = params.get(CSV_NEWLINE);
-    if (nl!=null) {
-      if (nl.length()==0) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid newline:'"+nl+"'");
+    if (nl != null) {
+      if (nl.length() == 0)
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid newline:'" + nl + "'");
       strat.setPrinterNewline(nl);
     }
 
     String encapsulator = params.get(CSV_ENCAPSULATOR);
     String escape = params.get(CSV_ESCAPE);
-    if (encapsulator!=null) {
-      if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid encapsulator:'"+encapsulator+"'");
+    if (encapsulator != null) {
+      if (encapsulator.length() != 1)
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid encapsulator:'" + encapsulator + "'");
       strat.setEncapsulator(encapsulator.charAt(0));
     }
 
-    if (escape!=null) {
-      if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid escape:'"+escape+"'");
+    if (escape != null) {
+      if (escape.length() != 1)
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid escape:'" + escape + "'");
       strat.setEscape(escape.charAt(0));
       if (encapsulator == null) {
-        strat.setEncapsulator( CSVStrategy.ENCAPSULATOR_DISABLED);
+        strat.setEncapsulator(CSVStrategy.ENCAPSULATOR_DISABLED);
       }
     }
 
@@ -208,23 +225,35 @@ class CSVWriter extends TabularResponseWriter {
       strat.setUnicodeEscapeInterpretation(true);
     }
     printer = new CSVPrinter(writer, strategy);
-    
 
-    CSVStrategy mvStrategy = new CSVStrategy(strategy.getDelimiter(), CSVStrategy.ENCAPSULATOR_DISABLED, 
-        CSVStrategy.COMMENTS_DISABLED, '\\', false, false, false, false, "\n");
+    CSVStrategy mvStrategy =
+        new CSVStrategy(
+            strategy.getDelimiter(),
+            CSVStrategy.ENCAPSULATOR_DISABLED,
+            CSVStrategy.COMMENTS_DISABLED,
+            '\\',
+            false,
+            false,
+            false,
+            false,
+            "\n");
     strat = mvStrategy;
 
     sep = params.get(MV_SEPARATOR);
-    if (sep!=null) {
-      if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv separator:'"+sep+"'");
+    if (sep != null) {
+      if (sep.length() != 1)
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid mv separator:'" + sep + "'");
       strat.setDelimiter(sep.charAt(0));
     }
 
     encapsulator = params.get(MV_ENCAPSULATOR);
     escape = params.get(MV_ESCAPE);
 
-    if (encapsulator!=null) {
-      if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv encapsulator:'"+encapsulator+"'");
+    if (encapsulator != null) {
+      if (encapsulator.length() != 1)
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid mv encapsulator:'" + encapsulator + "'");
       strat.setEncapsulator(encapsulator.charAt(0));
       if (escape == null) {
         strat.setEscape(CSVStrategy.ESCAPE_DISABLED);
@@ -232,8 +261,10 @@ class CSVWriter extends TabularResponseWriter {
     }
 
     escape = params.get(MV_ESCAPE);
-    if (escape!=null) {
-      if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv escape:'"+escape+"'");
+    if (escape != null) {
+      if (escape.length() != 1)
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid mv escape:'" + escape + "'");
       strat.setEscape(escape.charAt(0));
       // encapsulator will already be disabled if it wasn't specified
     }
@@ -242,9 +273,9 @@ class CSVWriter extends TabularResponseWriter {
     CSVSharedBufPrinter csvPrinterMV = new CSVSharedBufPrinter(mvWriter, mvStrategy);
 
     for (String field : fields) {
-       if (!returnFields.wantsField(field)) {
-         continue;
-       }
+      if (!returnFields.wantsField(field)) {
+        continue;
+      }
       if (field.equals("score")) {
         CSVField csvField = new CSVField();
         csvField.name = "score";
@@ -266,34 +297,41 @@ class CSVWriter extends TabularResponseWriter {
       sep = params.get("f." + field + '.' + CSV_SEPARATOR);
       encapsulator = params.get("f." + field + '.' + CSV_ENCAPSULATOR);
       escape = params.get("f." + field + '.' + CSV_ESCAPE);
-     
+
       // if polyfield and no escape is provided, add "\\" escape by default
       if (sf.isPolyField()) {
-        escape = (escape==null)?"\\":escape;
+        escape = (escape == null) ? "\\" : escape;
       }
 
       CSVSharedBufPrinter csvPrinter = csvPrinterMV;
       if (sep != null || encapsulator != null || escape != null) {
         // create a new strategy + printer if there were any per-field overrides
-        strat = (CSVStrategy)mvStrategy.clone();
-        if (sep!=null) {
-          if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv separator:'"+sep+"'");
+        strat = (CSVStrategy) mvStrategy.clone();
+        if (sep != null) {
+          if (sep.length() != 1)
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Invalid mv separator:'" + sep + "'");
           strat.setDelimiter(sep.charAt(0));
         }
-        if (encapsulator!=null) {
-          if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv encapsulator:'"+encapsulator+"'");
+        if (encapsulator != null) {
+          if (encapsulator.length() != 1)
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Invalid mv encapsulator:'" + encapsulator + "'");
           strat.setEncapsulator(encapsulator.charAt(0));
           if (escape == null) {
             strat.setEscape(CSVStrategy.ESCAPE_DISABLED);
           }
         }
-        if (escape!=null) {
-          if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv escape:'"+escape+"'");
+        if (escape != null) {
+          if (escape.length() != 1)
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Invalid mv escape:'" + escape + "'");
           strat.setEscape(escape.charAt(0));
           if (encapsulator == null) {
             strat.setEncapsulator(CSVStrategy.ENCAPSULATOR_DISABLED);
           }
-        }        
+        }
         csvPrinter = new CSVSharedBufPrinter(mvWriter, strat);
       }
 
@@ -322,12 +360,14 @@ class CSVWriter extends TabularResponseWriter {
     super.close();
   }
 
-  //NOTE: a document cannot currently contain another document
+  // NOTE: a document cannot currently contain another document
   @SuppressWarnings({"rawtypes"})
   List tmpList;
+
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx)
+      throws IOException {
     if (tmpList == null) {
       tmpList = new ArrayList(1);
       tmpList.add(null);
@@ -335,7 +375,7 @@ class CSVWriter extends TabularResponseWriter {
 
     for (CSVField csvField : csvFields.values()) {
       Object val = doc.getFieldValue(csvField.name);
-      int nVals = val instanceof Collection ? ((Collection)val).size() : (val==null ? 0 : 1);
+      int nVals = val instanceof Collection ? ((Collection) val).size() : (val == null ? 0 : 1);
       if (nVals == 0) {
         writeNull(csvField.name);
         continue;
@@ -345,7 +385,7 @@ class CSVWriter extends TabularResponseWriter {
         Collection values;
         // normalize to a collection
         if (val instanceof Collection) {
-          values = (Collection)val;
+          values = (Collection) val;
         } else {
           tmpList.set(0, val);
           values = tmpList;
@@ -359,7 +399,7 @@ class CSVWriter extends TabularResponseWriter {
         for (Object fval : values) {
           writeVal(csvField.name, fval);
         }
-        printer = tmp;  // restore the original printer
+        printer = tmp; // restore the original printer
 
         mvWriter.freeze();
         printer.print(mvWriter.getFrozenBuf(), 0, mvWriter.getFrozenSize(), true);
@@ -367,7 +407,7 @@ class CSVWriter extends TabularResponseWriter {
       } else {
         // normalize to first value
         if (val instanceof Collection) {
-          Collection values = (Collection)val;
+          Collection values = (Collection) val;
           val = values.iterator().next();
         }
         // if field is polyfield, use the multi-valued printer to apply appropriate escaping

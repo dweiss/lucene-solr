@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -33,8 +32,10 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
 
   @Test
   public void testSingleZkHostSpecified() throws IOException {
-    try(CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
-        .build()) {
+    try (CloudHttp2SolrClient createdClient =
+        new CloudHttp2SolrClient.Builder(
+                Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .build()) {
       final String clientZkHost = createdClient.getZkHost();
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
@@ -44,9 +45,10 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
   @Test
   public void testSeveralZkHostsSpecifiedSingly() throws IOException {
     final List<String> zkHostList = new ArrayList<>();
-    zkHostList.add(ANY_ZK_HOST); zkHostList.add(ANY_OTHER_ZK_HOST);
-    try (CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(zkHostList, Optional.of(ANY_CHROOT))
-        .build()) {
+    zkHostList.add(ANY_ZK_HOST);
+    zkHostList.add(ANY_OTHER_ZK_HOST);
+    try (CloudHttp2SolrClient createdClient =
+        new CloudHttp2SolrClient.Builder(zkHostList, Optional.of(ANY_CHROOT)).build()) {
       final String clientZkHost = createdClient.getZkHost();
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
@@ -59,7 +61,8 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     final ArrayList<String> zkHosts = new ArrayList<String>();
     zkHosts.add(ANY_ZK_HOST);
     zkHosts.add(ANY_OTHER_ZK_HOST);
-    try(CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
+    try (CloudHttp2SolrClient createdClient =
+        new CloudHttp2SolrClient.Builder(zkHosts, Optional.of(ANY_CHROOT)).build()) {
       final String clientZkHost = createdClient.getZkHost();
 
       assertTrue(clientZkHost.contains(ANY_ZK_HOST));
@@ -69,16 +72,21 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
 
   @Test
   public void testByDefaultConfiguresClientToSendUpdatesOnlyToShardLeaders() throws IOException {
-    try(CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
+    try (CloudHttp2SolrClient createdClient =
+        new CloudHttp2SolrClient.Builder(
+                Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .build()) {
       assertTrue(createdClient.isUpdatesToLeaders() == true);
     }
   }
 
   @Test
   public void testIsDirectUpdatesToLeadersOnlyDefault() throws IOException {
-    try(CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
+    try (CloudHttp2SolrClient createdClient =
+        new CloudHttp2SolrClient.Builder(
+                Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .build()) {
       assertFalse(createdClient.isDirectUpdatesToLeadersOnly());
     }
   }
-
 }

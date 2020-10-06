@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
@@ -54,7 +53,7 @@ public class ClusterStatus {
   }
 
   @SuppressWarnings("unchecked")
-  public void getClusterStatus(@SuppressWarnings({"rawtypes"})NamedList results)
+  public void getClusterStatus(@SuppressWarnings({"rawtypes"}) NamedList results)
       throws KeeperException, InterruptedException {
     // read aliases
     Aliases aliases = zkStateReader.getAliases();
@@ -64,7 +63,7 @@ public class ClusterStatus {
       String alias = entry.getKey();
       List<String> colls = entry.getValue();
       for (String coll : colls) {
-        if (collection == null || collection.equals(coll))  {
+        if (collection == null || collection.equals(coll)) {
           List<String> list = collectionVsAliases.computeIfAbsent(coll, k -> new ArrayList<>());
           list.add(alias);
         }
@@ -74,7 +73,10 @@ public class ClusterStatus {
     @SuppressWarnings({"rawtypes"})
     Map roles = null;
     if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
+      roles =
+          (Map)
+              Utils.fromJSON(
+                  zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
     }
 
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -85,8 +87,9 @@ public class ClusterStatus {
     Map<String, DocCollection> collectionsMap = null;
     if (collection == null) {
       collectionsMap = clusterState.getCollectionsMap();
-    } else  {
-      collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection));
+    } else {
+      collectionsMap =
+          Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection));
     }
 
     boolean isAlias = aliasVsCollections.containsKey(collection);
@@ -95,9 +98,10 @@ public class ClusterStatus {
     if (didNotFindCollection && isAlias) {
       // In this case this.collection is an alias name not a collection
       // get all collections and filter out collections not in the alias
-      collectionsMap = clusterState.getCollectionsMap().entrySet().stream()
-          .filter((entry) -> aliasVsCollections.get(collection).contains(entry.getKey()))
-          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+      collectionsMap =
+          clusterState.getCollectionsMap().entrySet().stream()
+              .filter((entry) -> aliasVsCollections.get(collection).contains(entry.getKey()))
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     NamedList<Object> collectionProps = new SimpleOrderedMap<>();
@@ -108,11 +112,13 @@ public class ClusterStatus {
       DocCollection clusterStateCollection = entry.getValue();
       if (clusterStateCollection == null) {
         if (collection != null) {
-          SolrException solrException = new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
-          solrException.setMetadata("CLUSTERSTATUS","NOT_FOUND");
+          SolrException solrException =
+              new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+          solrException.setMetadata("CLUSTERSTATUS", "NOT_FOUND");
           throw solrException;
         } else {
-          //collection might have got deleted at the same time
+          // collection might have got deleted at the same time
           continue;
         }
       }
@@ -130,9 +136,9 @@ public class ClusterStatus {
         requestedShards.addAll(Arrays.asList(paramShards));
       }
 
-        byte[] bytes = Utils.toJSON(clusterStateCollection);
-        Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
-        collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
+      byte[] bytes = Utils.toJSON(clusterStateCollection);
+      Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
+      collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
 
       collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
@@ -148,7 +154,8 @@ public class ClusterStatus {
       }
     }
 
-    List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+    List<String> liveNodes =
+        zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
 
     // now we need to walk the collectionProps tree to cross-check replica state with live nodes
     crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
@@ -158,18 +165,18 @@ public class ClusterStatus {
 
     // read cluster properties
     Map<String, Object> clusterProps = zkStateReader.getClusterProperties();
-    if (clusterProps != null && !clusterProps.isEmpty())  {
+    if (clusterProps != null && !clusterProps.isEmpty()) {
       clusterStatus.add("properties", clusterProps);
     }
 
     // add the alias map too
     Map<String, String> collectionAliasMap = aliases.getCollectionAliasMap(); // comma delim
-    if (!collectionAliasMap.isEmpty())  {
+    if (!collectionAliasMap.isEmpty()) {
       clusterStatus.add("aliases", collectionAliasMap);
     }
 
     // add the roles map
-    if (roles != null)  {
+    if (roles != null) {
       clusterStatus.add("roles", roles);
     }
 
@@ -180,29 +187,31 @@ public class ClusterStatus {
   }
 
   /**
-   * Get collection status from cluster state.
-   * Can return collection status by given shard name.
-   *
+   * Get collection status from cluster state. Can return collection status by given shard name.
    *
    * @param collection collection map parsed from JSON-serialized {@link ClusterState}
-   * @param name  collection name
-   * @param requestedShards a set of shards to be returned in the status.
-   *                        An empty or null values indicates <b>all</b> shards.
+   * @param name collection name
+   * @param requestedShards a set of shards to be returned in the status. An empty or null values
+   *     indicates <b>all</b> shards.
    * @return map of collection properties
    */
   @SuppressWarnings("unchecked")
-  private Map<String, Object> getCollectionStatus(Map<String, Object> collection, String name, Set<String> requestedShards) {
-    if (collection == null)  {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+  private Map<String, Object> getCollectionStatus(
+      Map<String, Object> collection, String name, Set<String> requestedShards) {
+    if (collection == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
     }
     if (requestedShards == null || requestedShards.isEmpty()) {
       return collection;
     } else {
       Map<String, Object> shards = (Map<String, Object>) collection.get("shards");
-      Map<String, Object>  selected = new HashMap<>();
+      Map<String, Object> selected = new HashMap<>();
       for (String selectedShard : requestedShards) {
         if (!shards.containsKey(selectedShard)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " shard: " + selectedShard + " not found");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Collection: " + name + " shard: " + selectedShard + " not found");
         }
         selected.put(selectedShard, shards.get(selectedShard));
         collection.put("shards", selected);
@@ -211,18 +220,17 @@ public class ClusterStatus {
     }
   }
 
-
-
   /**
-   * Walks the tree of collection status to verify that any replicas not reporting a "down" status is
-   * on a live node, if any replicas reporting their status as "active" but the node is not live is
-   * marked as "down"; used by CLUSTERSTATUS.
+   * Walks the tree of collection status to verify that any replicas not reporting a "down" status
+   * is on a live node, if any replicas reporting their status as "active" but the node is not live
+   * is marked as "down"; used by CLUSTERSTATUS.
+   *
    * @param liveNodes List of currently live node names.
    * @param collectionProps Map of collection status information pulled directly from ZooKeeper.
    */
-
   @SuppressWarnings("unchecked")
-  protected void crossCheckReplicaStateWithLiveNodes(List<String> liveNodes, NamedList<Object> collectionProps) {
+  protected void crossCheckReplicaStateWithLiveNodes(
+      List<String> liveNodes, NamedList<Object> collectionProps) {
     for (Map.Entry<String, Object> next : collectionProps) {
       Map<String, Object> collMap = (Map<String, Object>) next.getValue();
       Map<String, Object> shards = (Map<String, Object>) collMap.get("shards");
@@ -231,7 +239,8 @@ public class ClusterStatus {
         Map<String, Object> replicas = (Map<String, Object>) shardMap.get("replicas");
         for (Object nextReplica : replicas.values()) {
           Map<String, Object> replicaMap = (Map<String, Object>) nextReplica;
-          if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP)) != Replica.State.DOWN) {
+          if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP))
+              != Replica.State.DOWN) {
             // not down, so verify the node is live
             String node_name = (String) replicaMap.get(ZkStateReader.NODE_NAME_PROP);
             if (!liveNodes.contains(node_name)) {

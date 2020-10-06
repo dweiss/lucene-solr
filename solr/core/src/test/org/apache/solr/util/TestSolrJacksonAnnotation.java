@@ -17,10 +17,9 @@
 
 package org.apache.solr.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.JsonSchemaCreator;
@@ -42,9 +41,9 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
 
     @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSONString(json);
-    assertEquals("v1",  m.get("field"));
-    assertEquals("v2",  m.get("friendlyName"));
-    assertEquals("1234",  String.valueOf(m.get("friendlyIntFld")));
+    assertEquals("v1", m.get("field"));
+    assertEquals("v2", m.get("friendlyName"));
+    assertEquals("1234", String.valueOf(m.get("friendlyIntFld")));
     TestObj o1 = mapper.readValue(json, TestObj.class);
 
     assertEquals("v1", o1.field);
@@ -52,10 +51,9 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     assertEquals(1234, o1.ifld);
 
     Map<String, Object> schema = JsonSchemaCreator.getSchema(TestObj.class);
-    assertEquals("string", Utils.getObjectByPath(schema,true,"/properties/friendlyName/type"));
-    assertEquals("integer", Utils.getObjectByPath(schema,true,"/properties/friendlyIntFld/type"));
-    assertEquals("friendlyName", Utils.getObjectByPath(schema,true,"/required[0]"));
-
+    assertEquals("string", Utils.getObjectByPath(schema, true, "/properties/friendlyName/type"));
+    assertEquals("integer", Utils.getObjectByPath(schema, true, "/properties/friendlyIntFld/type"));
+    assertEquals("friendlyName", Utils.getObjectByPath(schema, true, "/required[0]"));
 
     JsonSchemaValidator validator = new JsonSchemaValidator(schema);
     List<String> errs = validator.validateJson(m);
@@ -70,14 +68,12 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     assertTrue(errs.get(0).contains("Value is not valid"));
   }
 
-
-
-
   public static class TestObj {
-    @JsonProperty()
-    public String field;
-    @JsonProperty(value = "friendlyName" ,required = true)
+    @JsonProperty() public String field;
+
+    @JsonProperty(value = "friendlyName", required = true)
     public String f2;
+
     @JsonProperty("friendlyIntFld")
     public int ifld;
   }

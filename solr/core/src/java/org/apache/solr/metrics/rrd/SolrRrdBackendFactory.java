@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -47,8 +46,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.TimeSource;
 import org.rrd4j.core.RrdBackend;
 import org.rrd4j.core.RrdBackendFactory;
 import org.slf4j.Logger;
@@ -56,12 +55,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * RRD backend factory using Solr documents as underlying storage.
- * <p>RRD databases are identified by paths in the format <code>solr:dbName</code>.
- * Typically the path will correspond to the name of metric or a group of metrics, eg:
- * <code>solr:QUERY./select.requests</code></p>
- * <p>NOTE: Solr doesn't register instances of this factory in the static
- * registry {@link RrdBackendFactory#registerFactory(RrdBackendFactory)} because
- * it's then impossible to manage its life-cycle.</p>
+ *
+ * <p>RRD databases are identified by paths in the format <code>solr:dbName</code>. Typically the
+ * path will correspond to the name of metric or a group of metrics, eg: <code>
+ * solr:QUERY./select.requests</code>
+ *
+ * <p>NOTE: Solr doesn't register instances of this factory in the static registry {@link
+ * RrdBackendFactory#registerFactory(RrdBackendFactory)} because it's then impossible to manage its
+ * life-cycle.
  */
 public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -90,14 +91,16 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
 
   /**
    * Create a factory.
+   *
    * @param solrClient SolrClient to use
-   * @param collection collection name where documents are stored (typically this is
-   *                   {@link CollectionAdminParams#SYSTEM_COLL})
-   * @param syncPeriod synchronization period in seconds - how often modified
-   *                   databases are stored as updated Solr documents
+   * @param collection collection name where documents are stored (typically this is {@link
+   *     CollectionAdminParams#SYSTEM_COLL})
+   * @param syncPeriod synchronization period in seconds - how often modified databases are stored
+   *     as updated Solr documents
    * @param timeSource time source
    */
-  public SolrRrdBackendFactory(SolrClient solrClient, String collection, int syncPeriod, TimeSource timeSource) {
+  public SolrRrdBackendFactory(
+      SolrClient solrClient, String collection, int syncPeriod, TimeSource timeSource) {
     this.solrClient = solrClient;
     this.timeSource = timeSource;
     this.collection = collection;
@@ -106,11 +109,14 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       log.debug("Created {}", hashCode());
     }
     this.idPrefixLength = ID_PREFIX.length() + ID_SEP.length();
-    syncService = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2,
-        new SolrNamedThreadFactory("SolrRrdBackendFactory"));
+    syncService =
+        (ScheduledThreadPoolExecutor)
+            Executors.newScheduledThreadPool(
+                2, new SolrNamedThreadFactory("SolrRrdBackendFactory"));
     syncService.setRemoveOnCancelPolicy(true);
     syncService.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    syncService.scheduleWithFixedDelay(() -> maybeSyncBackends(),
+    syncService.scheduleWithFixedDelay(
+        () -> maybeSyncBackends(),
         timeSource.convertDelay(TimeUnit.SECONDS, syncPeriod, TimeUnit.MILLISECONDS),
         timeSource.convertDelay(TimeUnit.SECONDS, syncPeriod, TimeUnit.MILLISECONDS),
         TimeUnit.MILLISECONDS);
@@ -160,28 +166,29 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     return uri;
   }
 
-//  @Override
-//  protected URI getRootUri() {
-//    try {
-//      return new URI("solr", null, null, null);
-//    } catch (URISyntaxException e) {
-//      throw new RuntimeException("Impossible error", e);
-//    }
-//  }
-//
+  //  @Override
+  //  protected URI getRootUri() {
+  //    try {
+  //      return new URI("solr", null, null, null);
+  //    } catch (URISyntaxException e) {
+  //      throw new RuntimeException("Impossible error", e);
+  //    }
+  //  }
+  //
   /**
    * Open (or get) a backend.
+   *
    * @param path backend path (without URI scheme)
-   * @param readOnly if true then the backend will never be synchronized to Solr,
-   *                 and updates will be silently ignored. Read-only backends can
-   *                 be safely closed and discarded after use.
+   * @param readOnly if true then the backend will never be synchronized to Solr, and updates will
+   *     be silently ignored. Read-only backends can be safely closed and discarded after use.
    * @return an instance of Solr backend.
    * @throws IOException on Solr error when retrieving existing data
    */
   @Override
   protected synchronized RrdBackend open(String path, boolean readOnly) throws IOException {
     ensureOpen();
-    SolrRrdBackend backend = backends.computeIfAbsent(path, p -> new SolrRrdBackend(p, readOnly, this));
+    SolrRrdBackend backend =
+        backends.computeIfAbsent(path, p -> new SolrRrdBackend(p, readOnly, this));
     if (backend.isReadOnly()) {
       if (readOnly) {
         return backend;
@@ -215,7 +222,8 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         return null;
       }
       if (docs.size() > 1) {
-        throw new SolrServerException("Expected at most 1 doc with id '" + path + "' but got " + docs);
+        throw new SolrServerException(
+            "Expected at most 1 doc with id '" + path + "' but got " + docs);
       }
       SolrDocument doc = docs.get(0);
       Object o = doc.getFieldValue(DATA_FIELD);
@@ -224,10 +232,14 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       }
       if (o instanceof byte[]) {
         Object timeObj = doc.getFieldValue("timestamp_l");
-        Long time = timeObj instanceof Number ? ((Number)timeObj).longValue() : Long.parseLong(String.valueOf(timeObj));
-        return new SolrRrdBackend.SyncData((byte[])o, time);
+        Long time =
+            timeObj instanceof Number
+                ? ((Number) timeObj).longValue()
+                : Long.parseLong(String.valueOf(timeObj));
+        return new SolrRrdBackend.SyncData((byte[]) o, time);
       } else {
-        throw new SolrServerException("Unexpected value of '" + DATA_FIELD + "' field: " + o.getClass().getName() + ": " + o);
+        throw new SolrServerException(
+            "Unexpected value of '" + DATA_FIELD + "' field: " + o.getClass().getName() + ": " + o);
       }
     } catch (SolrServerException e) {
       throw new IOException(e);
@@ -249,6 +261,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
 
   /**
    * List all available databases created by this node name
+   *
    * @param maxLength maximum number of results to return
    * @return list of database names and their last update times, or empty
    * @throws IOException on server errors
@@ -265,33 +278,39 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         QueryResponse rsp = solrClient.query(collection, params);
         SolrDocumentList docs = rsp.getResults();
         if (docs != null) {
-          docs.forEach(d -> {
-            Object o = d.getFieldValue("timestamp_l");
-            if (o == null) {
-              return;
-            }
-            Long time = o instanceof Number ? ((Number)o).longValue() : Long.parseLong(String.valueOf(o));
-            Pair<String, Long> p = new Pair<>(((String)d.getFieldValue("id")).substring(idPrefixLength), time);
-            byName.put(p.first(), p);
-          });
+          docs.forEach(
+              d -> {
+                Object o = d.getFieldValue("timestamp_l");
+                if (o == null) {
+                  return;
+                }
+                Long time =
+                    o instanceof Number
+                        ? ((Number) o).longValue()
+                        : Long.parseLong(String.valueOf(o));
+                Pair<String, Long> p =
+                    new Pair<>(((String) d.getFieldValue("id")).substring(idPrefixLength), time);
+                byName.put(p.first(), p);
+              });
         }
       } catch (SolrServerException e) {
         log.warn("Error retrieving RRD list", e);
       }
     }
     // add in-memory backends not yet stored, or replace with more recent versions
-    backends.forEach((name, db) -> {
-      long lastModifiedTime = db.getLastModifiedTime();
-      Pair<String, Long> stored = byName.get(name);
-      Pair<String, Long> inMemory = new Pair<>(name, lastModifiedTime);
-      if (stored != null) {
-        if (stored.second() < lastModifiedTime) {
-          byName.put(name, inMemory);
-        }
-      } else {
-        byName.put(name, inMemory);
-      }
-    });
+    backends.forEach(
+        (name, db) -> {
+          long lastModifiedTime = db.getLastModifiedTime();
+          Pair<String, Long> stored = byName.get(name);
+          Pair<String, Long> inMemory = new Pair<>(name, lastModifiedTime);
+          if (stored != null) {
+            if (stored.second() < lastModifiedTime) {
+              byName.put(name, inMemory);
+            }
+          } else {
+            byName.put(name, inMemory);
+          }
+        });
     ArrayList<Pair<String, Long>> list = new ArrayList<>(byName.values());
     Collections.sort(list, DbComparator.INSTANCE);
     return list;
@@ -299,6 +318,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
 
   /**
    * Remove all databases created by this node name.
+   *
    * @throws IOException on server error
    */
   public void removeAll() throws IOException {
@@ -312,8 +332,8 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     }
     // remove all Solr docs
     try {
-      solrClient.deleteByQuery(collection,
-          "{!term f=" + CommonParams.TYPE + "}:" + DOC_TYPE, syncPeriod * 1000);
+      solrClient.deleteByQuery(
+          collection, "{!term f=" + CommonParams.TYPE + "}:" + DOC_TYPE, syncPeriod * 1000);
     } catch (SolrServerException e) {
       log.warn("Error deleting RRDs", e);
     }
@@ -321,6 +341,7 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
 
   /**
    * Remove a database.
+   *
    * @param path database path.
    * @throws IOException on Solr exception
    */
@@ -354,12 +375,13 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       log.debug("-- maybe sync backends: {}", backends.keySet());
     }
     Map<String, SolrRrdBackend.SyncData> syncDatas = new HashMap<>();
-    backends.forEach((path, backend) -> {
-      SolrRrdBackend.SyncData syncData = backend.getSyncDataAndMarkClean();
-      if (syncData != null) {
-        syncDatas.put(backend.getPath(), syncData);
-      }
-    });
+    backends.forEach(
+        (path, backend) -> {
+          SolrRrdBackend.SyncData syncData = backend.getSyncDataAndMarkClean();
+          if (syncData != null) {
+            syncDatas.put(backend.getPath(), syncData);
+          }
+        });
     if (syncDatas.isEmpty()) {
       return;
     }
@@ -368,18 +390,19 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
     }
     // write updates
     try {
-      syncDatas.forEach((path, syncData) -> {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.setField("id", ID_PREFIX + ID_SEP + path);
-        doc.addField(CommonParams.TYPE, DOC_TYPE);
-        doc.addField(DATA_FIELD, syncData.data);
-        doc.setField("timestamp_l", syncData.timestamp);
-        try {
-          solrClient.add(collection, doc);
-        } catch (SolrServerException | IOException e) {
-          log.warn("Error updating RRD data for {}", path, e);
-        }
-      });
+      syncDatas.forEach(
+          (path, syncData) -> {
+            SolrInputDocument doc = new SolrInputDocument();
+            doc.setField("id", ID_PREFIX + ID_SEP + path);
+            doc.addField(CommonParams.TYPE, DOC_TYPE);
+            doc.addField(DATA_FIELD, syncData.data);
+            doc.setField("timestamp_l", syncData.timestamp);
+            try {
+              solrClient.add(collection, doc);
+            } catch (SolrServerException | IOException e) {
+              log.warn("Error updating RRD data for {}", path, e);
+            }
+          });
       if (Thread.interrupted()) {
         return;
       }
@@ -395,9 +418,10 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
 
   /**
    * Check for existence of a backend.
+   *
    * @param path backend path, without the URI scheme
-   * @return true when a backend exists. Note that a backend may exist only
-   * in memory if it was created recently within {@link #syncPeriod}.
+   * @return true when a backend exists. Note that a backend may exist only in memory if it was
+   *     created recently within {@link #syncPeriod}.
    * @throws IOException on Solr exception
    */
   @Override
@@ -420,7 +444,8 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
         return false;
       }
       if (docs.size() > 1) {
-        throw new SolrServerException("Expected at most 1 doc with id '" + path + "' but got " + docs);
+        throw new SolrServerException(
+            "Expected at most 1 doc with id '" + path + "' but got " + docs);
       }
       return true;
     } catch (SolrServerException e) {

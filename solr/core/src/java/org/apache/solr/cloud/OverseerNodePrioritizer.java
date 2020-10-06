@@ -16,10 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -35,11 +36,9 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 /**
- * Responsible for prioritization of Overseer nodes, for example with the
- * ADDROLE collection command.
+ * Responsible for prioritization of Overseer nodes, for example with the ADDROLE collection
+ * command.
  */
 public class OverseerNodePrioritizer {
 
@@ -51,7 +50,11 @@ public class OverseerNodePrioritizer {
 
   private ZkDistributedQueue stateUpdateQueue;
 
-  public OverseerNodePrioritizer(ZkStateReader zkStateReader, ZkDistributedQueue stateUpdateQueue, String adminPath, ShardHandlerFactory shardHandlerFactory) {
+  public OverseerNodePrioritizer(
+      ZkStateReader zkStateReader,
+      ZkDistributedQueue stateUpdateQueue,
+      String adminPath,
+      ShardHandlerFactory shardHandlerFactory) {
     this.zkStateReader = zkStateReader;
     this.adminPath = adminPath;
     this.shardHandlerFactory = shardHandlerFactory;
@@ -60,45 +63,53 @@ public class OverseerNodePrioritizer {
 
   public synchronized void prioritizeOverseerNodes(String overseerId) throws Exception {
     SolrZkClient zk = zkStateReader.getZkClient();
-    if(!zk.exists(ZkStateReader.ROLES,true))return;
+    if (!zk.exists(ZkStateReader.ROLES, true)) return;
     @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
 
     @SuppressWarnings({"rawtypes"})
     List overseerDesignates = (List) m.get("overseer");
-    if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
+    if (overseerDesignates == null || overseerDesignates.isEmpty()) return;
     String ldr = OverseerTaskProcessor.getLeaderNode(zk);
-    if(overseerDesignates.contains(ldr)) return;
-    log.info("prioritizing overseer nodes at {} overseer designates are {}", overseerId, overseerDesignates);
-    List<String> electionNodes = OverseerTaskProcessor.getSortedElectionNodes(zk, Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE);
-    if(electionNodes.size()<2) return;
+    if (overseerDesignates.contains(ldr)) return;
+    log.info(
+        "prioritizing overseer nodes at {} overseer designates are {}",
+        overseerId,
+        overseerDesignates);
+    List<String> electionNodes =
+        OverseerTaskProcessor.getSortedElectionNodes(
+            zk, Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE);
+    if (electionNodes.size() < 2) return;
     log.info("sorted nodes {}", electionNodes);
 
     String designateNodeId = null;
     for (String electionNode : electionNodes) {
-      if(overseerDesignates.contains( LeaderElector.getNodeName(electionNode))){
+      if (overseerDesignates.contains(LeaderElector.getNodeName(electionNode))) {
         designateNodeId = electionNode;
         break;
       }
     }
 
-    if(designateNodeId == null){
+    if (designateNodeId == null) {
       log.warn("No live overseer designate ");
       return;
     }
-    if(!designateNodeId.equals( electionNodes.get(1))) { //checking if it is already at no:1
+    if (!designateNodeId.equals(electionNodes.get(1))) { // checking if it is already at no:1
       log.info("asking node {} to come join election at head", designateNodeId);
-      invokeOverseerOp(designateNodeId, "rejoinAtHead"); //ask designate to come first
+      invokeOverseerOp(designateNodeId, "rejoinAtHead"); // ask designate to come first
       if (log.isInfoEnabled()) {
         log.info("asking the old first in line {} to rejoin election  ", electionNodes.get(1));
       }
-      invokeOverseerOp(electionNodes.get(1), "rejoin");//ask second inline to go behind
+      invokeOverseerOp(electionNodes.get(1), "rejoin"); // ask second inline to go behind
     }
-    //now ask the current leader to QUIT , so that the designate can takeover
+    // now ask the current leader to QUIT , so that the designate can takeover
     stateUpdateQueue.offer(
-        Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
-            ID, OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()))));
-
+        Utils.toJSON(
+            new ZkNodeProps(
+                Overseer.QUEUE_OPERATION,
+                OverseerAction.QUIT.toLower(),
+                ID,
+                OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()))));
   }
 
   private void invokeOverseerOp(String electionNode, String op) {
@@ -111,7 +122,7 @@ public class OverseerNodePrioritizer {
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = 1;
     String replica = zkStateReader.getBaseUrlForNodeName(LeaderElector.getNodeName(electionNode));
-    sreq.shards = new String[]{replica};
+    sreq.shards = new String[] {replica};
     sreq.actualShards = sreq.shards;
     sreq.params = params;
     shardHandler.submit(sreq, replica, sreq.params);

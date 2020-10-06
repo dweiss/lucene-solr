@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -34,15 +33,14 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * SolrCloud ConfigSetService impl.
- */
+/** SolrCloud ConfigSetService impl. */
 public class CloudConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private final ZkController zkController;
 
-  public CloudConfigSetService(SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
+  public CloudConfigSetService(
+      SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
     super(loader, shareSchema);
     this.zkController = zkController;
   }
@@ -53,28 +51,40 @@ public class CloudConfigSetService extends ConfigSetService {
 
     // For back compat with cores that can create collections without the collections API
     try {
-      if (!zkController.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
+      if (!zkController
+          .getZkClient()
+          .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
         // TODO remove this functionality or maybe move to a CLI mechanism
-        log.warn("Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
-        CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), colName, cd.getCloudDescriptor().getParams());
+        log.warn(
+            "Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
+        CreateCollectionCmd.createCollectionZkNode(
+            zkController.getSolrCloudManager().getDistribStateManager(),
+            colName,
+            cd.getCloudDescriptor().getParams());
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted auto-creating collection", e);
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR, "Interrupted auto-creating collection", e);
     } catch (KeeperException e) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Failure auto-creating collection", e);
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR, "Failure auto-creating collection", e);
     }
 
-    // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only populated in standalone
+    // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only
+    // populated in standalone
     final String configSetName;
     try {
       configSetName = zkController.getZkStateReader().readConfigName(colName);
       cd.setConfigSet(configSetName);
     } catch (KeeperException ex) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Trouble resolving configSet for collection " + colName + ": " + ex.getMessage());
+      throw new ZooKeeperException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Trouble resolving configSet for collection " + colName + ": " + ex.getMessage());
     }
 
-    return new ZkSolrResourceLoader(cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(), zkController);
+    return new ZkSolrResourceLoader(
+        cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(), zkController);
   }
 
   @Override
@@ -89,7 +99,8 @@ public class CloudConfigSetService extends ConfigSetService {
   }
 
   @Override
-  protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile) {
+  protected Long getCurrentSchemaModificationVersion(
+      String configSet, SolrConfig solrConfig, String schemaFile) {
     String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + schemaFile;
     Stat stat;
     try {

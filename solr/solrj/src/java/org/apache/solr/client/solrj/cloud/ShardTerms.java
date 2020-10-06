@@ -23,13 +23,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 
-/**
- * Hold values of terms, this class is immutable. Create a new instance for every mutation
- */
+/** Hold values of terms, this class is immutable. Create a new instance for every mutation */
 public class ShardTerms implements MapWriter {
   private static final String RECOVERING_TERM_SUFFIX = "_recovering";
   private final Map<String, Long> values;
@@ -37,7 +34,7 @@ public class ShardTerms implements MapWriter {
   // ZK node version
   private final int version;
 
-  public ShardTerms () {
+  public ShardTerms() {
     this(new HashMap<>(), 0);
   }
 
@@ -59,6 +56,7 @@ public class ShardTerms implements MapWriter {
 
   /**
    * Can {@code coreNodeName} become leader?
+   *
    * @param coreNodeName of the replica
    * @return true if {@code coreNodeName} can become leader, false if otherwise
    */
@@ -68,6 +66,7 @@ public class ShardTerms implements MapWriter {
 
   /**
    * Is {@code coreNodeName}'s term highest?
+   *
    * @param coreNodeName of the replica
    * @return true if term of {@code coreNodeName} is highest
    */
@@ -82,14 +81,18 @@ public class ShardTerms implements MapWriter {
   }
 
   /**
-   * Return a new {@link ShardTerms} in which term of {@code leader} is higher than {@code replicasNeedingRecovery}
+   * Return a new {@link ShardTerms} in which term of {@code leader} is higher than {@code
+   * replicasNeedingRecovery}
+   *
    * @param leader coreNodeName of leader
-   * @param replicasNeedingRecovery set of replicas in which their terms should be lower than leader's term
+   * @param replicasNeedingRecovery set of replicas in which their terms should be lower than
+   *     leader's term
    * @return null if term of {@code leader} is already higher than {@code replicasNeedingRecovery}
    */
   public ShardTerms increaseTerms(String leader, Set<String> replicasNeedingRecovery) {
     if (!values.containsKey(leader)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can not find leader's term " + leader);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Can not find leader's term " + leader);
     }
 
     boolean changed = false;
@@ -101,15 +104,16 @@ public class ShardTerms implements MapWriter {
       String key = entry.getKey();
       if (replicasNeedingRecovery.contains(key)) foundReplicasInLowerTerms = true;
       if (Objects.equals(entry.getValue(), leaderTerm)) {
-        if(skipIncreaseTermOf(key, replicasNeedingRecovery)) {
+        if (skipIncreaseTermOf(key, replicasNeedingRecovery)) {
           changed = true;
         } else {
-          newValues.put(key, leaderTerm+1);
+          newValues.put(key, leaderTerm + 1);
         }
       }
     }
 
-    // We should skip the optimization if there are no replicasNeedingRecovery present in local terms,
+    // We should skip the optimization if there are no replicasNeedingRecovery present in local
+    // terms,
     // this may indicate that the current value is stale
     if (!changed && foundReplicasInLowerTerms) return null;
     return new ShardTerms(newValues, version);
@@ -124,6 +128,7 @@ public class ShardTerms implements MapWriter {
 
   /**
    * Return a new {@link ShardTerms} in which highest terms are not zero
+   *
    * @return null if highest terms are already larger than zero
    */
   public ShardTerms ensureHighestTermsAreNotZero() {
@@ -139,6 +144,7 @@ public class ShardTerms implements MapWriter {
 
   /**
    * Return a new {@link ShardTerms} in which terms for the {@code coreNodeName} are removed
+   *
    * @param coreNodeName of the replica
    * @return null if term of {@code coreNodeName} is already not exist
    */
@@ -156,6 +162,7 @@ public class ShardTerms implements MapWriter {
 
   /**
    * Return a new {@link ShardTerms} in which the associate term of {@code coreNodeName} is not null
+   *
    * @param coreNodeName of the replica
    * @return null if term of {@code coreNodeName} is already exist
    */
@@ -178,6 +185,7 @@ public class ShardTerms implements MapWriter {
 
   /**
    * Return a new {@link ShardTerms} in which the term of {@code coreNodeName} is max
+   *
    * @param coreNodeName of the replica
    * @return null if term of {@code coreNodeName} is already maximum
    */
@@ -197,13 +205,13 @@ public class ShardTerms implements MapWriter {
 
   /**
    * Mark {@code coreNodeName} as recovering
+   *
    * @param coreNodeName of the replica
    * @return null if {@code coreNodeName} is already marked as doing recovering
    */
   public ShardTerms startRecovering(String coreNodeName) {
     long maxTerm = getMaxTerm();
-    if (values.get(coreNodeName) == maxTerm)
-      return null;
+    if (values.get(coreNodeName) == maxTerm) return null;
 
     HashMap<String, Long> newValues = new HashMap<>(values);
     if (!newValues.containsKey(recoveringTerm(coreNodeName))) {
@@ -217,6 +225,7 @@ public class ShardTerms implements MapWriter {
 
   /**
    * Mark {@code coreNodeName} as finished recovering
+   *
    * @param coreNodeName of the replica
    * @return null if term of {@code coreNodeName} is already finished doing recovering
    */
@@ -236,17 +245,14 @@ public class ShardTerms implements MapWriter {
 
   @Override
   public String toString() {
-    return "Terms{" +
-        "values=" + values +
-        ", version=" + version +
-        '}';
+    return "Terms{" + "values=" + values + ", version=" + version + '}';
   }
 
   public int getVersion() {
     return version;
   }
 
-  public Map<String , Long> getTerms() {
+  public Map<String, Long> getTerms() {
     return new HashMap<>(this.values);
   }
 

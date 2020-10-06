@@ -17,15 +17,14 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
+import com.google.common.collect.Ordering;
+import com.google.common.collect.TreeMultimap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 import java.util.Map;
-
-import com.google.common.collect.Ordering;
-import com.google.common.collect.TreeMultimap;
+import java.util.Set;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
@@ -34,10 +33,11 @@ import org.apache.solr.cluster.placement.*;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
- * <p>Implements placing replicas to minimize number of cores per {@link Node}, while not placing two replicas of the same
- * shard on the same node.</p>
+ * Implements placing replicas to minimize number of cores per {@link Node}, while not placing two
+ * replicas of the same shard on the same node.
  *
- * <p>Warning: not really tested. See {@link SamplePluginAffinityReplicaPlacement} for a more realistic example.</p>
+ * <p>Warning: not really tested. See {@link SamplePluginAffinityReplicaPlacement} for a more
+ * realistic example.
  */
 public class SamplePluginMinimizeCores implements PlacementPlugin {
 
@@ -47,14 +47,13 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
     this.config = config;
   }
 
-  static public class Factory implements PlacementPluginFactory {
+  public static class Factory implements PlacementPluginFactory {
 
     /**
-     * Empty public constructor is used to instantiate this factory based on configuration in solr.xml, element
-     * {@code <placementPluginFactory>} in element {@code <solrcloud>}.
+     * Empty public constructor is used to instantiate this factory based on configuration in
+     * solr.xml, element {@code <placementPluginFactory>} in element {@code <solrcloud>}.
      */
-    public Factory() {
-    }
+    public Factory() {}
 
     @Override
     public PlacementPlugin createPluginInstance(PlacementPluginConfig config) {
@@ -62,9 +61,15 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
     }
   }
 
-  @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-  public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
-                                        PlacementPlanFactory placementPlanFactory) throws PlacementException {
+  @SuppressForbidden(
+      reason =
+          "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
+  public PlacementPlan computePlacement(
+      Cluster cluster,
+      PlacementRequest request,
+      AttributeFetcher attributeFetcher,
+      PlacementPlanFactory placementPlanFactory)
+      throws PlacementException {
     int totalReplicasPerShard = 0;
     for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
       totalReplicasPerShard += request.getCountReplicasToCreate(rt);
@@ -75,14 +80,14 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
     }
 
     // Get number of cores on each Node
-    TreeMultimap<Integer, Node> nodesByCores = TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
+    TreeMultimap<Integer, Node> nodesByCores =
+        TreeMultimap.create(Comparator.naturalOrder(), Ordering.arbitrary());
 
     Set<Node> nodes = request.getTargetNodes();
 
     attributeFetcher.requestNodeCoreCount();
     attributeFetcher.fetchFrom(nodes);
     AttributeValues attrValues = attributeFetcher.fetchAttributes();
-
 
     // Get the number of cores on each node and sort the nodes by increasing number of cores
     for (Node node : nodes) {
@@ -92,23 +97,31 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
       nodesByCores.put(attrValues.getCoresCount(node).get(), node);
     }
 
-    Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
+    Set<ReplicaPlacement> replicaPlacements =
+        new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
 
-    // Now place all replicas of all shards on nodes, by placing on nodes with the smallest number of cores and taking
-    // into account replicas placed during this computation. Note that for each shard we must place replicas on different
-    // nodes, when moving to the next shard we use the nodes sorted by their updated number of cores (due to replica
+    // Now place all replicas of all shards on nodes, by placing on nodes with the smallest number
+    // of cores and taking
+    // into account replicas placed during this computation. Note that for each shard we must place
+    // replicas on different
+    // nodes, when moving to the next shard we use the nodes sorted by their updated number of cores
+    // (due to replica
     // placements for previous shards).
     for (String shardName : request.getShardNames()) {
-      // Assign replicas based on the sort order of the nodesByCores tree multimap to put replicas on nodes with less
-      // cores first. We only need totalReplicasPerShard nodes given that's the number of replicas to place.
+      // Assign replicas based on the sort order of the nodesByCores tree multimap to put replicas
+      // on nodes with less
+      // cores first. We only need totalReplicasPerShard nodes given that's the number of replicas
+      // to place.
       // We assign based on the passed nodeEntriesToAssign list so the right nodes get replicas.
-      ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign = new ArrayList<>(totalReplicasPerShard);
+      ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign =
+          new ArrayList<>(totalReplicasPerShard);
       Iterator<Map.Entry<Integer, Node>> treeIterator = nodesByCores.entries().iterator();
       for (int i = 0; i < totalReplicasPerShard; i++) {
         nodeEntriesToAssign.add(treeIterator.next());
       }
 
-      // Update the number of cores each node will have once the assignments below got executed so the next shard picks the
+      // Update the number of cores each node will have once the assignments below got executed so
+      // the next shard picks the
       // lowest loaded nodes for its replicas.
       for (Map.Entry<Integer, Node> e : nodeEntriesToAssign) {
         int coreCount = e.getKey();
@@ -118,21 +131,35 @@ public class SamplePluginMinimizeCores implements PlacementPlugin {
       }
 
       for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-        placeReplicas(request.getCollection(), nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request, replicaType);
+        placeReplicas(
+            request.getCollection(),
+            nodeEntriesToAssign,
+            placementPlanFactory,
+            replicaPlacements,
+            shardName,
+            request,
+            replicaType);
       }
     }
 
     return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
   }
 
-  private void placeReplicas(SolrCollection solrCollection, ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
-                             PlacementPlanFactory placementPlanFactory, Set<ReplicaPlacement> replicaPlacements,
-                             String shardName, PlacementRequest request, Replica.ReplicaType replicaType) {
+  private void placeReplicas(
+      SolrCollection solrCollection,
+      ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,
+      PlacementPlanFactory placementPlanFactory,
+      Set<ReplicaPlacement> replicaPlacements,
+      String shardName,
+      PlacementRequest request,
+      Replica.ReplicaType replicaType) {
     for (int replica = 0; replica < request.getCountReplicasToCreate(replicaType); replica++) {
       final Map.Entry<Integer, Node> entry = nodeEntriesToAssign.remove(0);
       final Node node = entry.getValue();
 
-      replicaPlacements.add(placementPlanFactory.createReplicaPlacement(solrCollection, shardName, node, replicaType));
+      replicaPlacements.add(
+          placementPlanFactory.createReplicaPlacement(
+              solrCollection, shardName, node, replicaType));
     }
   }
 }

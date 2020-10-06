@@ -17,7 +17,6 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
@@ -37,9 +36,8 @@ import org.locationtech.spatial4j.io.GeohashUtils;
 import org.locationtech.spatial4j.shape.Point;
 
 /**
- * This is a class that represents a <a
- * href="http://en.wikipedia.org/wiki/Geohash">Geohash</a> field. The field is
- * provided as a lat/lon pair and is internally represented as a string.
+ * This is a class that represents a <a href="http://en.wikipedia.org/wiki/Geohash">Geohash</a>
+ * field. The field is provided as a lat/lon pair and is internally represented as a string.
  *
  * @deprecated use {@link LatLonPointSpatialField} instead
  */
@@ -50,7 +48,7 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   public SortField getSortField(SchemaField field, boolean top) {
     return getStringSort(field, top);
   }
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
@@ -60,20 +58,27 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
     }
   }
 
-    //QUESTION: Should we do a fast and crude one?  Or actually check distances
-  //Fast and crude could use EdgeNGrams, but that would require a different
-  //encoding.  Plus there are issues around the Equator/Prime Meridian
+  // QUESTION: Should we do a fast and crude one?  Or actually check distances
+  // Fast and crude could use EdgeNGrams, but that would require a different
+  // encoding.  Plus there are issues around the Equator/Prime Meridian
   @Override
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
     String geohash = toInternal(options.pointStr);
-    //TODO: optimize this
-    return new SolrConstantScoreQuery(new ValueSourceRangeFilter(new GeohashHaversineFunction(getValueSource(options.field, parser),
-            new LiteralValueSource(geohash), options.radius), "0", String.valueOf(options.distance), true, true));
+    // TODO: optimize this
+    return new SolrConstantScoreQuery(
+        new ValueSourceRangeFilter(
+            new GeohashHaversineFunction(
+                getValueSource(options.field, parser),
+                new LiteralValueSource(geohash),
+                options.radius),
+            "0",
+            String.valueOf(options.distance),
+            true,
+            true));
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f)
-          throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toExternal(f), false);
   }
 
@@ -99,5 +104,4 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   public double getSphereRadius() {
     return DistanceUtils.EARTH_MEAN_RADIUS_KM;
   }
-
 }

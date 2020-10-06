@@ -20,7 +20,6 @@ package org.apache.solr.cluster.placement.impl;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
@@ -33,15 +32,21 @@ public class PlacementRequestImpl implements PlacementRequest {
   private final SolrCollection solrCollection;
   private final Set<String> shardNames;
   private final Set<Node> targetNodes;
-  private final EnumMap<Replica.ReplicaType, Integer> countReplicas = new EnumMap<>(Replica.ReplicaType.class);
+  private final EnumMap<Replica.ReplicaType, Integer> countReplicas =
+      new EnumMap<>(Replica.ReplicaType.class);
 
-  private PlacementRequestImpl(SolrCollection solrCollection,
-                               Set<String> shardNames, Set<Node> targetNodes,
-                               int countNrtReplicas, int countTlogReplicas, int countPullReplicas) {
+  private PlacementRequestImpl(
+      SolrCollection solrCollection,
+      Set<String> shardNames,
+      Set<Node> targetNodes,
+      int countNrtReplicas,
+      int countTlogReplicas,
+      int countPullReplicas) {
     this.solrCollection = solrCollection;
     this.shardNames = shardNames;
     this.targetNodes = targetNodes;
-    // Initializing map for all values of enum, so unboxing always possible later without checking for null
+    // Initializing map for all values of enum, so unboxing always possible later without checking
+    // for null
     countReplicas.put(Replica.ReplicaType.NRT, countNrtReplicas);
     countReplicas.put(Replica.ReplicaType.TLOG, countTlogReplicas);
     countReplicas.put(Replica.ReplicaType.PULL, countPullReplicas);
@@ -65,19 +70,22 @@ public class PlacementRequestImpl implements PlacementRequest {
   @Override
   public int getCountReplicasToCreate(Replica.ReplicaType replicaType) {
     return countReplicas.get(replicaType);
-
   }
 
   /**
-   * Returns a {@link PlacementRequest} that can be consumed by a plugin based on an internal Assign.AssignRequest
-   * for adding replicas + additional info (upon creation of a new collection or adding replicas to an existing one).
+   * Returns a {@link PlacementRequest} that can be consumed by a plugin based on an internal
+   * Assign.AssignRequest for adding replicas + additional info (upon creation of a new collection
+   * or adding replicas to an existing one).
    */
-  static PlacementRequestImpl toPlacementRequest(Cluster cluster, DocCollection docCollection,
-                                                 Assign.AssignRequest assignRequest) throws Assign.AssignmentException {
-    SolrCollection solrCollection = new SimpleClusterAbstractionsImpl.SolrCollectionImpl(docCollection);
+  static PlacementRequestImpl toPlacementRequest(
+      Cluster cluster, DocCollection docCollection, Assign.AssignRequest assignRequest)
+      throws Assign.AssignmentException {
+    SolrCollection solrCollection =
+        new SimpleClusterAbstractionsImpl.SolrCollectionImpl(docCollection);
     Set<String> shardNames = new HashSet<>(assignRequest.shardNames);
     if (shardNames.size() < 1) {
-      throw new Assign.AssignmentException("Bad assign request: no shards specified for collection " + docCollection.getName());
+      throw new Assign.AssignmentException(
+          "Bad assign request: no shards specified for collection " + docCollection.getName());
     }
 
     final Set<Node> nodes;
@@ -85,16 +93,23 @@ public class PlacementRequestImpl implements PlacementRequest {
     if (assignRequest.nodes != null) {
       nodes = SimpleClusterAbstractionsImpl.NodeImpl.getNodes(assignRequest.nodes);
       if (nodes.isEmpty()) {
-        throw new Assign.AssignmentException("Bad assign request: empty list of nodes for collection " + docCollection.getName());
+        throw new Assign.AssignmentException(
+            "Bad assign request: empty list of nodes for collection " + docCollection.getName());
       }
     } else {
       nodes = cluster.getLiveNodes();
       if (nodes.isEmpty()) {
-        throw new Assign.AssignmentException("Impossible assign request: no live nodes for collection " + docCollection.getName());
+        throw new Assign.AssignmentException(
+            "Impossible assign request: no live nodes for collection " + docCollection.getName());
       }
     }
 
-    return new PlacementRequestImpl(solrCollection, shardNames, nodes,
-        assignRequest.numNrtReplicas, assignRequest.numTlogReplicas, assignRequest.numPullReplicas);
+    return new PlacementRequestImpl(
+        solrCollection,
+        shardNames,
+        nodes,
+        assignRequest.numNrtReplicas,
+        assignRequest.numTlogReplicas,
+        assignRequest.numPullReplicas);
   }
 }

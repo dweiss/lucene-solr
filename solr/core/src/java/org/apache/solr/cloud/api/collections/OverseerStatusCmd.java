@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,12 +17,11 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
@@ -46,18 +44,20 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
 
   @Override
   @SuppressWarnings("unchecked")
-  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
+  public void call(
+      ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"}) NamedList results)
+      throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
     Stat stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue",null, stat, true);
+    zkStateReader.getZkClient().getData("/overseer/queue", null, stat, true);
     results.add("overseer_queue_size", stat.getNumChildren());
     stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue-work",null, stat, true);
+    zkStateReader.getZkClient().getData("/overseer/queue-work", null, stat, true);
     results.add("overseer_work_queue_size", stat.getNumChildren());
     stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat, true);
+    zkStateReader.getZkClient().getData("/overseer/collection-queue-work", null, stat, true);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
     @SuppressWarnings({"rawtypes"})
@@ -74,7 +74,7 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
       String key = entry.getKey();
       NamedList<Object> lst = new SimpleOrderedMap<>();
-      if (key.startsWith("collection_"))  {
+      if (key.startsWith("collection_")) {
         collectionStats.add(key.substring(11), lst);
         int successes = stats.getSuccessCount(entry.getKey());
         int errors = stats.getErrorCount(entry.getKey());
@@ -91,13 +91,13 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
           }
           lst.add("recent_failures", failures);
         }
-      } else if (key.startsWith("/overseer/queue_"))  {
+      } else if (key.startsWith("/overseer/queue_")) {
         stateUpdateQueueStats.add(key.substring(16), lst);
-      } else if (key.startsWith("/overseer/queue-work_"))  {
+      } else if (key.startsWith("/overseer/queue-work_")) {
         workQueueStats.add(key.substring(21), lst);
-      } else if (key.startsWith("/overseer/collection-queue-work_"))  {
+      } else if (key.startsWith("/overseer/collection-queue-work_")) {
         collectionQueueStats.add(key.substring(32), lst);
-      } else  {
+      } else {
         // overseer stats
         overseerStats.add(key, lst);
         int successes = stats.getSuccessCount(entry.getKey());
@@ -113,6 +113,5 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     results.add("overseer_queue", stateUpdateQueueStats);
     results.add("overseer_internal_queue", workQueueStats);
     results.add("collection_queue", collectionQueueStats);
-
   }
 }

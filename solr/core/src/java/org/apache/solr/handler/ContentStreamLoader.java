@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.handler;
+
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-
-/**
- * Load a {@link org.apache.solr.common.util.ContentStream} into Solr
- *
- **/
+/** Load a {@link org.apache.solr.common.util.ContentStream} into Solr */
 public abstract class ContentStreamLoader {
 
   protected String errHeader;
@@ -43,7 +40,6 @@ public abstract class ContentStreamLoader {
    * @param rsp The response, in case the Loader wishes to add anything
    * @param stream The {@link org.apache.solr.common.util.ContentStream} to add
    */
-  public abstract void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws Exception;
-
-
+  public abstract void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream)
+      throws Exception;
 }

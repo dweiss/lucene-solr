@@ -1,56 +1,18 @@
 /*
-                    Egothor Software License version 1.00
-                    Copyright (C) 1997-2004 Leo Galambos.
-                 Copyright (C) 2002-2004 "Egothor developers"
-                      on behalf of the Egothor Project.
-                             All rights reserved.
-
-   This  software  is  copyrighted  by  the "Egothor developers". If this
-   license applies to a single file or document, the "Egothor developers"
-   are the people or entities mentioned as copyright holders in that file
-   or  document.  If  this  license  applies  to the Egothor project as a
-   whole,  the  copyright holders are the people or entities mentioned in
-   the  file CREDITS. This file can be found in the same location as this
-   license in the distribution.
-
-   Redistribution  and  use  in  source and binary forms, with or without
-   modification, are permitted provided that the following conditions are
-   met:
-    1. Redistributions  of  source  code  must retain the above copyright
-       notice, the list of contributors, this list of conditions, and the
-       following disclaimer.
-    2. Redistributions  in binary form must reproduce the above copyright
-       notice, the list of contributors, this list of conditions, and the
-       disclaimer  that  follows  these  conditions  in the documentation
-       and/or other materials provided with the distribution.
-    3. The name "Egothor" must not be used to endorse or promote products
-       derived  from  this software without prior written permission. For
-       written permission, please contact Leo.G@seznam.cz
-    4. Products  derived  from this software may not be called "Egothor",
-       nor  may  "Egothor"  appear  in  their name, without prior written
-       permission from Leo.G@seznam.cz.
-
-   In addition, we request that you include in the end-user documentation
-   provided  with  the  redistribution  and/or  in the software itself an
-   acknowledgement equivalent to the following:
-   "This product includes software developed by the Egothor Project.
-    http://egothor.sf.net/"
-
-   THIS  SOFTWARE  IS  PROVIDED  ``AS  IS''  AND ANY EXPRESSED OR IMPLIED
-   WARRANTIES,  INCLUDING,  BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-   MERCHANTABILITY  AND  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-   IN  NO  EVENT  SHALL THE EGOTHOR PROJECT OR ITS CONTRIBUTORS BE LIABLE
-   FOR   ANY   DIRECT,   INDIRECT,  INCIDENTAL,  SPECIAL,  EXEMPLARY,  OR
-   CONSEQUENTIAL  DAMAGES  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-   SUBSTITUTE  GOODS  OR  SERVICES;  LOSS  OF  USE,  DATA, OR PROFITS; OR
-   BUSINESS  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-   WHETHER  IN  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
-   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-   This  software  consists  of  voluntary  contributions  made  by  many
-   individuals  on  behalf  of  the  Egothor  Project  and was originally
-   created by Leo Galambos (Leo.G@seznam.cz).
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.egothor.stemmer;
 
@@ -62,35 +24,34 @@ import java.util.List;
 
 /**
  * The MultiTrie is a Trie of Tries.
- * <p>
- * It stores words and their associated patch commands. The MultiTrie handles
- * patch commands broken into their constituent parts, as a MultiTrie does, but
- * the commands are delimited by the skip command.
+ *
+ * <p>It stores words and their associated patch commands. The MultiTrie handles patch commands
+ * broken into their constituent parts, as a MultiTrie does, but the commands are delimited by the
+ * skip command.
  */
 public class MultiTrie2 extends MultiTrie {
   /**
    * Constructor for the MultiTrie object.
-   * 
+   *
    * @param is the input stream
    * @exception IOException if an I/O error occurs
    */
   public MultiTrie2(DataInput is) throws IOException {
     super(is);
   }
-  
+
   /**
    * Constructor for the MultiTrie2 object
-   * 
-   * @param forward set to <code>true</code> if the elements should be read left to
-   *          right
+   *
+   * @param forward set to <code>true</code> if the elements should be read left to right
    */
   public MultiTrie2(boolean forward) {
     super(forward);
   }
-  
+
   /**
    * Return the element that is stored in a cell associated with the given key.
-   * 
+   *
    * @param key the key to the cell holding the desired element
    * @return the element
    */
@@ -125,14 +86,14 @@ public class MultiTrie2 extends MultiTrie {
           lastkey = key;
         }
       }
-    } catch (IndexOutOfBoundsException x) {}
+    } catch (IndexOutOfBoundsException x) {
+    }
     return result;
   }
-  
+
   /**
-   * Return the element that is stored as last on a path belonging to the given
-   * key.
-   * 
+   * Return the element that is stored as last on a path belonging to the given key.
+   *
    * @param key the key associated with the desired element
    * @return the element that is stored as last on a path
    */
@@ -168,13 +129,14 @@ public class MultiTrie2 extends MultiTrie {
           lastkey = key;
         }
       }
-    } catch (IndexOutOfBoundsException x) {}
+    } catch (IndexOutOfBoundsException x) {
+    }
     return result;
   }
-  
+
   /**
    * Write this data structure to the given output stream.
-   * 
+   *
    * @param os the output stream
    * @exception IOException if an I/O error occurs
    */
@@ -182,14 +144,12 @@ public class MultiTrie2 extends MultiTrie {
   public void store(DataOutput os) throws IOException {
     super.store(os);
   }
-  
+
   /**
-   * Add an element to this structure consisting of the given key and patch
-   * command. 
-   * <p>
-   * This method will return without executing if the <code>cmd</code>
-   * parameter's length is 0.
-   * 
+   * Add an element to this structure consisting of the given key and patch command.
+   *
+   * <p>This method will return without executing if the <code>cmd</code> parameter's length is 0.
+   *
    * @param key the key
    * @param cmd the patch command
    */
@@ -231,18 +191,18 @@ public class MultiTrie2 extends MultiTrie {
       tries.get(levels).add(lastkey, EOM_NODE);
     }
   }
-  
+
   /**
-   * Break the given patch command into its constituent pieces. The pieces are
-   * delimited by NOOP commands.
-   * 
+   * Break the given patch command into its constituent pieces. The pieces are delimited by NOOP
+   * commands.
+   *
    * @param cmd the patch command
    * @return an array containing the pieces of the command
    */
   public CharSequence[] decompose(CharSequence cmd) {
     int parts = 0;
-    
-    for (int i = 0; 0 <= i && i < cmd.length();) {
+
+    for (int i = 0; 0 <= i && i < cmd.length(); ) {
       int next = dashEven(cmd, i);
       if (i == next) {
         parts++;
@@ -252,11 +212,11 @@ public class MultiTrie2 extends MultiTrie {
         i = next;
       }
     }
-    
+
     CharSequence part[] = new CharSequence[parts];
     int x = 0;
-    
-    for (int i = 0; 0 <= i && i < cmd.length();) {
+
+    for (int i = 0; 0 <= i && i < cmd.length(); ) {
       int next = dashEven(cmd, i);
       if (i == next) {
         part[x++] = cmd.subSequence(i, i + 2);
@@ -268,24 +228,23 @@ public class MultiTrie2 extends MultiTrie {
     }
     return part;
   }
-  
+
   /**
    * Remove empty rows from the given Trie and return the newly reduced Trie.
-   * 
+   *
    * @param by the Trie to reduce
    * @return the newly reduced Trie
    */
   @Override
   public Trie reduce(Reduce by) {
     List<Trie> h = new ArrayList<>();
-    for (Trie trie : tries)
-      h.add(trie.reduce(by));
+    for (Trie trie : tries) h.add(trie.reduce(by));
 
     MultiTrie2 m = new MultiTrie2(forward);
     m.tries = h;
     return m;
   }
-  
+
   private boolean cannotFollow(char after, char goes) {
     switch (after) {
       case '-':
@@ -294,7 +253,7 @@ public class MultiTrie2 extends MultiTrie {
     }
     return false;
   }
-  
+
   private CharSequence skip(CharSequence in, int count) {
     if (forward) {
       return in.subSequence(count, in.length());
@@ -302,7 +261,7 @@ public class MultiTrie2 extends MultiTrie {
       return in.subSequence(0, in.length() - count);
     }
   }
-  
+
   private int dashEven(CharSequence in, int from) {
     while (from < in.length()) {
       if (in.charAt(from) == '-') {
@@ -313,7 +272,7 @@ public class MultiTrie2 extends MultiTrie {
     }
     return -1;
   }
-  
+
   @SuppressWarnings("fallthrough")
   private int lengthPP(CharSequence cmd) {
     int len = 0;

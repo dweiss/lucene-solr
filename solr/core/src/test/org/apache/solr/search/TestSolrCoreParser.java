@@ -48,7 +48,9 @@ public class TestSolrCoreParser extends SolrTestCase {
   private CoreParser solrCoreParser() {
     if (solrCoreParser == null) {
       final String defaultField = "contents";
-      final Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
+      final Analyzer analyzer =
+          new MockAnalyzer(
+              random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
       final SolrQueryRequest req = null;
       solrCoreParser = new SolrCoreParser(defaultField, analyzer, req);
       {
@@ -71,10 +73,15 @@ public class TestSolrCoreParser extends SolrTestCase {
   }
 
   private Query parseHandyQuery(String lhsXml, String rhsXml) throws IOException, ParserException {
-    final String xml = "<HandyQuery>"
-        + "<Left>" + lhsXml + "</Left>"
-        + "<Right>" + rhsXml + "</Right>"
-        + "</HandyQuery>";
+    final String xml =
+        "<HandyQuery>"
+            + "<Left>"
+            + lhsXml
+            + "</Left>"
+            + "<Right>"
+            + rhsXml
+            + "</Right>"
+            + "</HandyQuery>";
     return parseXmlString(xml);
   }
 
@@ -90,13 +97,13 @@ public class TestSolrCoreParser extends SolrTestCase {
 
   public void testApacheLuceneSolr() throws IOException, ParserException {
     final String fieldName = "contents";
-    final Query query = parseXmlString("<ApacheLuceneSolr fieldName='"+fieldName+"'/>");
+    final Query query = parseXmlString("<ApacheLuceneSolr fieldName='" + fieldName + "'/>");
     checkApacheLuceneSolr(query, fieldName);
   }
 
   private static void checkApacheLuceneSolr(Query query, String fieldName) {
     assertTrue(query instanceof SpanNearQuery);
-    final SpanNearQuery snq = (SpanNearQuery)query;
+    final SpanNearQuery snq = (SpanNearQuery) query;
     assertEquals(fieldName, snq.getField());
     assertEquals(42, snq.getSlop());
     assertFalse(snq.isInOrder());
@@ -112,7 +119,7 @@ public class TestSolrCoreParser extends SolrTestCase {
     final String rhsXml = "<GoodbyeQuery/>";
     final Query query = parseHandyQuery(lhsXml, rhsXml);
     assertTrue(query instanceof BooleanQuery);
-    final BooleanQuery bq = (BooleanQuery)query;
+    final BooleanQuery bq = (BooleanQuery) query;
     assertEquals(2, bq.clauses().size());
     assertTrue(bq.clauses().get(0).getQuery() instanceof MatchAllDocsQuery);
     assertTrue(bq.clauses().get(1).getQuery() instanceof MatchNoDocsQuery);
@@ -120,25 +127,27 @@ public class TestSolrCoreParser extends SolrTestCase {
 
   private static SpanQuery unwrapSpanBoostQuery(Query query) {
     assertTrue(query instanceof SpanBoostQuery);
-    final SpanBoostQuery spanBoostQuery = (SpanBoostQuery)query;
+    final SpanBoostQuery spanBoostQuery = (SpanBoostQuery) query;
     return spanBoostQuery.getQuery();
   }
 
   // test custom query (HandyQueryBuilder) wrapping a SpanQuery
   public void testHandySpanQuery() throws IOException, ParserException {
-    final String lhsXml = "<SpanOr fieldName='contents'>"
-        + "<SpanTerm>rain</SpanTerm>"
-        + "<SpanTerm>spain</SpanTerm>"
-        + "<SpanTerm>plain</SpanTerm>"
-        + "</SpanOr>";
-    final String rhsXml = "<SpanNear fieldName='contents' slop='2' inOrder='true'>"
-        + "<SpanTerm>sunny</SpanTerm>"
-        + "<SpanTerm>sky</SpanTerm>"
-        + "</SpanNear>";
+    final String lhsXml =
+        "<SpanOr fieldName='contents'>"
+            + "<SpanTerm>rain</SpanTerm>"
+            + "<SpanTerm>spain</SpanTerm>"
+            + "<SpanTerm>plain</SpanTerm>"
+            + "</SpanOr>";
+    final String rhsXml =
+        "<SpanNear fieldName='contents' slop='2' inOrder='true'>"
+            + "<SpanTerm>sunny</SpanTerm>"
+            + "<SpanTerm>sky</SpanTerm>"
+            + "</SpanNear>";
     final Query query = parseHandyQuery(lhsXml, rhsXml);
-    final BooleanQuery bq = (BooleanQuery)query;
+    final BooleanQuery bq = (BooleanQuery) query;
     assertEquals(2, bq.clauses().size());
-    for (int ii=0; ii<bq.clauses().size(); ++ii) {
+    for (int ii = 0; ii < bq.clauses().size(); ++ii) {
       final Query clauseQuery = bq.clauses().get(ii).getQuery();
       switch (ii) {
         case 0:
@@ -148,13 +157,13 @@ public class TestSolrCoreParser extends SolrTestCase {
           assertTrue(unwrapSpanBoostQuery(clauseQuery) instanceof SpanNearQuery);
           break;
         default:
-          fail("unexpected clause index "+ii);
+          fail("unexpected clause index " + ii);
       }
     }
   }
 
   private static String composeChooseOneWordQueryXml(String fieldName, String... termTexts) {
-    final StringBuilder sb = new StringBuilder("<ChooseOneWord fieldName='"+fieldName+"'>");
+    final StringBuilder sb = new StringBuilder("<ChooseOneWord fieldName='" + fieldName + "'>");
     for (String termText : termTexts) {
       sb.append("<Word>").append(termText).append("</Word>");
     }
@@ -169,41 +178,51 @@ public class TestSolrCoreParser extends SolrTestCase {
     final String fieldName = "contents";
     final String[] randomTerms = new String[] {"bumble", "honey", "solitary"};
     final String randomQuery = composeChooseOneWordQueryXml(fieldName, randomTerms);
-    final String apacheLuceneSolr = "<ApacheLuceneSolr fieldName='"+fieldName+"'/>";
+    final String apacheLuceneSolr = "<ApacheLuceneSolr fieldName='" + fieldName + "'/>";
     // the wrapping query
     final String parentQuery = (span ? "SpanOr" : "BooleanQuery");
     final String subQueryPrefix = (span ? "" : "<Clause occurs='must'>");
     final String subQuerySuffix = (span ? "" : "</Clause>");
-    final String xml = "<"+parentQuery+">"
-        + subQueryPrefix+randomQuery+subQuerySuffix
-        + subQueryPrefix+apacheLuceneSolr+subQuerySuffix
-        + "</"+parentQuery+">";
+    final String xml =
+        "<"
+            + parentQuery
+            + ">"
+            + subQueryPrefix
+            + randomQuery
+            + subQuerySuffix
+            + subQueryPrefix
+            + apacheLuceneSolr
+            + subQuerySuffix
+            + "</"
+            + parentQuery
+            + ">";
     // the test
     final Query query = parseXmlString(xml);
     if (span) {
       assertTrue(unwrapSpanBoostQuery(query) instanceof SpanOrQuery);
-      final SpanOrQuery soq = (SpanOrQuery)unwrapSpanBoostQuery(query);
+      final SpanOrQuery soq = (SpanOrQuery) unwrapSpanBoostQuery(query);
       assertEquals(2, soq.getClauses().length);
       checkChooseOneWordQuery(span, soq.getClauses()[0], fieldName, randomTerms);
       checkApacheLuceneSolr(soq.getClauses()[1], fieldName);
     } else {
       assertTrue(query instanceof BooleanQuery);
-      final BooleanQuery bq = (BooleanQuery)query;
+      final BooleanQuery bq = (BooleanQuery) query;
       assertEquals(2, bq.clauses().size());
       checkChooseOneWordQuery(span, bq.clauses().get(0).getQuery(), fieldName, randomTerms);
       checkApacheLuceneSolr(bq.clauses().get(1).getQuery(), fieldName);
     }
   }
 
-  private static void checkChooseOneWordQuery(boolean span, Query query, String fieldName, String ... expectedTermTexts) {
+  private static void checkChooseOneWordQuery(
+      boolean span, Query query, String fieldName, String... expectedTermTexts) {
     final Term term;
     if (span) {
       assertTrue(query instanceof SpanTermQuery);
-      final SpanTermQuery stq = (SpanTermQuery)query;
+      final SpanTermQuery stq = (SpanTermQuery) query;
       term = stq.getTerm();
     } else {
       assertTrue(query instanceof TermQuery);
-      final TermQuery tq = (TermQuery)query;
+      final TermQuery tq = (TermQuery) query;
       term = tq.getTerm();
     }
     final String text = term.text();
@@ -212,7 +231,8 @@ public class TestSolrCoreParser extends SolrTestCase {
       foundExpected |= expected.equals(text);
     }
     assertEquals(fieldName, term.field());
-    assertTrue("expected term text ("+text+") not found in ("+expectedTermTexts+")", foundExpected);
+    assertTrue(
+        "expected term text (" + text + ") not found in (" + expectedTermTexts + ")",
+        foundExpected);
   }
-
 }

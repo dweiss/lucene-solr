@@ -29,25 +29,19 @@ public class TestLTRWithSort extends TestRerankBase {
   @Before
   public void before() throws Exception {
     setuptest(false);
-    assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity",
-        "1"));
-    assertU(adoc("id", "2", "title", "a1 b1", "description",
-        "B", "popularity", "2"));
-    assertU(adoc("id", "3", "title", "a1 b1 c1", "description", "B", "popularity",
-        "3"));
-    assertU(adoc("id", "4", "title", "a1 b1 c1 d1", "description", "B", "popularity",
-        "4"));
-    assertU(adoc("id", "5", "title", "a1 b1 c1 d1 e1", "description", "E", "popularity",
-        "5"));
-    assertU(adoc("id", "6", "title", "a1 b1 c1 d1 e1 f1", "description", "B",
-        "popularity", "6"));
-    assertU(adoc("id", "7", "title", "a1 b1 c1 d1 e1 f1 g1", "description",
-        "C", "popularity", "7"));
-    assertU(adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description",
-        "D", "popularity", "8"));
+    assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity", "1"));
+    assertU(adoc("id", "2", "title", "a1 b1", "description", "B", "popularity", "2"));
+    assertU(adoc("id", "3", "title", "a1 b1 c1", "description", "B", "popularity", "3"));
+    assertU(adoc("id", "4", "title", "a1 b1 c1 d1", "description", "B", "popularity", "4"));
+    assertU(adoc("id", "5", "title", "a1 b1 c1 d1 e1", "description", "E", "popularity", "5"));
+    assertU(adoc("id", "6", "title", "a1 b1 c1 d1 e1 f1", "description", "B", "popularity", "6"));
+    assertU(
+        adoc("id", "7", "title", "a1 b1 c1 d1 e1 f1 g1", "description", "C", "popularity", "7"));
+    assertU(
+        adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description", "D", "popularity", "8"));
     assertU(commit());
   }
-  
+
   @After
   public void after() throws Exception {
     aftertest();
@@ -56,11 +50,14 @@ public class TestLTRWithSort extends TestRerankBase {
   @Test
   public void testRankingSolrSort() throws Exception {
     // before();
-    loadFeature("powpularityS", SolrFeature.class.getName(),
-        "{\"q\":\"{!func}pow(popularity,2)\"}");
+    loadFeature(
+        "powpularityS", SolrFeature.class.getName(), "{\"q\":\"{!func}pow(popularity,2)\"}");
 
-    loadModel("powpularityS-model", LinearModel.class.getName(),
-        new String[] {"powpularityS"}, "{\"weights\":{\"powpularityS\":1.0}}");
+    loadModel(
+        "powpularityS-model",
+        LinearModel.class.getName(),
+        new String[] {"powpularityS"},
+        "{\"weights\":{\"powpularityS\":1.0}}");
 
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:a1");
@@ -74,7 +71,7 @@ public class TestLTRWithSort extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/id=='3'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='4'");
 
-    //Add sort
+    // Add sort
     query.add("sort", "description desc");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==8");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='1'");
@@ -94,7 +91,5 @@ public class TestLTRWithSort extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==25.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==1.0");
-
   }
-
 }

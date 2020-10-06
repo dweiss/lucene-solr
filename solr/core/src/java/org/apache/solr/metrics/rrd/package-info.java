@@ -16,7 +16,7 @@
  */
 
 /**
- * This package contains {@link org.rrd4j.core.RrdBackendFactory} implementation
- * that supports storing metrics history in Solr.
+ * This package contains {@link org.rrd4j.core.RrdBackendFactory} implementation that supports
+ * storing metrics history in Solr.
  */
 package org.apache.solr.metrics.rrd;

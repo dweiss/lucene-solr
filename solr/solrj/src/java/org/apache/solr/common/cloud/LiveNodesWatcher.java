@@ -22,5 +22,4 @@ import java.util.SortedSet;
 public interface LiveNodesWatcher {
 
   boolean onStateChanged(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes);
-
 }

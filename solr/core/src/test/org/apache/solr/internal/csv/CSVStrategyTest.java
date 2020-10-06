@@ -21,11 +21,10 @@ import junit.framework.TestCase;
 /**
  * CSVStrategyTest
  *
- * The test are organized in three different sections:
- * The 'setter/getter' section, the lexer section and finally the strategy 
- * section. In case a test fails, you should follow a top-down approach for 
- * fixing a potential bug (it's likely that the strategy itself fails if the lexer
- * has problems...).
+ * <p>The test are organized in three different sections: The 'setter/getter' section, the lexer
+ * section and finally the strategy section. In case a test fails, you should follow a top-down
+ * approach for fixing a potential bug (it's likely that the strategy itself fails if the lexer has
+ * problems...).
  */
 public class CSVStrategyTest extends TestCase {
 
@@ -33,7 +32,7 @@ public class CSVStrategyTest extends TestCase {
   //   getters / setters
   // ======================================================
   public void testGetSetCommentStart() {
-    CSVStrategy strategy = (CSVStrategy)CSVStrategy.DEFAULT_STRATEGY.clone();
+    CSVStrategy strategy = (CSVStrategy) CSVStrategy.DEFAULT_STRATEGY.clone();
     strategy.setCommentStart('#');
     assertEquals(strategy.getCommentStart(), '#');
     strategy.setCommentStart('!');
@@ -41,7 +40,7 @@ public class CSVStrategyTest extends TestCase {
   }
 
   public void testGetSetEncapsulator() {
-    CSVStrategy strategy = (CSVStrategy)CSVStrategy.DEFAULT_STRATEGY.clone();
+    CSVStrategy strategy = (CSVStrategy) CSVStrategy.DEFAULT_STRATEGY.clone();
     strategy.setEncapsulator('"');
     assertEquals(strategy.getEncapsulator(), '"');
     strategy.setEncapsulator('\'');
@@ -49,7 +48,7 @@ public class CSVStrategyTest extends TestCase {
   }
 
   public void testGetSetDelimiter() {
-    CSVStrategy strategy = (CSVStrategy)CSVStrategy.DEFAULT_STRATEGY.clone();
+    CSVStrategy strategy = (CSVStrategy) CSVStrategy.DEFAULT_STRATEGY.clone();
     strategy.setDelimiter(';');
     assertEquals(strategy.getDelimiter(), ';');
     strategy.setDelimiter(',');
@@ -64,26 +63,25 @@ public class CSVStrategyTest extends TestCase {
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(true,  strategy.getIgnoreLeadingWhitespaces());
+    assertEquals(true, strategy.getIgnoreLeadingWhitespaces());
     assertEquals(false, strategy.getUnicodeEscapeInterpretation());
-    assertEquals(true,  strategy.getIgnoreEmptyLines());
+    assertEquals(true, strategy.getIgnoreEmptyLines());
     // explicit csv settings
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(true,  strategy.getIgnoreLeadingWhitespaces());
+    assertEquals(true, strategy.getIgnoreLeadingWhitespaces());
     assertEquals(false, strategy.getUnicodeEscapeInterpretation());
-    assertEquals(true,  strategy.getIgnoreEmptyLines());
+    assertEquals(true, strategy.getIgnoreEmptyLines());
   }
-  
+
   public void testSetExcelStrategy() {
     CSVStrategy strategy = CSVStrategy.EXCEL_STRATEGY;
     assertEquals(strategy.getDelimiter(), ',');
     assertEquals(strategy.getEncapsulator(), '"');
     assertEquals(strategy.getCommentStart(), CSVStrategy.COMMENTS_DISABLED);
-    assertEquals(false,  strategy.getIgnoreLeadingWhitespaces());
+    assertEquals(false, strategy.getIgnoreLeadingWhitespaces());
     assertEquals(false, strategy.getUnicodeEscapeInterpretation());
     assertEquals(false, strategy.getIgnoreEmptyLines());
   }
-  
-} 
+}

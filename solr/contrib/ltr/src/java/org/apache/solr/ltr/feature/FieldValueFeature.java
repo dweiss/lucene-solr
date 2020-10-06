@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -32,15 +31,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.BoolField;
 
 /**
- * This feature returns the value of a field in the current document
- * Example configuration:
+ * This feature returns the value of a field in the current document Example configuration:
+ *
  * <pre>{
-  "name":  "rawHits",
-  "class": "org.apache.solr.ltr.feature.FieldValueFeature",
-  "params": {
-      "field": "hits"
-  }
-}</pre>
+ * "name":  "rawHits",
+ * "class": "org.apache.solr.ltr.feature.FieldValueFeature",
+ * "params": {
+ * "field": "hits"
+ * }
+ * }</pre>
  */
 public class FieldValueFeature extends Feature {
 
@@ -57,8 +56,8 @@ public class FieldValueFeature extends Feature {
   }
 
   @Override
-  public LinkedHashMap<String,Object> paramsToMap() {
-    final LinkedHashMap<String,Object> params = defaultParamsToMap();
+  public LinkedHashMap<String, Object> paramsToMap() {
+    final LinkedHashMap<String, Object> params = defaultParamsToMap();
     params.put("field", field);
     return params;
   }
@@ -66,41 +65,47 @@ public class FieldValueFeature extends Feature {
   @Override
   protected void validate() throws FeatureException {
     if (field == null || field.isEmpty()) {
-      throw new FeatureException(getClass().getSimpleName()+
-          ": field must be provided");
+      throw new FeatureException(getClass().getSimpleName() + ": field must be provided");
     }
   }
 
-  public FieldValueFeature(String name, Map<String,Object> params) {
+  public FieldValueFeature(String name, Map<String, Object> params) {
     super(name, params);
   }
 
   @Override
-  public FeatureWeight createWeight(IndexSearcher searcher, boolean needsScores,
-      SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi)
-          throws IOException {
+  public FeatureWeight createWeight(
+      IndexSearcher searcher,
+      boolean needsScores,
+      SolrQueryRequest request,
+      Query originalQuery,
+      Map<String, String[]> efi)
+      throws IOException {
     return new FieldValueFeatureWeight(searcher, request, originalQuery, efi);
   }
 
   public class FieldValueFeatureWeight extends FeatureWeight {
 
-    public FieldValueFeatureWeight(IndexSearcher searcher,
-        SolrQueryRequest request, Query originalQuery, Map<String,String[]> efi) {
+    public FieldValueFeatureWeight(
+        IndexSearcher searcher,
+        SolrQueryRequest request,
+        Query originalQuery,
+        Map<String, String[]> efi) {
       super(FieldValueFeature.this, searcher, request, originalQuery, efi);
     }
 
     @Override
     public FeatureScorer scorer(LeafReaderContext context) throws IOException {
-      return new FieldValueFeatureScorer(this, context,
-          DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
+      return new FieldValueFeatureScorer(
+          this, context, DocIdSetIterator.all(DocIdSetIterator.NO_MORE_DOCS));
     }
 
     public class FieldValueFeatureScorer extends FeatureScorer {
 
       LeafReaderContext context = null;
 
-      public FieldValueFeatureScorer(FeatureWeight weight,
-          LeafReaderContext context, DocIdSetIterator itr) {
+      public FieldValueFeatureScorer(
+          FeatureWeight weight, LeafReaderContext context, DocIdSetIterator itr) {
         super(weight, itr);
         this.context = context;
       }
@@ -109,8 +114,7 @@ public class FieldValueFeature extends Feature {
       public float score() throws IOException {
 
         try {
-          final Document document = context.reader().document(itr.docID(),
-              fieldAsSet);
+          final Document document = context.reader().document(itr.docID(), fieldAsSet);
           final IndexableField indexableField = document.getField(field);
           if (indexableField == null) {
             return getDefaultValue();
@@ -134,9 +138,7 @@ public class FieldValueFeature extends Feature {
           }
         } catch (final IOException e) {
           throw new FeatureException(
-              e.toString() + ": " +
-                  "Unable to extract feature for "
-                  + name, e);
+              e.toString() + ": " + "Unable to extract feature for " + name, e);
         }
         return getDefaultValue();
       }

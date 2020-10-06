@@ -16,6 +16,10 @@
  */
 package org.apache.solr.security;
 
+import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
+import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
+import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
+
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
@@ -44,10 +47,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.AUTZ_HEADER_PROBLEM;
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.NO_AUTZ_HEADER;
-import static org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.SCOPE_MISSING;
-
 @SuppressWarnings("unchecked")
 public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   private static String testHeader;
@@ -61,18 +60,22 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   static HashMap<String, Object> testJwk;
 
   static {
-    // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
+    // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped
+    // in a JWK
     try {
       rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
       rsaJsonWebKey.setKeyId("k1");
 
       testJwk = new HashMap<>();
       testJwk.put("kty", rsaJsonWebKey.getKeyType());
-      testJwk.put("e", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getPublicExponent()));
+      testJwk.put(
+          "e",
+          BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getPublicExponent()));
       testJwk.put("use", rsaJsonWebKey.getUse());
       testJwk.put("kid", rsaJsonWebKey.getKeyId());
       testJwk.put("alg", rsaJsonWebKey.getAlgorithm());
-      testJwk.put("n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
+      testJwk.put(
+          "n", BigEndianBigInteger.toBase64Url(rsaJsonWebKey.getRsaPublicKey().getModulus()));
     } catch (JoseException e) {
       fail("Failed static initialization: " + e.getMessage());
     }
@@ -101,21 +104,26 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   protected static JwtClaims generateClaims() {
     JwtClaims claims = new JwtClaims();
-    claims.setIssuer("IDServer");  // who creates the token and signs it
+    claims.setIssuer("IDServer"); // who creates the token and signs it
     claims.setAudience("Solr"); // to whom the token is intended to be sent
-    claims.setExpirationTimeMinutesInTheFuture(10); // time when the token will expire (10 minutes from now)
+    claims.setExpirationTimeMinutesInTheFuture(
+        10); // time when the token will expire (10 minutes from now)
     claims.setGeneratedJwtId(); // a unique identifier for the token
-    claims.setIssuedAtToNow();  // when the token was issued/created (now)
-    claims.setNotBeforeMinutesInThePast(2); // time before which the token is not yet valid (2 minutes ago)
+    claims.setIssuedAtToNow(); // when the token was issued/created (now)
+    claims.setNotBeforeMinutesInThePast(
+        2); // time before which the token is not yet valid (2 minutes ago)
     claims.setSubject("solruser"); // the subject/principal is whom the token is about
-    claims.setStringClaim("scope", "solr:read"); 
-    claims.setClaim("name", "Solr User"); // additional claims/attributes about the subject can be added
-    claims.setClaim("customPrincipal", "custom"); // additional claims/attributes about the subject can be added
+    claims.setStringClaim("scope", "solr:read");
+    claims.setClaim(
+        "name", "Solr User"); // additional claims/attributes about the subject can be added
+    claims.setClaim(
+        "customPrincipal", "custom"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim1", "foo"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim2", "bar"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim3", "foo"); // additional claims/attributes about the subject can be added
     List<String> roles = Arrays.asList("group-one", "other-group", "group-three");
-    claims.setStringListClaim("roles", roles); // multi-valued claims work too and will end up as a JSON array
+    claims.setStringListClaim(
+        "roles", roles); // multi-valued claims work too and will end up as a JSON array
     return claims;
   }
 
@@ -131,7 +139,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("principalClaim", "customPrincipal");
     testConfig.put("jwk", testJwk);
     plugin.init(testConfig);
-    
+
     minimalConfig = new HashMap<>();
     minimalConfig.put("class", "org.apache.solr.security.JWTAuthPlugin");
   }
@@ -156,7 +164,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void initFromSecurityJSONLocalJWK() throws Exception {
     Path securityJson = TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json");
     InputStream is = Files.newInputStream(securityJson);
-    Map<String,Object> securityConf = (Map<String, Object>) Utils.fromJSON(is);
+    Map<String, Object> securityConf = (Map<String, Object>) Utils.fromJSON(is);
     Map<String, Object> authConf = (Map<String, Object>) securityConf.get("authentication");
     plugin.init(authConf);
   }
@@ -165,12 +173,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void initFromSecurityJSONUrlJwk() throws Exception {
     Path securityJson = TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_url_security.json");
     InputStream is = Files.newInputStream(securityJson);
-    Map<String,Object> securityConf = (Map<String, Object>) Utils.fromJSON(is);
+    Map<String, Object> securityConf = (Map<String, Object>) Utils.fromJSON(is);
     Map<String, Object> authConf = (Map<String, Object>) securityConf.get("authentication");
     plugin.init(authConf);
 
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION,
+        resp.getAuthCode());
     assertTrue(resp.getJwtException().getMessage().contains("Connection refused"));
   }
 
@@ -206,7 +216,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Test
   public void initWithJwkUrlArray() {
     HashMap<String, Object> authConf = new HashMap<>();
-    authConf.put("jwksUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    authConf.put(
+        "jwksUrl",
+        Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
     authConf.put("iss", "myIssuer");
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
@@ -218,18 +230,21 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void authenticateOk() {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertTrue(resp.isAuthenticated());
-    assertEquals("custom", resp.getPrincipal().getName()); // principalClaim = customPrincipal, not sub here
+    assertEquals(
+        "custom", resp.getPrincipal().getName()); // principalClaim = customPrincipal, not sub here
   }
 
   @Test
   public void authFailedMissingSubject() {
-    minimalConfig.put("principalClaim","sub");  // minimalConfig has no subject specified
+    minimalConfig.put("principalClaim", "sub"); // minimalConfig has no subject specified
     plugin.init(minimalConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION,
+        resp.getAuthCode());
 
-    testConfig.put("principalClaim","sub");  // testConfig has subject = solruser
+    testConfig.put("principalClaim", "sub"); // testConfig has subject = solruser
     plugin.init(testConfig);
     resp = plugin.authenticate(testHeader);
     assertTrue(resp.isAuthenticated());
@@ -241,7 +256,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION,
+        resp.getAuthCode());
 
     testConfig.put("iss", "IDServer");
     plugin.init(testConfig);
@@ -255,7 +272,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION,
+        resp.getAuthCode());
 
     testConfig.put("aud", "Solr");
     plugin.init(testConfig);
@@ -274,7 +293,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     resp = plugin.authenticate(testHeader);
     assertFalse(resp.isAuthenticated());
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PRINCIPAL_MISSING, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PRINCIPAL_MISSING, resp.getAuthCode());
   }
 
   @Test
@@ -294,13 +314,15 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     shouldMatch.put("claim9", "NA");
     plugin.init(testConfig);
     resp = plugin.authenticate(testHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH, resp.getAuthCode());
 
     // Required claim does not match regex
     shouldMatch.clear();
     shouldMatch.put("claim1", "NA");
     resp = plugin.authenticate(testHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.CLAIM_MISMATCH, resp.getAuthCode());
   }
 
   @Test
@@ -315,14 +337,18 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("requireExp", true);
     plugin.init(testConfig);
     resp = plugin.authenticate(slimHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION,
+        resp.getAuthCode());
     testConfig.put("requireExp", false);
 
     // Missing issuer claim
     testConfig.put("requireIss", true);
     plugin.init(testConfig);
     resp = plugin.authenticate(slimHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION,
+        resp.getAuthCode());
   }
 
   @Test
@@ -330,7 +356,9 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("algWhitelist", Arrays.asList("PS384", "PS512"));
     plugin.init(testConfig);
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
-    assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    assertEquals(
+        JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.JWT_VALIDATION_EXCEPTION,
+        resp.getAuthCode());
     assertTrue(resp.getErrorMessage().contains("not a whitelisted"));
   }
 
@@ -344,7 +372,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     // When 'rolesClaim' is not defined in config, then all scopes are registered as roles
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);
-    Set<String> roles = ((VerifiedUserRoles)principal).getVerifiedRoles();
+    Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
     assertEquals(1, roles.size());
     assertTrue(roles.contains("solr:read"));
   }
@@ -359,7 +387,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     // When 'rolesClaim' is defined in config, then roles from that claim are used instead of claims
     Principal principal = resp.getPrincipal();
     assertTrue(principal instanceof VerifiedUserRoles);
-    Set<String> roles = ((VerifiedUserRoles)principal).getVerifiedRoles();
+    Set<String> roles = ((VerifiedUserRoles) principal).getVerifiedRoles();
     assertEquals(3, roles.size());
     assertTrue(roles.contains("group-one"));
     assertTrue(roles.contains("other-group"));
@@ -375,7 +403,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertNull(resp.getPrincipal());
     assertEquals(SCOPE_MISSING, resp.getAuthCode());
   }
-  
+
   @Test
   public void noHeaderBlockUnknown() {
     testConfig.put("blockUnknown", true);
@@ -399,10 +427,16 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
   }
-  
+
   @Test
   public void wellKnownConfigNoHeaderPassThrough() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl =
+        TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_well-known-config.json")
+            .toAbsolutePath()
+            .toUri()
+            .toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     plugin.init(testConfig);
@@ -412,7 +446,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void defaultRealm() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl =
+        TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_well-known-config.json")
+            .toAbsolutePath()
+            .toUri()
+            .toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     plugin.init(testConfig);
@@ -421,7 +461,13 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
   @Test
   public void configureRealm() {
-    String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
+    String wellKnownUrl =
+        TEST_PATH()
+            .resolve("security")
+            .resolve("jwt_well-known-config.json")
+            .toAbsolutePath()
+            .toUri()
+            .toString();
     testConfig.put("wellKnownUrl", wellKnownUrl);
     testConfig.remove("jwk");
     testConfig.put("realm", "myRealm");
@@ -443,19 +489,27 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     String headerBase64 = plugin.generateAuthDataHeader();
     String headerJson = new String(Base64.base64ToByteArray(headerBase64), StandardCharsets.UTF_8);
-    Map<String,String> parsed = (Map<String, String>) Utils.fromJSONString(headerJson);
+    Map<String, String> parsed = (Map<String, String>) Utils.fromJSONString(headerJson);
     assertEquals("solr:admin", parsed.get("scope"));
-    assertEquals("http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
+    assertEquals(
+        "http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
     assertEquals("solr-cluster", parsed.get("client_id"));
   }
 
   @Test
   public void initWithTwoIssuers() {
     HashMap<String, Object> authConf = new HashMap<>();
-    JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("1").setAud("aud1")
-        .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
-    JWTIssuerConfig iss2 = new JWTIssuerConfig("iss2").setIss("2").setAud("aud2")
-        .setJwksUrl(Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    JWTIssuerConfig iss1 =
+        new JWTIssuerConfig("iss1")
+            .setIss("1")
+            .setAud("aud1")
+            .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
+    JWTIssuerConfig iss2 =
+        new JWTIssuerConfig("iss2")
+            .setIss("2")
+            .setAud("aud2")
+            .setJwksUrl(
+                Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
     authConf.put("issuers", Arrays.asList(iss1.asConfig(), iss2.asConfig()));
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);
@@ -474,11 +528,16 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   @Test
   public void initWithToplevelAndIssuersCombined() {
     HashMap<String, Object> authConf = new HashMap<>();
-    JWTIssuerConfig iss1 = new JWTIssuerConfig("iss1").setIss("1").setAud("aud1")
-        .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
+    JWTIssuerConfig iss1 =
+        new JWTIssuerConfig("iss1")
+            .setIss("1")
+            .setAud("aud1")
+            .setJwksUrl("https://127.0.0.1:9999/foo.jwk");
     authConf.put("issuers", Collections.singletonList(iss1.asConfig()));
     authConf.put("aud", "aud2");
-    authConf.put("jwksUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
+    authConf.put(
+        "jwksUrl",
+        Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
 
     plugin = new JWTAuthPlugin();
     plugin.init(authConf);

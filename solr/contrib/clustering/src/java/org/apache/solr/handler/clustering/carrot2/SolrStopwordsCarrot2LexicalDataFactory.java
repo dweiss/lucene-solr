@@ -20,12 +20,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
-import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
@@ -41,14 +40,12 @@ import org.carrot2.util.attribute.Bindable;
 import org.carrot2.util.attribute.Input;
 
 /**
- * An implementation of Carrot2's {@link ILexicalDataFactory} that adds stop
- * words from a field's StopFilter to the default stop words used in Carrot2,
- * for all languages Carrot2 supports. Completely replacing Carrot2 stop words
- * with Solr's wouldn't make much sense because clustering needs more aggressive
- * stop words removal. In other words, if something is a stop word during
- * indexing, then it should also be a stop word during clustering, but not the
- * other way round.
- * 
+ * An implementation of Carrot2's {@link ILexicalDataFactory} that adds stop words from a field's
+ * StopFilter to the default stop words used in Carrot2, for all languages Carrot2 supports.
+ * Completely replacing Carrot2 stop words with Solr's wouldn't make much sense because clustering
+ * needs more aggressive stop words removal. In other words, if something is a stop word during
+ * indexing, then it should also be a stop word during clustering, but not the other way round.
+ *
  * @lucene.experimental
  */
 @Bindable
@@ -64,21 +61,13 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFacto
   @Attribute(key = "solrFieldNames")
   public Set<String> fieldNames;
 
-  /**
-   * A lazily-built cache of stop words per field.
-   */
+  /** A lazily-built cache of stop words per field. */
   private HashMap<String, List<CharArraySet>> solrStopWords = new HashMap<>();
 
-  /**
-   * Carrot2's default lexical resources to use in addition to Solr's stop
-   * words.
-   */
+  /** Carrot2's default lexical resources to use in addition to Solr's stop words. */
   public DefaultLexicalDataFactory carrot2LexicalDataFactory = new DefaultLexicalDataFactory();
 
-  /**
-   * Obtains stop words for a field from the associated
-   * {@link StopFilterFactory}, if any.
-   */
+  /** Obtains stop words for a field from the associated {@link StopFilterFactory}, if any. */
   private List<CharArraySet> getSolrStopWordsForField(String fieldName) {
     // No need to synchronize here, Carrot2 ensures that instances
     // of this class are not used by multiple threads at a time.
@@ -89,7 +78,7 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFacto
         IndexSchema schema = core.getLatestSchema();
         final Analyzer fieldAnalyzer = schema.getFieldType(fieldName).getIndexAnalyzer();
         if (fieldAnalyzer instanceof TokenizerChain) {
-          final TokenFilterFactory[] filterFactories = 
+          final TokenFilterFactory[] filterFactories =
               ((TokenizerChain) fieldAnalyzer).getTokenFilterFactories();
           for (TokenFilterFactory factory : filterFactories) {
             if (factory instanceof StopFilterFactory) {
@@ -111,8 +100,7 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFacto
 
   @Override
   public ILexicalData getLexicalData(LanguageCode languageCode) {
-    final ILexicalData carrot2LexicalData = carrot2LexicalDataFactory
-        .getLexicalData(languageCode);
+    final ILexicalData carrot2LexicalData = carrot2LexicalDataFactory.getLexicalData(languageCode);
 
     return new ILexicalData() {
       @Override

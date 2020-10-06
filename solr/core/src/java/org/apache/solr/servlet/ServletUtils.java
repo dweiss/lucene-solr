@@ -19,15 +19,16 @@ package org.apache.solr.servlet;
 
 import javax.servlet.http.HttpServletRequest;
 
-/**
- * Various Util methods for interaction on servlet level, i.e. HttpServletRequest
- */
+/** Various Util methods for interaction on servlet level, i.e. HttpServletRequest */
 public abstract class ServletUtils {
-  private ServletUtils() { /* only static methods in this class */ }
+  private ServletUtils() {
+    /* only static methods in this class */
+  }
 
   /**
-   * Use this to get the full path after context path "/solr", which is a combination of
-   * servletPath and pathInfo.
+   * Use this to get the full path after context path "/solr", which is a combination of servletPath
+   * and pathInfo.
+   *
    * @param request the HttpServletRequest object
    * @return String with path starting with a "/", or empty string if no path
    */

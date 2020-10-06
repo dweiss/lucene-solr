@@ -17,10 +17,9 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -28,23 +27,25 @@ import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerat
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
- * The StreamContext is used to pass shared context to concentrically wrapped TupleStreams.
+ * The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method. The
+ * StreamContext is used to pass shared context to concentrically wrapped TupleStreams.
  *
- * Note: The StreamContext contains the SolrClientCache which is used to cache SolrClients for reuse
- * across multiple TupleStreams.
- **/
-
-
+ * <p>Note: The StreamContext contains the SolrClientCache which is used to cache SolrClients for
+ * reuse across multiple TupleStreams.
+ */
 public class StreamContext implements Serializable {
 
   @SuppressWarnings({"rawtypes"})
   private Map entries = new HashMap();
+
   @SuppressWarnings({"rawtypes"})
   private Map tupleContext = new HashMap();
+
   private Map<String, Object> lets = new HashMap<>();
+
   @SuppressWarnings({"rawtypes"})
   private ConcurrentMap objectCache;
+
   public int workerID;
   public int numWorkers;
   private SolrClientCache clientCache;
@@ -59,7 +60,7 @@ public class StreamContext implements Serializable {
     return this.objectCache;
   }
 
-  public void setObjectCache(@SuppressWarnings({"rawtypes"})ConcurrentMap objectCache) {
+  public void setObjectCache(@SuppressWarnings({"rawtypes"}) ConcurrentMap objectCache) {
     this.objectCache = objectCache;
   }
 
@@ -130,7 +131,8 @@ public class StreamContext implements Serializable {
     return requestParams;
   }
 
-  public void setRequestReplicaListTransformerGenerator(RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator) {
+  public void setRequestReplicaListTransformerGenerator(
+      RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator) {
     this.requestReplicaListTransformerGenerator = requestReplicaListTransformerGenerator;
   }
 

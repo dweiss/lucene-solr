@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.PointVectorStrategy;
 
@@ -28,51 +27,52 @@ import org.apache.solr.legacy.PointVectorStrategy;
  * @deprecated use {@link LatLonPointSpatialField} instead
  */
 @Deprecated
-public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointVectorStrategy> implements SchemaAware {
+public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointVectorStrategy>
+    implements SchemaAware {
 
-  protected String numberFieldName = "tdouble";//in example schema defaults to non-zero precision step -- a good choice
+  protected String numberFieldName =
+      "tdouble"; // in example schema defaults to non-zero precision step -- a good choice
   private int precisionStep;
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
 
-    String v = args.remove( "numberType" );
-    if( v != null ) {
+    String v = args.remove("numberType");
+    if (v != null) {
       numberFieldName = v;
     }
-
   }
 
   /**
    * Adds X and Y fields to the given schema for each field with this class as its field type.
-   * 
-   * {@inheritDoc}
-   * 
-   * @param schema {@inheritDoc}
    *
+   * <p>{@inheritDoc}
+   *
+   * @param schema {@inheritDoc}
    */
   @Override
   public void inform(IndexSchema schema) {
     FieldType fieldType = schema.getFieldTypeByName(numberFieldName);
-    if( fieldType == null ) {
-      throw new RuntimeException( "Can not find number field: "+ numberFieldName);
+    if (fieldType == null) {
+      throw new RuntimeException("Can not find number field: " + numberFieldName);
     }
-    //TODO support other numeric types in the future
-    if( !(fieldType instanceof TrieDoubleField) ) {
-      throw new RuntimeException( "field type must be TrieDoubleField: "+ fieldType);
+    // TODO support other numeric types in the future
+    if (!(fieldType instanceof TrieDoubleField)) {
+      throw new RuntimeException("field type must be TrieDoubleField: " + fieldType);
     }
-    precisionStep = ((TrieField)fieldType).getPrecisionStep();
+    precisionStep = ((TrieField) fieldType).getPrecisionStep();
 
     // NOTE: the SchemaField constructor we're using ignores any properties of the fieldType
     // so only the ones we're explicitly setting get used.
     //
-    // In theory we should fix this, but since this class is already deprecated, we'll leave it alone
+    // In theory we should fix this, but since this class is already deprecated, we'll leave it
+    // alone
     // to simplify the risk of back-compat break for existing users.
     final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS | UNINVERTIBLE);
     List<SchemaField> newFields = new ArrayList<>();
-    for( SchemaField sf : schema.getFields().values() ) {
-      if( sf.getType() == this ) {
+    for (SchemaField sf : schema.getFields().values()) {
+      if (sf.getType() == this) {
         String name = sf.getName();
         newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_X, fieldType, p, null));
         newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_Y, fieldType, p, null));
@@ -101,6 +101,4 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
       return PointVectorStrategy.newInstance(ctx, fieldName);
     }
   }
-
 }
-

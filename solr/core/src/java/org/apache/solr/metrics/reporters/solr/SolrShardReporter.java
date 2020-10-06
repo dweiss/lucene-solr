@@ -16,6 +16,7 @@
  */
 package org.apache.solr.metrics.reporters.solr;
 
+import com.codahale.metrics.MetricFilter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -23,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -36,21 +36,25 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.MetricFilter;
-
 /**
  * This class reports selected metrics from replicas to shard leader.
- * <p>The following configuration properties are supported:</p>
+ *
+ * <p>The following configuration properties are supported:
+ *
  * <ul>
- *   <li>handler - (optional str) handler path where reports are sent. Default is
- *   {@link MetricsCollectorHandler#HANDLER_PATH}.</li>
+ *   <li>handler - (optional str) handler path where reports are sent. Default is {@link
+ *       MetricsCollectorHandler#HANDLER_PATH}.
  *   <li>period - (optional int) how often reports are sent, in seconds. Default is 60. Setting this
- *   to 0 disables the reporter.</li>
- *   <li>filter - (optional multiple str) regex expression(s) matching selected metrics to be reported.</li>
+ *       to 0 disables the reporter.
+ *   <li>filter - (optional multiple str) regex expression(s) matching selected metrics to be
+ *       reported.
  * </ul>
- * NOTE: this reporter uses predefined "shard" group, and it's always created even if explicit configuration
- * is missing. Default configuration uses filters defined in {@link #DEFAULT_FILTERS}.
- * <p>Example configuration:</p>
+ *
+ * NOTE: this reporter uses predefined "shard" group, and it's always created even if explicit
+ * configuration is missing. Default configuration uses filters defined in {@link #DEFAULT_FILTERS}.
+ *
+ * <p>Example configuration:
+ *
  * <pre>
  *    &lt;reporter name="test" group="shard" class="solr.SolrShardReporter"&gt;
  *      &lt;int name="period"&gt;11&lt;/int&gt;
@@ -62,15 +66,18 @@ import com.codahale.metrics.MetricFilter;
 public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final List<String> DEFAULT_FILTERS = new ArrayList<>(){{
-    add("TLOG.*");
-    add("CORE\\.fs.*");
-    add("REPLICATION.*");
-    add("INDEX\\.flush.*");
-    add("INDEX\\.merge\\.major.*");
-    add("UPDATE\\./update.*requests");
-    add("QUERY\\./select.*requests");
-  }};
+  public static final List<String> DEFAULT_FILTERS =
+      new ArrayList<>() {
+        {
+          add("TLOG.*");
+          add("CORE\\.fs.*");
+          add("REPLICATION.*");
+          add("INDEX\\.flush.*");
+          add("INDEX\\.merge\\.major.*");
+          add("UPDATE\\./update.*requests");
+          add("QUERY\\./select.*requests");
+        }
+      };
 
   private String handler = MetricsCollectorHandler.HANDLER_PATH;
 
@@ -80,8 +87,7 @@ public class SolrShardReporter extends SolrCoreReporter {
    * Create a reporter for metrics managed in a named registry.
    *
    * @param metricManager metric manager
-   * @param registryName  registry to use, one of registries managed by
-   *                      {@link SolrMetricManager}
+   * @param registryName registry to use, one of registries managed by {@link SolrMetricManager}
    */
   public SolrShardReporter(SolrMetricManager metricManager, String registryName) {
     super(metricManager, registryName);
@@ -102,7 +108,8 @@ public class SolrShardReporter extends SolrCoreReporter {
   @Override
   protected MetricFilter newMetricFilter() {
     // unsupported here since setCore(SolrCore) directly uses the this.filters
-    throw new UnsupportedOperationException(getClass().getCanonicalName()+".newMetricFilter() is not supported");
+    throw new UnsupportedOperationException(
+        getClass().getCanonicalName() + ".newMetricFilter() is not supported");
   }
 
   @Override
@@ -145,16 +152,18 @@ public class SolrShardReporter extends SolrCoreReporter {
       return;
     }
     SolrReporter.Report spec = new SolrReporter.Report(groupId, null, registryName, filters);
-    reporter = SolrReporter.Builder.forReports(metricManager, Collections.singletonList(spec))
-        .convertRatesTo(TimeUnit.SECONDS)
-        .convertDurationsTo(TimeUnit.MILLISECONDS)
-        .withHandler(handler)
-        .withReporterId(id)
-        .setCompact(true)
-        .cloudClient(false) // we want to send reports specifically to a selected leader instance
-        .skipAggregateValues(true) // we don't want to transport details of aggregates
-        .skipHistograms(true) // we don't want to transport histograms
-        .build(core.getCoreContainer().getSolrClientCache(), new LeaderUrlSupplier(core));
+    reporter =
+        SolrReporter.Builder.forReports(metricManager, Collections.singletonList(spec))
+            .convertRatesTo(TimeUnit.SECONDS)
+            .convertDurationsTo(TimeUnit.MILLISECONDS)
+            .withHandler(handler)
+            .withReporterId(id)
+            .setCompact(true)
+            .cloudClient(
+                false) // we want to send reports specifically to a selected leader instance
+            .skipAggregateValues(true) // we don't want to transport details of aggregates
+            .skipHistograms(true) // we don't want to transport histograms
+            .build(core.getCoreContainer().getSolrClientCache(), new LeaderUrlSupplier(core));
 
     reporter.start(period, TimeUnit.SECONDS);
   }
@@ -174,9 +183,13 @@ public class SolrShardReporter extends SolrCoreReporter {
       }
       ClusterState state = core.getCoreContainer().getZkController().getClusterState();
       DocCollection collection = state.getCollection(core.getCoreDescriptor().getCollectionName());
-      Replica replica = collection.getLeader(core.getCoreDescriptor().getCloudDescriptor().getShardId());
+      Replica replica =
+          collection.getLeader(core.getCoreDescriptor().getCloudDescriptor().getShardId());
       if (replica == null) {
-        log.warn("No leader for {}/{}", collection.getName(), core.getCoreDescriptor().getCloudDescriptor().getShardId());
+        log.warn(
+            "No leader for {}/{}",
+            collection.getName(),
+            core.getCoreDescriptor().getCloudDescriptor().getShardId());
         return null;
       }
       String baseUrl = replica.getStr("base_url");

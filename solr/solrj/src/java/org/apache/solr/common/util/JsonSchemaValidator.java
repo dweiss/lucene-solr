@@ -21,18 +21,19 @@ import java.util.*;
 import java.util.function.Function;
 
 /**
- * A very basic and lightweight json schema parsing and data validation tool. This custom tool is created
- * because a) we need to support non json inputs b) to avoiding double parsing (this accepts an already parsed json as a map)
- * It validates most aspects of json schema but it is NOT A FULLY COMPLIANT JSON schema parser or validator.
- * This validator borrow some design's idea from https://github.com/networknt/json-schema-validator
+ * A very basic and lightweight json schema parsing and data validation tool. This custom tool is
+ * created because a) we need to support non json inputs b) to avoiding double parsing (this accepts
+ * an already parsed json as a map) It validates most aspects of json schema but it is NOT A FULLY
+ * COMPLIANT JSON schema parser or validator. This validator borrow some design's idea from
+ * https://github.com/networknt/json-schema-validator
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class JsonSchemaValidator {
 
   private List<Validator> validators;
-  private static Set<String> KNOWN_FNAMES = new HashSet<>(Arrays.asList(
-      "description","documentation","default","additionalProperties"));
-
+  private static Set<String> KNOWN_FNAMES =
+      new HashSet<>(
+          Arrays.asList("description", "documentation", "default", "additionalProperties"));
 
   public JsonSchemaValidator(String jsonString) {
     this((Map) Utils.fromJSONString(jsonString));
@@ -51,15 +52,16 @@ public class JsonSchemaValidator {
     }
   }
 
-  static final Map<String, Function<Pair<Map,Object>, Validator>> VALIDATORS = new HashMap<>();
+  static final Map<String, Function<Pair<Map, Object>, Validator>> VALIDATORS = new HashMap<>();
 
   static {
     VALIDATORS.put("items", pair -> new ItemsValidator(pair.first(), (Map) pair.second()));
     VALIDATORS.put("enum", pair -> new EnumValidator(pair.first(), (List) pair.second()));
-    VALIDATORS.put("properties", pair -> new PropertiesValidator(pair.first(), (Map) pair.second()));
+    VALIDATORS.put(
+        "properties", pair -> new PropertiesValidator(pair.first(), (Map) pair.second()));
     VALIDATORS.put("type", pair -> new TypeValidator(pair.first(), pair.second()));
-    VALIDATORS.put("required", pair -> new RequiredValidator(pair.first(), (List)pair.second()));
-    VALIDATORS.put("oneOf", pair -> new OneOfValidator(pair.first(), (List)pair.second()));
+    VALIDATORS.put("required", pair -> new RequiredValidator(pair.first(), (List) pair.second()));
+    VALIDATORS.put("oneOf", pair -> new OneOfValidator(pair.first(), (List) pair.second()));
   }
 
   public List<String> validateJson(Object data) {
@@ -77,11 +79,12 @@ public class JsonSchemaValidator {
     }
     return true;
   }
-
 }
 
 abstract class Validator<T> {
-  Validator(@SuppressWarnings({"rawtypes"})Map schema, T properties) {};
+  Validator(@SuppressWarnings({"rawtypes"}) Map schema, T properties) {}
+  ;
+
   abstract boolean validate(Object o, List<String> errs);
 }
 
@@ -89,30 +92,28 @@ enum Type {
   STRING(String.class),
   ARRAY(List.class),
   NUMBER(Number.class),
-  INTEGER(Long.class){
+  INTEGER(Long.class) {
     @Override
     boolean isValid(Object o) {
-      if(super.isValid(o)) return true;
+      if (super.isValid(o)) return true;
       try {
         Long.parseLong(String.valueOf(o));
         return true;
       } catch (NumberFormatException e) {
         return false;
-
       }
     }
   },
-  BOOLEAN(Boolean.class){
+  BOOLEAN(Boolean.class) {
     @Override
     boolean isValid(Object o) {
-      if(super.isValid(o)) return true;
+      if (super.isValid(o)) return true;
       try {
-        Boolean.parseBoolean (String.valueOf(o));
+        Boolean.parseBoolean(String.valueOf(o));
         return true;
       } catch (NumberFormatException e) {
         return false;
       }
-
     }
   },
   ENUM(List.class),
@@ -123,7 +124,7 @@ enum Type {
   @SuppressWarnings({"rawtypes"})
   Class type;
 
-  Type(@SuppressWarnings({"rawtypes"})Class type) {
+  Type(@SuppressWarnings({"rawtypes"}) Class type) {
     this.type = type;
   }
 
@@ -136,11 +137,11 @@ enum Type {
 class TypeValidator extends Validator<Object> {
   private Set<Type> types;
 
-  TypeValidator(@SuppressWarnings({"rawtypes"})Map schema, Object type) {
+  TypeValidator(@SuppressWarnings({"rawtypes"}) Map schema, Object type) {
     super(schema, type);
     types = new HashSet<>(1);
     if (type instanceof List) {
-      for (Object t : (List)type) {
+      for (Object t : (List) type) {
         types.add(getType(t.toString()));
       }
     } else {
@@ -158,10 +159,14 @@ class TypeValidator extends Validator<Object> {
 
   @Override
   boolean validate(Object o, List<String> errs) {
-    for (Type type: types) {
+    for (Type type : types) {
       if (type.isValid(o)) return true;
     }
-    errs.add("Value is not valid, expected one of: " + types + ", found: " + o.getClass().getSimpleName());
+    errs.add(
+        "Value is not valid, expected one of: "
+            + types
+            + ", found: "
+            + o.getClass().getSimpleName());
     return false;
   }
 }
@@ -169,6 +174,7 @@ class TypeValidator extends Validator<Object> {
 @SuppressWarnings({"rawtypes"})
 class ItemsValidator extends Validator<Map> {
   private JsonSchemaValidator validator;
+
   ItemsValidator(Map schema, Map properties) {
     super(schema, properties);
     validator = new JsonSchemaValidator(properties);
@@ -193,16 +199,15 @@ class EnumValidator extends Validator<List<String>> {
 
   private Set<String> enumVals;
 
-  EnumValidator(@SuppressWarnings({"rawtypes"})Map schema, List<String> properties) {
+  EnumValidator(@SuppressWarnings({"rawtypes"}) Map schema, List<String> properties) {
     super(schema, properties);
     enumVals = new HashSet<>(properties);
-
   }
 
   @Override
   boolean validate(Object o, List<String> errs) {
     if (o instanceof String) {
-      if(!enumVals.contains(o)) {
+      if (!enumVals.contains(o)) {
         errs.add("Value of enum must be one of " + enumVals);
         return false;
       }
@@ -216,33 +221,40 @@ class RequiredValidator extends Validator<List<String>> {
 
   private Set<String> requiredProps;
 
-  RequiredValidator(@SuppressWarnings({"rawtypes"})Map schema, List<String> requiredProps) {
+  RequiredValidator(@SuppressWarnings({"rawtypes"}) Map schema, List<String> requiredProps) {
     super(schema, requiredProps);
     this.requiredProps = new HashSet<>(requiredProps);
   }
 
   @Override
   boolean validate(Object o, List<String> errs) {
-    return validate(o,errs,requiredProps);
+    return validate(o, errs, requiredProps);
   }
 
-  boolean validate( Object o, List<String> errs, Set<String> requiredProps) {
+  boolean validate(Object o, List<String> errs, Set<String> requiredProps) {
     if (o instanceof Map) {
       @SuppressWarnings({"rawtypes"})
       Set fnames = ((Map) o).keySet();
       for (String requiredProp : requiredProps) {
         if (requiredProp.contains(".")) {
           if (requiredProp.endsWith(".")) {
-            errs.add("Illegal required attribute name (ends with '.': " + requiredProp + ").  This is a bug.");
+            errs.add(
+                "Illegal required attribute name (ends with '.': "
+                    + requiredProp
+                    + ").  This is a bug.");
             return false;
           }
           String subprop = requiredProp.substring(requiredProp.indexOf(".") + 1);
-          if (!validate(((Map)o).get(requiredProp), errs, Collections.singleton(subprop))) {
+          if (!validate(((Map) o).get(requiredProp), errs, Collections.singleton(subprop))) {
             return false;
           }
         } else {
           if (!fnames.contains(requiredProp)) {
-            errs.add("Missing required attribute '" + requiredProp + "' in object " + Utils.toJSONString(o));
+            errs.add(
+                "Missing required attribute '"
+                    + requiredProp
+                    + "' in object "
+                    + Utils.toJSONString(o));
             return false;
           }
         }
@@ -272,7 +284,7 @@ class PropertiesValidator extends Validator<Map<String, Map>> {
   boolean validate(Object o, List<String> errs) {
     if (o instanceof Map) {
       Map<?, ?> map = (Map) o;
-      for (Map.Entry<?,?> entry : map.entrySet()) {
+      for (Map.Entry<?, ?> entry : map.entrySet()) {
         Object key = entry.getKey();
         JsonSchemaValidator jsonSchema = jsonSchemas.get(key.toString());
         if (jsonSchema == null && !additionalProperties) {
@@ -293,7 +305,7 @@ class OneOfValidator extends Validator<List<String>> {
 
   private Set<String> oneOfProps;
 
-  OneOfValidator(@SuppressWarnings({"rawtypes"})Map schema, List<String> oneOfProps) {
+  OneOfValidator(@SuppressWarnings({"rawtypes"}) Map schema, List<String> oneOfProps) {
     super(schema, oneOfProps);
     this.oneOfProps = new HashSet<>(oneOfProps);
   }
@@ -306,7 +318,11 @@ class OneOfValidator extends Validator<List<String>> {
       for (Object key : map.keySet()) {
         if (oneOfProps.contains(key.toString())) return true;
       }
-      errs.add("One of fields :"  + oneOfProps + " is not presented in object : " + Utils.toJSONString(o));
+      errs.add(
+          "One of fields :"
+              + oneOfProps
+              + " is not presented in object : "
+              + Utils.toJSONString(o));
       return false;
     }
 

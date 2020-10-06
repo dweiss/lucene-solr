@@ -16,31 +16,25 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
+
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELECT_NO_FIELDS;
-
 /**
- * An update processor that keeps only the maximum value from any selected 
- * fields where multiple values are found.  Correct behavior requires tha all 
- * of the values in the SolrInputFields being mutated are mutually comparable; 
- * If this is not the case, then a SolrException will br thrown. 
- * <p>
- * By default, this processor matches no fields.
- * </p>
+ * An update processor that keeps only the maximum value from any selected fields where multiple
+ * values are found. Correct behavior requires tha all of the values in the SolrInputFields being
+ * mutated are mutually comparable; If this is not the case, then a SolrException will br thrown.
  *
- * <p>
- * In the example configuration below, if a document contains multiple integer 
- * values (ie: <code>64, 128, 1024</code>) in the field 
- * <code>largestFileSize</code> then only the biggest value 
- * (ie: <code>1024</code>) will be kept in that field.
- * <br>
+ * <p>By default, this processor matches no fields.
+ *
+ * <p>In the example configuration below, if a document contains multiple integer values (ie: <code>
+ * 64, 128, 1024</code>) in the field <code>largestFileSize</code> then only the biggest value (ie:
+ * <code>1024</code>) will be kept in that field. <br>
  *
  * <pre class="prettyprint">
  *  &lt;processor class="solr.MaxFieldValueUpdateProcessorFactory"&gt;
@@ -52,11 +46,12 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
  * @see Collections#max
  * @since 4.0.0
  */
-public final class MaxFieldValueUpdateProcessorFactory extends FieldValueSubsetUpdateProcessorFactory {
+public final class MaxFieldValueUpdateProcessorFactory
+    extends FieldValueSubsetUpdateProcessorFactory {
 
   @Override
   @SuppressWarnings({"unchecked"})
-  public Collection<Object> pickSubset(@SuppressWarnings({"rawtypes"})Collection values) {
+  public Collection<Object> pickSubset(@SuppressWarnings({"rawtypes"}) Collection values) {
     @SuppressWarnings({"rawtypes"})
     Collection result = values;
     try {
@@ -64,9 +59,8 @@ public final class MaxFieldValueUpdateProcessorFactory extends FieldValueSubsetU
       // errors on Eclipse Compiler (ecj) used for javadoc lint
       result = Collections.singletonList((Object) Collections.max(values));
     } catch (ClassCastException e) {
-      throw new SolrException
-        (BAD_REQUEST, 
-         "Field values are not mutually comparable: " + e.getMessage(), e);
+      throw new SolrException(
+          BAD_REQUEST, "Field values are not mutually comparable: " + e.getMessage(), e);
     }
     return result;
   }
@@ -75,6 +69,4 @@ public final class MaxFieldValueUpdateProcessorFactory extends FieldValueSubsetU
   public FieldNameSelector getDefaultSelector(SolrCore core) {
     return SELECT_NO_FIELDS;
   }
-  
 }
-

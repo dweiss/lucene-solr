@@ -18,7 +18,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -52,8 +51,9 @@ public class ReplicateFromLeader {
 
   /**
    * Start a replication handler thread that will periodically pull indices from the shard leader
+   *
    * @param switchTransactionLog if true, ReplicationHandler will rotate the transaction log once
-   * the replication is done
+   *     the replication is done
    */
   public void startReplication(boolean switchTransactionLog) throws InterruptedException {
     try (SolrCore core = cc.getCore(coreName)) {
@@ -61,7 +61,9 @@ public class ReplicateFromLeader {
         if (cc.isShutDown()) {
           return;
         } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
         }
       }
       SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
@@ -70,15 +72,16 @@ public class ReplicateFromLeader {
         pollIntervalStr = "00:00:01";
       }
       if (uinfo.autoCommmitMaxTime != -1) {
-        pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime/2);
+        pollIntervalStr = toPollIntervalStr(uinfo.autoCommmitMaxTime / 2);
       } else if (uinfo.autoSoftCommmitMaxTime != -1) {
-        pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime/2);
+        pollIntervalStr = toPollIntervalStr(uinfo.autoSoftCommmitMaxTime / 2);
       }
-      log.info("Will start replication from leader with poll interval: {}", pollIntervalStr );
+      log.info("Will start replication from leader with poll interval: {}", pollIntervalStr);
 
       NamedList<Object> followerConfig = new NamedList<>();
       followerConfig.add("fetchFromLeader", Boolean.TRUE);
-      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, switchTransactionLog);
+      followerConfig.add(
+          ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, switchTransactionLog);
       followerConfig.add("pollInterval", pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
       replicationConfig.add("follower", followerConfig);
@@ -90,20 +93,20 @@ public class ReplicateFromLeader {
 
       replicationProcess = new ReplicationHandler();
       if (switchTransactionLog) {
-        replicationProcess.setPollListener((solrCore, fetchResult) -> {
-          if (fetchResult == IndexFetcher.IndexFetchResult.INDEX_FETCH_SUCCESS) {
-            String commitVersion = getCommitVersion(core);
-            if (commitVersion == null) return;
-            if (Long.parseLong(commitVersion) == lastVersion) return;
-            UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
-            SolrQueryRequest req = new LocalSolrQueryRequest(core,
-                new ModifiableSolrParams());
-            CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
-            cuc.setVersion(Long.parseLong(commitVersion));
-            updateLog.commitAndSwitchToNewTlog(cuc);
-            lastVersion = Long.parseLong(commitVersion);
-          }
-        });
+        replicationProcess.setPollListener(
+            (solrCore, fetchResult) -> {
+              if (fetchResult == IndexFetcher.IndexFetchResult.INDEX_FETCH_SUCCESS) {
+                String commitVersion = getCommitVersion(core);
+                if (commitVersion == null) return;
+                if (Long.parseLong(commitVersion) == lastVersion) return;
+                UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
+                SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+                CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+                cuc.setVersion(Long.parseLong(commitVersion));
+                updateLog.commitAndSwitchToNewTlog(cuc);
+                lastVersion = Long.parseLong(commitVersion);
+              }
+            });
       }
       replicationProcess.init(replicationConfig);
       replicationProcess.inform(core);
@@ -117,13 +120,13 @@ public class ReplicateFromLeader {
       if (commitVersion == null) return null;
       else return commitVersion;
     } catch (Exception e) {
-      log.warn("Cannot get commit command version from index commit point ",e);
+      log.warn("Cannot get commit command version from index commit point ", e);
       return null;
     }
   }
 
   private static String toPollIntervalStr(int ms) {
-    int sec = ms/1000;
+    int sec = ms / 1000;
     int hour = sec / 3600;
     sec = sec % 3600;
     int min = sec / 60;

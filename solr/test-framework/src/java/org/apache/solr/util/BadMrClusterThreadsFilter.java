@@ -23,13 +23,13 @@ public class BadMrClusterThreadsFilter implements ThreadFilter {
   @Override
   public boolean reject(Thread t) {
     String name = t.getName();
-    if (name.startsWith("ForkJoinPool.")) { 
+    if (name.startsWith("ForkJoinPool.")) {
       return true;
-    } else if (name.startsWith("com.google.inject.internal.util.$Finalizer")) { 
+    } else if (name.startsWith("com.google.inject.internal.util.$Finalizer")) {
       return true;
-    } else if (name.startsWith("IPC Client ")) { 
+    } else if (name.startsWith("IPC Client ")) {
       return true;
-    } else if (name.startsWith("Timer-")) { 
+    } else if (name.startsWith("Timer-")) {
       return true;
     }
     return false;

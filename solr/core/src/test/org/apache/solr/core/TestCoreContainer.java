@@ -16,6 +16,14 @@
  */
 package org.apache.solr.core;
 
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
@@ -28,9 +36,6 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Pattern;
-
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
 import org.apache.commons.exec.OS;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
@@ -45,13 +50,6 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xml.sax.SAXParseException;
-
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
 
 public class TestCoreContainer extends SolrTestCaseJ4 {
 
@@ -93,7 +91,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     try {
       SolrCore core1 = cores.create("core1", ImmutableMap.of("configSet", "minimal"));
       SolrCore core2 = cores.create("core2", ImmutableMap.of("configSet", "minimal"));
-      
+
       assertSame(core1.getLatestSchema(), core2.getLatestSchema());
 
     } finally {
@@ -144,7 +142,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     cc.shutdown();
-
   }
 
   @Test
@@ -153,36 +150,42 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     CoreContainer cores = init(CONFIGSETS_SOLR_XML);
 
     try {
-      //assert zero cores
+      // assert zero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
-      
-      //add a new core
+
+      // add a new core
       cores.create("core1", ImmutableMap.of("configSet", "minimal"));
 
-      //assert one registered core
+      // assert one registered core
 
       assertEquals("There core registered", 1, cores.getCores().size());
 
       cores.unload("core1");
-      //assert cero cores
+      // assert cero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
-      
-      // try and remove a core that does not exist
-      SolrException thrown = expectThrows(SolrException.class, () -> {
-        cores.unload("non_existent_core");
-      });
-      assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [non_existent_core]"));
 
+      // try and remove a core that does not exist
+      SolrException thrown =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                cores.unload("non_existent_core");
+              });
+      assertThat(
+          thrown.getMessage(),
+          containsString("Cannot unload non-existent core [non_existent_core]"));
 
       // try and remove a null core
-      thrown = expectThrows(SolrException.class, () -> {
-        cores.unload(null);
-      });
+      thrown =
+          expectThrows(
+              SolrException.class,
+              () -> {
+                cores.unload(null);
+              });
       assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
     } finally {
       cores.shutdown();
     }
-
   }
 
   @Test
@@ -190,8 +193,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     CoreContainer cc = init("<solr></solr>");
     try {
       assertNotNull(cc.getLogging());
-    }
-    finally {
+    } finally {
       cc.shutdown();
     }
   }
@@ -204,17 +206,20 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Path solrHome = createTempDir();
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
+    final CoreContainer cc =
+        new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
     Path corePath = solrHome.resolve("badcore");
-    CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc,
-        "configSet", "nosuchconfigset");
+    CoreDescriptor badcore =
+        new CoreDescriptor("badcore", corePath, cc, "configSet", "nosuchconfigset");
 
     cl.add(badcore);
 
     try {
       cc.load();
       assertThat(cc.getCoreInitFailures().size(), is(1));
-      assertThat(cc.getCoreInitFailures().get("badcore").exception.getMessage(), containsString("nosuchconfigset"));
+      assertThat(
+          cc.getCoreInitFailures().get("badcore").exception.getMessage(),
+          containsString("nosuchconfigset"));
       cc.unload("badcore", true, true, true);
       assertThat(cc.getCoreInitFailures().size(), is(0));
 
@@ -222,8 +227,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       SolrCore core = cc.create("badcore", ImmutableMap.of("configSet", "minimal"));
       assertThat(core, not(nullValue()));
 
-    }
-    finally {
+    } finally {
       cc.shutdown();
     }
   }
@@ -252,7 +256,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     File lib = new File(tmpRoot.toFile(), "lib");
     lib.mkdirs();
 
-    try (JarOutputStream jar1 = new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")))) {
+    try (JarOutputStream jar1 =
+        new JarOutputStream(new FileOutputStream(new File(lib, "jar1.jar")))) {
       jar1.putNextEntry(new JarEntry("defaultSharedLibFile"));
       jar1.closeEntry();
     }
@@ -260,7 +265,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     File customLib = new File(tmpRoot.toFile(), "customLib");
     customLib.mkdirs();
 
-    try (JarOutputStream jar2 = new JarOutputStream(new FileOutputStream(new File(customLib, "jar2.jar")))) {
+    try (JarOutputStream jar2 =
+        new JarOutputStream(new FileOutputStream(new File(customLib, "jar2.jar")))) {
       jar2.putNextEntry(new JarEntry("customSharedLibFile"));
       jar2.closeEntry();
     }
@@ -268,7 +274,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     File customLib2 = new File(tmpRoot.toFile(), "customLib2");
     customLib2.mkdirs();
 
-    try (JarOutputStream jar3 = new JarOutputStream(new FileOutputStream(new File(customLib2, "jar3.jar")))) {
+    try (JarOutputStream jar3 =
+        new JarOutputStream(new FileOutputStream(new File(customLib2, "jar3.jar")))) {
       jar3.putNextEntry(new JarEntry("jar3File"));
       jar3.closeEntry();
     }
@@ -298,7 +305,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     // Comma separated list of lib folders
-    final CoreContainer cc4 = init(tmpRoot, "<solr><str name=\"sharedLib\">customLib, customLib2</str></solr>");
+    final CoreContainer cc4 =
+        init(tmpRoot, "<solr><str name=\"sharedLib\">customLib, customLib2</str></solr>");
     try {
       cc4.loader.openResource("defaultSharedLibFile").close();
       cc4.loader.openResource("customSharedLibFile").close();
@@ -308,24 +316,35 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
   }
 
-  private static final String CONFIGSETS_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-      "<solr>\n" +
-      "<str name=\"configSetBaseDir\">${configsets:configsets}</str>\n" +
-      "<str name=\"shareSchema\">${shareSchema:false}</str>\n" +
-      "</solr>";
+  private static final String CONFIGSETS_SOLR_XML =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+          + "<solr>\n"
+          + "<str name=\"configSetBaseDir\">${configsets:configsets}</str>\n"
+          + "<str name=\"shareSchema\">${shareSchema:false}</str>\n"
+          + "</solr>";
 
-  private static final String ALLOW_PATHS_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-      "<solr>\n" +
-      "<str name=\"allowPaths\">${solr.allowPaths:}</str>\n" +
-      "</solr>";
+  private static final String ALLOW_PATHS_SOLR_XML =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+          + "<solr>\n"
+          + "<str name=\"allowPaths\">${solr.allowPaths:}</str>\n"
+          + "</solr>";
 
-  private static final String CUSTOM_HANDLERS_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-      "<solr>" +
-      " <str name=\"collectionsHandler\">" + CustomCollectionsHandler.class.getName() + "</str>" +
-      " <str name=\"infoHandler\">" + CustomInfoHandler.class.getName() + "</str>" +
-      " <str name=\"adminHandler\">" + CustomCoreAdminHandler.class.getName() + "</str>" +
-      " <str name=\"configSetsHandler\">" + CustomConfigSetsHandler.class.getName() + "</str>" +
-      "</solr>";
+  private static final String CUSTOM_HANDLERS_SOLR_XML =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+          + "<solr>"
+          + " <str name=\"collectionsHandler\">"
+          + CustomCollectionsHandler.class.getName()
+          + "</str>"
+          + " <str name=\"infoHandler\">"
+          + CustomInfoHandler.class.getName()
+          + "</str>"
+          + " <str name=\"adminHandler\">"
+          + CustomCoreAdminHandler.class.getName()
+          + "</str>"
+          + " <str name=\"configSetsHandler\">"
+          + CustomConfigSetsHandler.class.getName()
+          + "</str>"
+          + "</solr>";
 
   public static class CustomCollectionsHandler extends CollectionsHandler {
     public CustomCollectionsHandler(CoreContainer cc) {
@@ -360,7 +379,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     try {
       cc.assertPathAllowed(Paths.get("/tmp"));
       fail("Path /tmp should not be allowed");
-    } catch(SolrException e) {
+    } catch (SolrException e) {
       /* Ignore */
     } finally {
       cc.shutdown();
@@ -377,7 +396,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     try {
       cc.assertPathAllowed(Paths.get("C:\\tmp"));
       fail("Path C:\\tmp should not be allowed");
-    } catch(SolrException e) {
+    } catch (SolrException e) {
       /* Ignore */
     } finally {
       cc.shutdown();
@@ -418,13 +437,17 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   private void assertPathBlocked(String path) {
     try {
 
-      SolrPaths.assertPathAllowed(Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
+      SolrPaths.assertPathAllowed(
+          Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
       fail("Path " + path + " sould have been blocked.");
-    } catch (SolrException e) { /* Expected */ }
+    } catch (SolrException e) {
+      /* Expected */
+    }
   }
 
   private void assertPathAllowed(String path) {
-    SolrPaths.assertPathAllowed(Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
+    SolrPaths.assertPathAllowed(
+        Path.of(path), OS.isFamilyWindows() ? ALLOWED_PATHS_WIN : ALLOWED_PATHS);
   }
 
   @Test
@@ -435,11 +458,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertThat(cc.getCollectionsHandler(), is(instanceOf(CustomCollectionsHandler.class)));
       assertThat(cc.getInfoHandler(), is(instanceOf(CustomInfoHandler.class)));
       assertThat(cc.getMultiCoreHandler(), is(instanceOf(CustomCoreAdminHandler.class)));
-    }
-    finally {
+    } finally {
       cc.shutdown();
     }
-
   }
 
   private static class MockCoresLocator implements CoresLocator {
@@ -456,36 +477,27 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
-
-    }
+    public void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {}
 
     @Override
-    public void delete(CoreContainer cc, CoreDescriptor... coreDescriptors) {
-
-    }
+    public void delete(CoreContainer cc, CoreDescriptor... coreDescriptors) {}
 
     @Override
-    public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
-
-    }
+    public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {}
 
     @Override
-    public void swap(CoreContainer cc, CoreDescriptor cd1, CoreDescriptor cd2) {
-
-    }
+    public void swap(CoreContainer cc, CoreDescriptor cd1, CoreDescriptor cd2) {}
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
       return cores;
     }
-
   }
 
   @Test
   public void testCoreInitFailuresFromEmptyContainer() throws Exception {
     // reused state
-    Map<String,CoreContainer.CoreLoadFailure> failures = null;
+    Map<String, CoreContainer.CoreLoadFailure> failures = null;
     Collection<String> cores = null;
     Exception fail = null;
 
@@ -506,11 +518,15 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // -----
     // try to add a collection with a configset that doesn't exist
     ignoreException(Pattern.quote("bogus_path"));
-    SolrException thrown = expectThrows(SolrException.class, () -> {
-      cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
-    });
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
+            });
     Throwable rootCause = Throwables.getRootCause(thrown);
-    assertTrue("init exception doesn't mention bogus dir: " + rootCause.getMessage(),
+    assertTrue(
+        "init exception doesn't mention bogus dir: " + rootCause.getMessage(),
         0 < rootCause.getMessage().indexOf("bogus_path"));
 
     // check that we have the cores we expect
@@ -524,19 +540,23 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
     fail = failures.get("bogus").exception;
     assertNotNull("null failure for test core", fail);
-    assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
+    assertTrue(
+        "init failure doesn't mention problem: " + fail.getMessage(),
         0 < fail.getMessage().indexOf("bogus_path"));
 
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
-    thrown = expectThrows(SolrException.class, () -> {
-      SolrCore c = cc.getCore("bogus");
-    });
+    thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              SolrCore c = cc.getCore("bogus");
+            });
     assertEquals(500, thrown.code());
     String cause = Throwables.getRootCause(thrown).getMessage();
-    assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
-        0 < cause.indexOf("bogus_path"));
+    assertTrue(
+        "getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("bogus_path"));
 
     cc.shutdown();
   }
@@ -545,7 +565,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testCoreInitFailuresOnReload() throws Exception {
 
     // reused state
-    Map<String,CoreContainer.CoreLoadFailure> failures = null;
+    Map<String, CoreContainer.CoreLoadFailure> failures = null;
     Collection<String> cores = null;
     Exception fail = null;
 
@@ -557,11 +577,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
-    cl.add(new CoreDescriptor("col_ok", solrHome.resolve("col_ok"), cc,
-        "configSet", "minimal"));
-    cl.add(new CoreDescriptor("col_bad", solrHome.resolve("col_bad"), cc,
-        "configSet", "bad-mergepolicy"));
+    final CoreContainer cc =
+        new CoreContainer(SolrXmlConfig.fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
+    cl.add(new CoreDescriptor("col_ok", solrHome.resolve("col_ok"), cc, "configSet", "minimal"));
+    cl.add(
+        new CoreDescriptor(
+            "col_bad", solrHome.resolve("col_bad"), cc, "configSet", "bad-mergepolicy"));
     cc.load();
 
     // check that we have the cores we expect
@@ -576,24 +597,32 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
     fail = failures.get("col_bad").exception;
     assertNotNull("null failure for test core", fail);
-    assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
+    assertTrue(
+        "init failure doesn't mention problem: " + fail.getMessage(),
         0 < fail.getMessage().indexOf("DummyMergePolicy"));
 
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
-    SolrException thrown = expectThrows(SolrException.class, () -> {
-      SolrCore c = cc.getCore("col_bad");
-    });
+    SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              SolrCore c = cc.getCore("col_bad");
+            });
     assertEquals(500, thrown.code());
     String cause = thrown.getCause().getCause().getMessage();
-    assertTrue("getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("DummyMergePolicy"));
+    assertTrue(
+        "getCore() ex cause doesn't mention init fail: " + cause,
+        0 < cause.indexOf("DummyMergePolicy"));
 
     // -----
     // "fix" the bad collection
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
+    FileUtils.copyFile(
+        getFile("solr/collection1/conf/solrconfig-defaults.xml"),
         FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"));
-    FileUtils.copyFile(getFile("solr/collection1/conf/schema-minimal.xml"),
+    FileUtils.copyFile(
+        getFile("solr/collection1/conf/schema-minimal.xml"),
         FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "schema.xml"));
     cc.create("col_bad", ImmutableMap.of());
 
@@ -609,14 +638,17 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertNotNull("core failures is a null map", failures);
     assertEquals("wrong number of core failures", 0, failures.size());
 
-
     // -----
     // try to add a collection with a path that doesn't exist
     ignoreException(Pattern.quote("bogus_path"));
-    thrown = expectThrows(SolrException.class, () -> {
-      cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
-    });
-    assertTrue("init exception doesn't mention bogus dir: " + thrown.getCause().getCause().getMessage(),
+    thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
+            });
+    assertTrue(
+        "init exception doesn't mention bogus dir: " + thrown.getCause().getCause().getMessage(),
         0 < thrown.getCause().getCause().getMessage().indexOf("bogus_path"));
 
     // check that we have the cores we expect
@@ -632,43 +664,55 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
     fail = failures.get("bogus").exception;
     assertNotNull("null failure for test core", fail);
-    assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
+    assertTrue(
+        "init failure doesn't mention problem: " + fail.getMessage(),
         0 < fail.getMessage().indexOf("bogus_path"));
 
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
-    thrown = expectThrows(SolrException.class, () -> {
-      SolrCore c = cc.getCore("bogus");
-    });
+    thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              SolrCore c = cc.getCore("bogus");
+            });
     assertEquals(500, thrown.code());
     cause = thrown.getCause().getMessage();
-    assertTrue("getCore() ex cause doesn't mention init fail: " + cause,
-        0 < cause.indexOf("bogus_path"));
+    assertTrue(
+        "getCore() ex cause doesn't mention init fail: " + cause, 0 < cause.indexOf("bogus_path"));
 
     // -----
     // break col_bad's config and try to RELOAD to add failure
 
     final long col_bad_old_start = getCoreStartTime(cc, "col_bad");
 
-    FileUtils.write
-        (FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"),
-            "This is giberish, not valid XML <",
-            IOUtils.UTF_8);
+    FileUtils.write(
+        FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"),
+        "This is giberish, not valid XML <",
+        IOUtils.UTF_8);
 
     ignoreException(Pattern.quote("SAX"));
-    thrown = expectThrows(SolrException.class,
-        "corrupt solrconfig.xml failed to trigger exception from reload",
-        () -> { cc.reload("col_bad"); });
+    thrown =
+        expectThrows(
+            SolrException.class,
+            "corrupt solrconfig.xml failed to trigger exception from reload",
+            () -> {
+              cc.reload("col_bad");
+            });
     Throwable rootException = getWrappedException(thrown);
-    assertTrue("We're supposed to have a wrapped SAXParserException here, but we don't",
+    assertTrue(
+        "We're supposed to have a wrapped SAXParserException here, but we don't",
         rootException instanceof SAXParseException);
     SAXParseException se = (SAXParseException) rootException;
-    assertTrue("reload exception doesn't refer to slrconfig.xml " + se.getSystemId(),
+    assertTrue(
+        "reload exception doesn't refer to slrconfig.xml " + se.getSystemId(),
         0 < se.getSystemId().indexOf("solrconfig.xml"));
 
-    assertEquals("Failed core reload should not have changed start time",
-        col_bad_old_start, getCoreStartTime(cc, "col_bad"));
+    assertEquals(
+        "Failed core reload should not have changed start time",
+        col_bad_old_start,
+        getCoreStartTime(cc, "col_bad"));
 
     // check that we have the cores we expect
     cores = cc.getLoadedCoreNames();
@@ -683,20 +727,22 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 2, failures.size());
     Throwable ex = getWrappedException(failures.get("col_bad").exception);
     assertNotNull("null failure for test core", ex);
-    assertTrue("init failure isn't SAXParseException",
-        ex instanceof SAXParseException);
+    assertTrue("init failure isn't SAXParseException", ex instanceof SAXParseException);
     SAXParseException saxEx = (SAXParseException) ex;
-    assertTrue("init failure doesn't mention problem: " + saxEx.toString(), saxEx.getSystemId().contains("solrconfig.xml"));
+    assertTrue(
+        "init failure doesn't mention problem: " + saxEx.toString(),
+        saxEx.getSystemId().contains("solrconfig.xml"));
 
     // ----
     // fix col_bad's config (again) and RELOAD to fix failure
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
+    FileUtils.copyFile(
+        getFile("solr/collection1/conf/solrconfig-defaults.xml"),
         FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"));
     cc.reload("col_bad");
 
-    assertTrue("Core reload should have changed start time",
+    assertTrue(
+        "Core reload should have changed start time",
         col_bad_old_start < getCoreStartTime(cc, "col_bad"));
-
 
     // check that we have the cores we expect
     cores = cc.getLoadedCoreNames();
@@ -711,7 +757,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
 
     cc.shutdown();
-
   }
 
   private long getCoreStartTime(final CoreContainer cc, final String name) {

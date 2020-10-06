@@ -16,13 +16,16 @@
  */
 package org.apache.solr.cloud;
 
-import javax.servlet.http.HttpServletRequest;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_ADDRESS_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
+
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import javax.servlet.http.HttpServletRequest;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -47,10 +50,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_ADDRESS_PARAM;
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.REMOTE_HOST_PARAM;
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
 
 public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   private static final int NUM_SERVERS = 2;
@@ -82,9 +81,15 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "noHosts.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "localHostAnyGroup.groups", "*");
     InetAddress loopback = InetAddress.getLoopbackAddress();
-    filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "localHostAnyGroup.hosts",
-        loopback.getCanonicalHostName() + "," + loopback.getHostName() + "," + loopback.getHostAddress());
-    filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostUsersGroup.groups", getUsersFirstGroup());
+    filterProps.put(
+        KerberosPlugin.IMPERSONATOR_PREFIX + "localHostAnyGroup.hosts",
+        loopback.getCanonicalHostName()
+            + ","
+            + loopback.getHostName()
+            + ","
+            + loopback.getHostAddress());
+    filterProps.put(
+        KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostUsersGroup.groups", getUsersFirstGroup());
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostUsersGroup.hosts", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "bogusGroup.groups", "__some_bogus_group");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "bogusGroup.hosts", "*");
@@ -94,7 +99,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   @BeforeClass
   public static void startup() throws Exception {
     HdfsTestUtil.checkAssumptions();
-    
+
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
 
@@ -114,13 +119,13 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     solrClient = new HttpSolrClient.Builder(runner.getBaseUrl().toString()).build();
   }
 
-  /**
-   * Verify that impersonator info is preserved in the request
-   */
+  /** Verify that impersonator info is preserved in the request */
   public static class ImpersonatorCollectionsHandler extends CollectionsHandler {
     public static AtomicBoolean called = new AtomicBoolean(false);
 
-    public ImpersonatorCollectionsHandler() { super(); }
+    public ImpersonatorCollectionsHandler() {
+      super();
+    }
 
     public ImpersonatorCollectionsHandler(final CoreContainer coreContainer) {
       super(coreContainer);
@@ -132,9 +137,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
       super.handleRequestBody(req, rsp);
       String doAs = req.getParams().get(KerberosPlugin.IMPERSONATOR_DO_AS_HTTP_PARAM);
       if (doAs != null) {
-        HttpServletRequest httpRequest = (HttpServletRequest)req.getContext().get("httpRequest");
+        HttpServletRequest httpRequest = (HttpServletRequest) req.getContext().get("httpRequest");
         assertNotNull(httpRequest);
-        String user = (String)httpRequest.getAttribute(USER_PARAM);
+        String user = (String) httpRequest.getAttribute(USER_PARAM);
         assertNotNull(user);
         assertEquals(user, httpRequest.getAttribute(KerberosPlugin.IMPERSONATOR_USER_NAME));
       }
@@ -173,20 +178,22 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     }
   }
 
-  private void create1ShardCollection(String name, String config, MiniSolrCloudCluster solrCluster) throws Exception {
+  private void create1ShardCollection(String name, String config, MiniSolrCloudCluster solrCluster)
+      throws Exception {
     CollectionAdminResponse response;
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create(name,config,1,1,0,0) {
-      @Override
-      public SolrParams getParams() {
-        ModifiableSolrParams msp = new ModifiableSolrParams(super.getParams());
-        msp.set(USER_PARAM, "user");
-        return msp;
-      }
-    };
+    CollectionAdminRequest.Create create =
+        new CollectionAdminRequest.Create(name, config, 1, 1, 0, 0) {
+          @Override
+          public SolrParams getParams() {
+            ModifiableSolrParams msp = new ModifiableSolrParams(super.getParams());
+            msp.set(USER_PARAM, "user");
+            return msp;
+          }
+        };
     response = create.process(solrCluster.getSolrClient());
 
     miniCluster.waitForActiveCollection(name, 1, 1);
-    
+
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
       fail("Could not create collection. Response" + response.toString());
     }
@@ -203,7 +210,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"rawtypes"})
-  private SolrRequest getProxyRequest(String user, String doAs, String remoteHost, String remoteAddress) {
+  private SolrRequest getProxyRequest(
+      String user, String doAs, String remoteHost, String remoteAddress) {
     return new CollectionAdminRequest.List() {
       @Override
       public SolrParams getParams() {
@@ -227,25 +235,28 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyNoConfigGroups() throws Exception {
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> solrClient.request(getProxyRequest("noGroups","bar"))
-    );
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            () -> solrClient.request(getProxyRequest("noGroups", "bar")));
     assertTrue(e.getMessage().contains(getExpectedGroupExMsg("noGroups", "bar")));
   }
 
   @Test
   public void testProxyWrongHost() throws Exception {
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> solrClient.request(getProxyRequest("wrongHost","bar"))
-    );
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            () -> solrClient.request(getProxyRequest("wrongHost", "bar")));
     assertTrue(e.getMessage().contains(getExpectedHostExMsg("wrongHost")));
   }
 
   @Test
   public void testProxyNoConfigHosts() throws Exception {
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> solrClient.request(getProxyRequest("noHosts","bar"))
-    );
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            () -> solrClient.request(getProxyRequest("noHosts", "bar")));
     // FixMe: this should return an exception about the host being invalid,
     // but a bug (HADOOP-11077) causes an NPE instead.
     // assertTrue(ex.getMessage().contains(getExpectedHostExMsg("noHosts")));
@@ -260,9 +271,10 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   @Test
   public void testProxyInvalidProxyUser() throws Exception {
     // wrong direction, should fail
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> solrClient.request(getProxyRequest("bar","anyHostAnyUser"))
-    );
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            () -> solrClient.request(getProxyRequest("bar", "anyHostAnyUser")));
     assertTrue(e.getMessage().contains(getExpectedGroupExMsg("bar", "anyHostAnyUser")));
   }
 
@@ -272,8 +284,6 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     assertTrue(ImpersonatorCollectionsHandler.called.get());
   }
 
-
-
   @Test
   public void testProxyValidateGroup() throws Exception {
     solrClient.request(getProxyRequest("anyHostUsersGroup", System.getProperty("user.name"), null));
@@ -282,37 +292,48 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyUnknownRemote() throws Exception {
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> {
-          // Use a reserved ip address
-          String nonProxyUserConfiguredIpAddress = "255.255.255.255";
-          solrClient.request(getProxyRequest("localHostAnyGroup", "bar", "unknownhost.bar.foo", nonProxyUserConfiguredIpAddress));
-    });
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            () -> {
+              // Use a reserved ip address
+              String nonProxyUserConfiguredIpAddress = "255.255.255.255";
+              solrClient.request(
+                  getProxyRequest(
+                      "localHostAnyGroup",
+                      "bar",
+                      "unknownhost.bar.foo",
+                      nonProxyUserConfiguredIpAddress));
+            });
     assertTrue(e.getMessage().contains(getExpectedHostExMsg("localHostAnyGroup")));
   }
 
   @Test
   public void testProxyInvalidRemote() throws Exception {
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> {
-          solrClient.request(getProxyRequest("localHostAnyGroup","bar", "[ff01::114]", DEAD_HOST_2));
-    });
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            () -> {
+              solrClient.request(
+                  getProxyRequest("localHostAnyGroup", "bar", "[ff01::114]", DEAD_HOST_2));
+            });
     assertTrue(e.getMessage().contains(getExpectedHostExMsg("localHostAnyGroup")));
   }
 
   @Test
   public void testProxyInvalidGroup() throws Exception {
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> solrClient.request(getProxyRequest("bogusGroup","bar", null))
-    );
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            () -> solrClient.request(getProxyRequest("bogusGroup", "bar", null)));
     assertTrue(e.getMessage().contains(getExpectedGroupExMsg("bogusGroup", "bar")));
   }
 
   @Test
   public void testProxyNullProxyUser() throws Exception {
-    expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> solrClient.request(getProxyRequest("","bar"))
-    );
+    expectThrows(
+        BaseHttpSolrClient.RemoteSolrException.class,
+        () -> solrClient.request(getProxyRequest("", "bar")));
   }
 
   @Test
@@ -323,8 +344,9 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
     // try a command to each node, one of them must be forwarded
     for (JettySolrRunner jetty : miniCluster.getJettySolrRunners()) {
-      try (HttpSolrClient client = new HttpSolrClient.Builder(
-          jetty.getBaseUrl().toString() + "/" + collectionName).build()) {
+      try (HttpSolrClient client =
+          new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/" + collectionName)
+              .build()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("q", "*:*");
         params.set(USER_PARAM, "user");

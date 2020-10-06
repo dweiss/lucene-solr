@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ScoreMode;
@@ -49,18 +48,19 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
- * This transformer will take care to generate and append in the response the
- * features declared in the feature store of the current reranking model,
- * or a specified feature store.  Ex. <code>fl=id,[features store=myStore efi.user_text="ibm"]</code>
- * 
+ * This transformer will take care to generate and append in the response the features declared in
+ * the feature store of the current reranking model, or a specified feature store. Ex. <code>
+ * fl=id,[features store=myStore efi.user_text="ibm"]</code>
+ *
  * <h2>Parameters</h2>
- * <code>store</code> - The feature store to extract features from. If not provided it
- * will default to the features used by your reranking model.<br>
- * <code>efi.*</code> - External feature information variables required by the features
- * you are extracting.<br>
- * <code>format</code> - The format you want the features to be returned in.  Supports (dense|sparse). Defaults to dense.<br>
-*/
-
+ *
+ * <code>store</code> - The feature store to extract features from. If not provided it will default
+ * to the features used by your reranking model.<br>
+ * <code>efi.*</code> - External feature information variables required by the features you are
+ * extracting.<br>
+ * <code>format</code> - The format you want the features to be returned in. Supports
+ * (dense|sparse). Defaults to dense.<br>
+ */
 public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   // used inside fl to specify the format (dense|sparse) of the extracted features
@@ -93,7 +93,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   }
 
   public void setDefaultFormat(String defaultFormat) {
-    this.defaultFormat = FeatureLogger.FeatureFormat.valueOf(defaultFormat.toUpperCase(Locale.ROOT));
+    this.defaultFormat =
+        FeatureLogger.FeatureFormat.valueOf(defaultFormat.toUpperCase(Locale.ROOT));
   }
 
   public void setCsvKeyValueDelimiter(String csvKeyValueDelimiter) {
@@ -119,8 +120,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   }
 
   @Override
-  public DocTransformer create(String name, SolrParams localparams,
-      SolrQueryRequest req) {
+  public DocTransformer create(String name, SolrParams localparams, SolrQueryRequest req) {
 
     // Hint to enable feature vector cache since we are requesting features
     SolrQueryRequestContextUtils.setIsExtractingFeatures(req);
@@ -129,19 +129,16 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     SolrQueryRequestContextUtils.setFvStoreName(req, localparams.get(FV_STORE, defaultStore));
 
     // Create and supply the feature logger to be used
-    SolrQueryRequestContextUtils.setFeatureLogger(req,
-        createFeatureLogger(
-            localparams.get(FV_FORMAT)));
+    SolrQueryRequestContextUtils.setFeatureLogger(
+        req, createFeatureLogger(localparams.get(FV_FORMAT)));
 
     return new FeatureTransformer(name, localparams, req);
   }
 
   /**
-   * returns a FeatureLogger that logs the features
-   * 'featureFormat' param: 'dense' will write features in dense format,
-   * 'sparse' will write the features in sparse format, null or empty will
+   * returns a FeatureLogger that logs the features 'featureFormat' param: 'dense' will write
+   * features in dense format, 'sparse' will write the features in sparse format, null or empty will
    * default to 'sparse'
-   *
    *
    * @return a feature logger for the format specified.
    */
@@ -160,9 +157,9 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
   class FeatureTransformer extends DocTransformer {
 
-    final private String name;
-    final private SolrParams localparams;
-    final private SolrQueryRequest req;
+    private final String name;
+    private final SolrParams localparams;
+    private final SolrQueryRequest req;
 
     private List<LeafReaderContext> leafContexts;
     private SolrIndexSearcher searcher;
@@ -171,13 +168,8 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     private FeatureLogger featureLogger;
     private boolean docsWereNotReranked;
 
-    /**
-     * @param name
-     *          Name of the field to be added in a document representing the
-     *          feature vectors
-     */
-    public FeatureTransformer(String name, SolrParams localparams,
-        SolrQueryRequest req) {
+    /** @param name Name of the field to be added in a document representing the feature vectors */
+    public FeatureTransformer(String name, SolrParams localparams, SolrQueryRequest req) {
       this.name = name;
       this.localparams = localparams;
       this.req = req;
@@ -200,47 +192,59 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
 
       searcher = context.getSearcher();
       if (searcher == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "searcher is null");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "searcher is null");
       }
       leafContexts = searcher.getTopReaderContext().leaves();
       if (threadManager != null) {
-        threadManager.setExecutor(context.getRequest().getCore().getCoreContainer().getUpdateShardHandler().getUpdateExecutor());
+        threadManager.setExecutor(
+            context
+                .getRequest()
+                .getCore()
+                .getCoreContainer()
+                .getUpdateShardHandler()
+                .getUpdateExecutor());
       }
-      
+
       // Setup LTRScoringQuery
       scoringQuery = SolrQueryRequestContextUtils.getScoringQuery(req);
       docsWereNotReranked = (scoringQuery == null);
       String featureStoreName = SolrQueryRequestContextUtils.getFvStoreName(req);
-      if (docsWereNotReranked || (featureStoreName != null && (!featureStoreName.equals(scoringQuery.getScoringModel().getFeatureStoreName())))) {
+      if (docsWereNotReranked
+          || (featureStoreName != null
+              && (!featureStoreName.equals(
+                  scoringQuery.getScoringModel().getFeatureStoreName())))) {
         // if store is set in the transformer we should overwrite the logger
 
         final ManagedFeatureStore fr = ManagedFeatureStore.getManagedFeatureStore(req.getCore());
 
         final FeatureStore store = fr.getFeatureStore(featureStoreName);
-        featureStoreName = store.getName(); // if featureStoreName was null before this gets actual name
+        featureStoreName =
+            store.getName(); // if featureStoreName was null before this gets actual name
 
         try {
-          final LoggingModel lm = new LoggingModel(loggingModelName,
-              featureStoreName, store.getFeatures());
+          final LoggingModel lm =
+              new LoggingModel(loggingModelName, featureStoreName, store.getFeatures());
 
-          scoringQuery = new LTRScoringQuery(lm,
-              LTRQParserPlugin.extractEFIParams(localparams),
-              true,
-              threadManager); // request feature weights to be created for all features
+          scoringQuery =
+              new LTRScoringQuery(
+                  lm,
+                  LTRQParserPlugin.extractEFIParams(localparams),
+                  true,
+                  threadManager); // request feature weights to be created for all features
 
-        }catch (final Exception e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "retrieving the feature store "+featureStoreName, e);
+        } catch (final Exception e) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "retrieving the feature store " + featureStoreName,
+              e);
         }
       }
 
       if (scoringQuery.getOriginalQuery() == null) {
         scoringQuery.setOriginalQuery(context.getQuery());
       }
-      if (scoringQuery.getFeatureLogger() == null){
-        scoringQuery.setFeatureLogger( SolrQueryRequestContextUtils.getFeatureLogger(req) );
+      if (scoringQuery.getFeatureLogger() == null) {
+        scoringQuery.setFeatureLogger(SolrQueryRequestContextUtils.getFeatureLogger(req));
       }
       scoringQuery.setRequest(req);
 
@@ -252,50 +256,54 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
       }
       if (modelWeight == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             "error logging the features, model weight is null");
       }
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid, float score)
-        throws IOException {
+    public void transform(SolrDocument doc, int docid, float score) throws IOException {
       implTransform(doc, docid, score);
     }
 
     @Override
-    public void transform(SolrDocument doc, int docid)
-        throws IOException {
+    public void transform(SolrDocument doc, int docid) throws IOException {
       implTransform(doc, docid, null);
     }
 
-    private void implTransform(SolrDocument doc, int docid, Float score)
-        throws IOException {
+    private void implTransform(SolrDocument doc, int docid, Float score) throws IOException {
       Object fv = featureLogger.getFeatureVector(docid, scoringQuery, searcher);
       if (fv == null) { // FV for this document was not in the cache
-        fv = featureLogger.makeFeatureVector(
-            LTRRescorer.extractFeaturesInfo(
-                modelWeight,
-                docid,
-                (docsWereNotReranked ? score : null),
-                leafContexts));
+        fv =
+            featureLogger.makeFeatureVector(
+                LTRRescorer.extractFeaturesInfo(
+                    modelWeight, docid, (docsWereNotReranked ? score : null), leafContexts));
       }
 
       doc.addField(name, fv);
     }
-
   }
 
   private static class LoggingModel extends LTRScoringModel {
 
-    public LoggingModel(String name, String featureStoreName, List<Feature> allFeatures){
-      this(name, Collections.emptyList(), Collections.emptyList(),
-          featureStoreName, allFeatures, Collections.emptyMap());
+    public LoggingModel(String name, String featureStoreName, List<Feature> allFeatures) {
+      this(
+          name,
+          Collections.emptyList(),
+          Collections.emptyList(),
+          featureStoreName,
+          allFeatures,
+          Collections.emptyMap());
     }
 
-    protected LoggingModel(String name, List<Feature> features,
-        List<Normalizer> norms, String featureStoreName,
-        List<Feature> allFeatures, Map<String,Object> params) {
+    protected LoggingModel(
+        String name,
+        List<Feature> features,
+        List<Normalizer> norms,
+        String featureStoreName,
+        List<Feature> allFeatures,
+        Map<String, Object> params) {
       super(name, features, norms, featureStoreName, allFeatures, params);
     }
 
@@ -305,11 +313,13 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     }
 
     @Override
-    public Explanation explain(LeafReaderContext context, int doc, float finalScore, List<Explanation> featureExplanations) {
-      return Explanation.match(finalScore, toString()
-          + " logging model, used only for logging the features");
+    public Explanation explain(
+        LeafReaderContext context,
+        int doc,
+        float finalScore,
+        List<Explanation> featureExplanations) {
+      return Explanation.match(
+          finalScore, toString() + " logging model, used only for logging the features");
     }
-
   }
-
 }

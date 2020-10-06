@@ -16,15 +16,18 @@
  */
 package org.apache.solr.security;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.security.Principal;
 import java.security.PublicKey;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-
+import javax.servlet.FilterChain;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import org.apache.http.Header;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.message.BasicHttpRequest;
@@ -35,10 +38,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
-
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
@@ -69,17 +68,18 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   public void test() throws Exception {
     assumeWorkingMockito();
-    
+
     AtomicReference<Principal> principal = new AtomicReference<>();
     String nodeName = "node_x_233";
 
     final MockPKIAuthenticationPlugin mock = new MockPKIAuthenticationPlugin(null, nodeName);
-    LocalSolrQueryRequest localSolrQueryRequest = new LocalSolrQueryRequest(null, new ModifiableSolrParams()) {
-      @Override
-      public Principal getUserPrincipal() {
-        return principal.get();
-      }
-    };
+    LocalSolrQueryRequest localSolrQueryRequest =
+        new LocalSolrQueryRequest(null, new ModifiableSolrParams()) {
+          @Override
+          public Principal getUserPrincipal() {
+            return principal.get();
+          }
+        };
     PublicKey correctKey = CryptoKeys.deserializeX509PublicKey(mock.getPublicKey());
     mock.remoteKeys.put(nodeName, correctKey);
 
@@ -93,17 +93,19 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertTrue(header.get().getValue().startsWith(nodeName));
     final AtomicReference<ServletRequest> wrappedRequestByFilter = new AtomicReference<>();
     HttpServletRequest mockReq = createMockRequest(header);
-    FilterChain filterChain = (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
+    FilterChain filterChain =
+        (servletRequest, servletResponse) -> wrappedRequestByFilter.set(servletRequest);
     mock.authenticate(mockReq, null, filterChain);
 
     assertNotNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
     assertNotNull(wrappedRequestByFilter.get());
-    assertEquals("solr", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+    assertEquals(
+        "solr", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
 
-    //test 2
+    // test 2
     principal.set(null); // no user
     header.set(null);
-    wrappedRequestByFilter.set(null);//
+    wrappedRequestByFilter.set(null); //
     request = new BasicHttpRequest("GET", "http://localhost:56565");
     mock.setHeader(request);
     assertNull(request.getFirstHeader(PKIAuthenticationPlugin.HEADER));
@@ -111,9 +113,9 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     assertNotNull(wrappedRequestByFilter.get());
     assertNull(((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal());
 
-    //test 3 . No user request . Request originated from Solr
-    //create pub key in advance because it can take time and it should be
-    //created before the header is set
+    // test 3 . No user request . Request originated from Solr
+    // create pub key in advance because it can take time and it should be
+    // created before the header is set
     PublicKey key = new CryptoKeys.RSAKeyPair().getPublicKey();
     mock.solrRequestInfo = null;
     header.set(null);
@@ -126,36 +128,42 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
     mock.authenticate(mockReq, null, filterChain);
     assertNotNull(wrappedRequestByFilter.get());
-    assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+    assertEquals(
+        "$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
 
     /*test4 mock the restart of a node*/
-    MockPKIAuthenticationPlugin mock1 = new MockPKIAuthenticationPlugin(null, nodeName) {
-      int called = 0;
-      @Override
-      PublicKey getRemotePublicKey(String nodename) {
-        try {
-          return called == 0 ? key : correctKey;
-        } finally {
-          called++;
-        }
-      }
-    };
+    MockPKIAuthenticationPlugin mock1 =
+        new MockPKIAuthenticationPlugin(null, nodeName) {
+          int called = 0;
 
-    mock1.authenticate(mockReq, null,filterChain );
+          @Override
+          PublicKey getRemotePublicKey(String nodename) {
+            try {
+              return called == 0 ? key : correctKey;
+            } finally {
+              called++;
+            }
+          }
+        };
+
+    mock1.authenticate(mockReq, null, filterChain);
     assertNotNull(wrappedRequestByFilter.get());
-    assertEquals("$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
+    assertEquals(
+        "$", ((HttpServletRequest) wrappedRequestByFilter.get()).getUserPrincipal().getName());
     mock1.close();
     mock.close();
   }
 
   private HttpServletRequest createMockRequest(final AtomicReference<Header> header) {
     HttpServletRequest mockReq = mock(HttpServletRequest.class);
-    when(mockReq.getHeader(any(String.class))).then(invocation -> {
-      if (PKIAuthenticationPlugin.HEADER.equals(invocation.getArgument(0))) {
-        if (header.get() == null) return null;
-        return header.get().getValue();
-      } else return null;
-    });
+    when(mockReq.getHeader(any(String.class)))
+        .then(
+            invocation -> {
+              if (PKIAuthenticationPlugin.HEADER.equals(invocation.getArgument(0))) {
+                if (header.get() == null) return null;
+                return header.get().getValue();
+              } else return null;
+            });
     when(mockReq.getRequestURI()).thenReturn("/collection1/select");
     return mockReq;
   }

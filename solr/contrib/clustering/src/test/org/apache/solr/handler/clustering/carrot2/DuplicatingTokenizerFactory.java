@@ -18,7 +18,6 @@ package org.apache.solr.handler.clustering.carrot2;
 
 import java.io.IOException;
 import java.io.Reader;
-
 import org.carrot2.core.LanguageCode;
 import org.carrot2.text.analysis.ExtendedWhitespaceTokenizer;
 import org.carrot2.text.analysis.ITokenizer;
@@ -30,18 +29,18 @@ public class DuplicatingTokenizerFactory implements ITokenizerFactory {
   public ITokenizer getTokenizer(LanguageCode language) {
     return new ITokenizer() {
       private final ExtendedWhitespaceTokenizer delegate = new ExtendedWhitespaceTokenizer();
-      
+
       @Override
       public void setTermBuffer(MutableCharArray buffer) {
         delegate.setTermBuffer(buffer);
         buffer.reset(buffer.toString() + buffer.toString());
       }
-      
+
       @Override
       public void reset(Reader input) {
         delegate.reset(input);
       }
-      
+
       @Override
       public short nextToken() throws IOException {
         return delegate.nextToken();

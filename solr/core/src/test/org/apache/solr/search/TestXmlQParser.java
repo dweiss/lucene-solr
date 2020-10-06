@@ -17,9 +17,7 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.queryparser.xml.CoreParser;
-
 import org.apache.lucene.queryparser.xml.TestCoreParser;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.junit.AfterClass;
@@ -39,17 +37,14 @@ public class TestXmlQParser extends TestCoreParser {
   @Override
   protected CoreParser coreParser() {
     if (solrCoreParser == null) {
-      solrCoreParser = new SolrCoreParser(
-          super.defaultField(),
-          super.analyzer(),
-          null);
+      solrCoreParser = new SolrCoreParser(super.defaultField(), super.analyzer(), null);
     }
     return solrCoreParser;
   }
 
-  //public void testSomeOtherQuery() {
+  // public void testSomeOtherQuery() {
   //  Query q = parse("SomeOtherQuery.xml");
   //  dumpResults("SomeOtherQuery", q, ?);
-  //}
+  // }
 
 }

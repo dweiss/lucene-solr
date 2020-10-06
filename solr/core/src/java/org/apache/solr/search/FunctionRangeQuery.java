@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -50,6 +49,7 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
   class FunctionRangeCollector extends DelegatingCollector {
     @SuppressWarnings({"rawtypes"})
     final Map fcontext;
+
     final Weight weight;
     ValueSourceScorer scorer;
     int maxdoc;
@@ -74,7 +74,14 @@ public class FunctionRangeQuery extends SolrConstantScoreQuery implements PostFi
       maxdoc = context.reader().maxDoc();
       @SuppressWarnings({"unchecked"})
       FunctionValues dv = rangeFilt.getValueSource().getValues(fcontext, context);
-      scorer = dv.getRangeScorer(weight, context, rangeFilt.getLowerVal(), rangeFilt.getUpperVal(), rangeFilt.isIncludeLower(), rangeFilt.isIncludeUpper());
+      scorer =
+          dv.getRangeScorer(
+              weight,
+              context,
+              rangeFilt.getLowerVal(),
+              rangeFilt.getUpperVal(),
+              rangeFilt.isIncludeLower(),
+              rangeFilt.isIncludeUpper());
     }
   }
 }

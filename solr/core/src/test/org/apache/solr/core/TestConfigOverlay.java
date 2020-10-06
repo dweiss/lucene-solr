@@ -16,12 +16,11 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.core.ConfigOverlay.isEditableProp;
+
 import java.util.Collections;
 import java.util.Map;
-
 import org.apache.solr.SolrTestCase;
-
-import static org.apache.solr.core.ConfigOverlay.isEditableProp;
 
 public class TestConfigOverlay extends SolrTestCase {
 
@@ -50,11 +49,15 @@ public class TestConfigOverlay extends SolrTestCase {
     assertTrue(isEditableProp("jmx.serviceUrl", false, null));
     assertTrue(isEditableProp("jmx.rootName", false, null));
 
-    assertTrue(isEditableProp("requestDispatcher.requestParsers.multipartUploadLimitInKB", false, null));
-    assertTrue(isEditableProp("requestDispatcher.requestParsers.formdataUploadLimitInKB", false, null));
-    assertTrue(isEditableProp("requestDispatcher.requestParsers.enableRemoteStreaming", false, null));
+    assertTrue(
+        isEditableProp("requestDispatcher.requestParsers.multipartUploadLimitInKB", false, null));
+    assertTrue(
+        isEditableProp("requestDispatcher.requestParsers.formdataUploadLimitInKB", false, null));
+    assertTrue(
+        isEditableProp("requestDispatcher.requestParsers.enableRemoteStreaming", false, null));
     assertTrue(isEditableProp("requestDispatcher.requestParsers.enableStreamBody", false, null));
-    assertTrue(isEditableProp("requestDispatcher.requestParsers.addHttpRequestToContext", false, null));
+    assertTrue(
+        isEditableProp("requestDispatcher.requestParsers.addHttpRequestToContext", false, null));
 
     assertTrue(isEditableProp("requestDispatcher.handleSelect", false, null));
 
@@ -64,16 +67,14 @@ public class TestConfigOverlay extends SolrTestCase {
     assertFalse(isEditableProp("query/filterCache/@initialSize1", true, null));
   }
 
-  public void testSetProperty(){
+  public void testSetProperty() {
     @SuppressWarnings({"unchecked"})
-    ConfigOverlay overlay = new ConfigOverlay(Collections.EMPTY_MAP,0);
-    overlay = overlay.setProperty("query.filterCache.initialSize",100);
+    ConfigOverlay overlay = new ConfigOverlay(Collections.EMPTY_MAP, 0);
+    overlay = overlay.setProperty("query.filterCache.initialSize", 100);
     assertEquals(100, overlay.getXPathProperty("query/filterCache/@initialSize"));
     Map<String, String> map = overlay.getEditableSubProperties("query/filterCache");
     assertNotNull(map);
-    assertEquals(1,map.size());
-    assertEquals(100,map.get("initialSize"));
+    assertEquals(1, map.size());
+    assertEquals(100, map.get("initialSize"));
   }
-
-
 }

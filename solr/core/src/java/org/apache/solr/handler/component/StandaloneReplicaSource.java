@@ -19,12 +19,9 @@ package org.apache.solr.handler.component;
 
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.solr.common.util.StrUtils;
 
-/**
- * A replica source for solr stand alone mode
- */
+/** A replica source for solr stand alone mode */
 class StandaloneReplicaSource implements ReplicaSource {
   private List<String>[] replicas;
 

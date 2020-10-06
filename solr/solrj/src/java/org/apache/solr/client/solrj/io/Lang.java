@@ -16,6 +16,12 @@
  */
 package org.apache.solr.client.solrj.io;
 
+import java.io.IOException;
+import java.util.List;
+import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
+import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.*;
 import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
@@ -23,6 +29,11 @@ import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
@@ -31,18 +42,8 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.PercentileMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.StdMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
-import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.expr.Explanation;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.common.params.CommonParams;
-import java.io.IOException;
-import java.util.List;
+
 public class Lang {
 
   public static void register(StreamFactory streamFactory) {
@@ -59,8 +60,7 @@ public class Lang {
         .withFunctionName("random", RandomFacadeStream.class)
         .withFunctionName("knnSearch", KnnStream.class)
 
-
-            // decorator streams
+        // decorator streams
         .withFunctionName("merge", MergeStream.class)
         .withFunctionName("unique", UniqueStream.class)
         .withFunctionName("top", RankStream.class)
@@ -120,18 +120,18 @@ public class Lang {
         .withFunctionName("std", StdMetric.class)
         .withFunctionName("count", CountMetric.class)
 
-            // tuple manipulation operations
+        // tuple manipulation operations
         .withFunctionName("replace", ReplaceOperation.class)
 
-            // stream reduction operations
+        // stream reduction operations
         .withFunctionName("group", GroupOperation.class)
         .withFunctionName("distinct", DistinctOperation.class)
         .withFunctionName("having", HavingStream.class)
 
-            // Stream Evaluators
+        // Stream Evaluators
         .withFunctionName("val", RawValueEvaluator.class)
 
-            // New Evaluators
+        // New Evaluators
         .withFunctionName("anova", AnovaEvaluator.class)
         .withFunctionName("array", ArrayEvaluator.class)
         .withFunctionName("col", ColumnEvaluator.class)
@@ -222,7 +222,8 @@ public class Lang {
         .withFunctionName("spline", SplineEvaluator.class)
         .withFunctionName("ttest", TTestEvaluator.class)
         .withFunctionName("pairedTtest", PairedTTestEvaluator.class)
-        .withFunctionName("multiVariateNormalDistribution", MultiVariateNormalDistributionEvaluator.class)
+        .withFunctionName(
+            "multiVariateNormalDistribution", MultiVariateNormalDistributionEvaluator.class)
         .withFunctionName("integral", IntegrateEvaluator.class)
         .withFunctionName("density", DensityEvaluator.class)
         .withFunctionName("mannWhitney", MannWhitneyUEvaluator.class)
@@ -333,20 +334,22 @@ public class Lang {
         .withFunctionName("not", NotEvaluator.class)
         .withFunctionName("or", OrEvaluator.class)
 
-            // Date Time Evaluators
+        // Date Time Evaluators
         .withFunctionName(TemporalEvaluatorYear.FUNCTION_NAME, TemporalEvaluatorYear.class)
         .withFunctionName(TemporalEvaluatorMonth.FUNCTION_NAME, TemporalEvaluatorMonth.class)
         .withFunctionName(TemporalEvaluatorDay.FUNCTION_NAME, TemporalEvaluatorDay.class)
-        .withFunctionName(TemporalEvaluatorDayOfYear.FUNCTION_NAME, TemporalEvaluatorDayOfYear.class)
+        .withFunctionName(
+            TemporalEvaluatorDayOfYear.FUNCTION_NAME, TemporalEvaluatorDayOfYear.class)
         .withFunctionName(TemporalEvaluatorHour.FUNCTION_NAME, TemporalEvaluatorHour.class)
         .withFunctionName(TemporalEvaluatorMinute.FUNCTION_NAME, TemporalEvaluatorMinute.class)
         .withFunctionName(TemporalEvaluatorSecond.FUNCTION_NAME, TemporalEvaluatorSecond.class)
         .withFunctionName(TemporalEvaluatorEpoch.FUNCTION_NAME, TemporalEvaluatorEpoch.class)
         .withFunctionName(TemporalEvaluatorWeek.FUNCTION_NAME, TemporalEvaluatorWeek.class)
         .withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME, TemporalEvaluatorQuarter.class)
-        .withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
+        .withFunctionName(
+            TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, TemporalEvaluatorDayOfQuarter.class)
 
-            // Number Stream Evaluators
+        // Number Stream Evaluators
         .withFunctionName("abs", AbsoluteValueEvaluator.class)
         .withFunctionName("add", AddEvaluator.class)
         .withFunctionName("div", DivideEvaluator.class)
@@ -373,17 +376,15 @@ public class Lang {
         .withFunctionName("coalesce", CoalesceEvaluator.class)
         .withFunctionName("uuid", UuidEvaluator.class)
 
-            // Conditional Stream Evaluators
+        // Conditional Stream Evaluators
         .withFunctionName("if", IfThenElseEvaluator.class)
         .withFunctionName("convert", ConversionEvaluator.class);
   }
-
 
   public static class LocalInputStream extends TupleStream implements Expressible {
 
     private StreamComparator streamComparator;
     private String sort;
-
 
     public LocalInputStream(StreamExpression expression, StreamFactory factory) throws IOException {
       this.streamComparator = parseComp(factory.getDefaultSort());
@@ -391,7 +392,7 @@ public class Lang {
 
     @Override
     public void setStreamContext(StreamContext context) {
-      sort = (String)context.get(CommonParams.SORT);
+      sort = (String) context.get(CommonParams.SORT);
     }
 
     @Override
@@ -403,10 +404,11 @@ public class Lang {
 
       String[] sorts = sort.split(",");
       StreamComparator[] comps = new StreamComparator[sorts.length];
-      for(int i=0; i<sorts.length; i++) {
+      for (int i = 0; i < sorts.length; i++) {
         String s = sorts[i];
 
-        String[] spec = s.trim().split("\\s+"); //This should take into account spaces in the sort spec.
+        String[] spec =
+            s.trim().split("\\s+"); // This should take into account spaces in the sort spec.
 
         if (spec.length != 2) {
           throw new IOException("Invalid sort spec:" + s);
@@ -415,10 +417,15 @@ public class Lang {
         String fieldName = spec[0].trim();
         String order = spec[1].trim();
 
-        comps[i] = new FieldComparator(fieldName, order.equalsIgnoreCase("asc") ? ComparatorOrder.ASCENDING : ComparatorOrder.DESCENDING);
+        comps[i] =
+            new FieldComparator(
+                fieldName,
+                order.equalsIgnoreCase("asc")
+                    ? ComparatorOrder.ASCENDING
+                    : ComparatorOrder.DESCENDING);
       }
 
-      if(comps.length > 1) {
+      if (comps.length > 1) {
         return new MultipleFieldComparator(comps);
       } else {
         return comps[0];
@@ -431,9 +438,7 @@ public class Lang {
     }
 
     @Override
-    public void close() throws IOException {
-
-    }
+    public void close() throws IOException {}
 
     @Override
     public Tuple read() throws IOException {
@@ -460,6 +465,4 @@ public class Lang {
           .withExpression("--non-expressible--");
     }
   }
-
-
 }

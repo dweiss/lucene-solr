@@ -17,14 +17,12 @@
 package org.apache.solr.analysis;
 
 import java.util.Collections;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
-import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
-
 
 public class TokenizerChainTest extends SolrTestCaseJ4 {
 
@@ -35,11 +33,9 @@ public class TokenizerChainTest extends SolrTestCaseJ4 {
     TokenFilterFactory[] tff = new TokenFilterFactory[2];
     tff[0] = new LowerCaseFilterFactory(Collections.EMPTY_MAP);
     tff[1] = new ASCIIFoldingFilterFactory(Collections.EMPTY_MAP);
-    TokenizerChain tokenizerChain = new TokenizerChain(
-        new MockTokenizerFactory(Collections.EMPTY_MAP),
-        tff);
-    assertEquals(new BytesRef("fooba"),
-        tokenizerChain.normalize(fieldName, "FOOB\u00c4"));
+    TokenizerChain tokenizerChain =
+        new TokenizerChain(new MockTokenizerFactory(Collections.EMPTY_MAP), tff);
+    assertEquals(new BytesRef("fooba"), tokenizerChain.normalize(fieldName, "FOOB\u00c4"));
     tokenizerChain.close();
   }
 }

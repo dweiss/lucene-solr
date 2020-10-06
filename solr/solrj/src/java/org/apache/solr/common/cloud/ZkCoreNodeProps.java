@@ -18,15 +18,17 @@ package org.apache.solr.common.cloud;
 
 public class ZkCoreNodeProps {
   private ZkNodeProps nodeProps;
-  
+
   public ZkCoreNodeProps(ZkNodeProps nodeProps) {
     this.nodeProps = nodeProps;
   }
-  
+
   public String getCoreUrl() {
-    return getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), nodeProps.getStr(ZkStateReader.CORE_NAME_PROP));
+    return getCoreUrl(
+        nodeProps.getStr(ZkStateReader.BASE_URL_PROP),
+        nodeProps.getStr(ZkStateReader.CORE_NAME_PROP));
   }
-  
+
   public String getNodeName() {
     return nodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
   }
@@ -38,15 +40,17 @@ public class ZkCoreNodeProps {
   public String getBaseUrl() {
     return nodeProps.getStr(ZkStateReader.BASE_URL_PROP);
   }
-  
+
   public String getCoreName() {
     return nodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
   }
-  
+
   public static String getCoreUrl(ZkNodeProps nodeProps) {
-    return getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), nodeProps.getStr(ZkStateReader.CORE_NAME_PROP));
+    return getCoreUrl(
+        nodeProps.getStr(ZkStateReader.BASE_URL_PROP),
+        nodeProps.getStr(ZkStateReader.CORE_NAME_PROP));
   }
-  
+
   public static String getCoreUrl(String baseUrl, String coreName) {
     StringBuilder sb = new StringBuilder();
     sb.append(baseUrl);
@@ -68,6 +72,4 @@ public class ZkCoreNodeProps {
   public boolean isLeader() {
     return nodeProps.containsKey(ZkStateReader.LEADER_PROP);
   }
-
-
 }

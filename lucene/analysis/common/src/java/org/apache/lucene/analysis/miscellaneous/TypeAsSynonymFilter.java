@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -27,17 +26,17 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /**
- * Adds the {@link TypeAttribute#type()} as a synonym,
- * i.e. another token at the same position, optionally with a specified prefix prepended.
+ * Adds the {@link TypeAttribute#type()} as a synonym, i.e. another token at the same position,
+ * optionally with a specified prefix prepended.
  */
 public final class TypeAsSynonymFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final String prefix;
 
   AttributeSource.State savedToken = null;
-
 
   public TypeAsSynonymFilter(TokenStream input) {
     this(input, null);
@@ -45,8 +44,8 @@ public final class TypeAsSynonymFilter extends TokenFilter {
 
   /**
    * @param input input tokenstream
-   * @param prefix Prepend this string to every token type emitted as token text.
-   *               If null, nothing will be prepended.
+   * @param prefix Prepend this string to every token type emitted as token text. If null, nothing
+   *     will be prepended.
    */
   public TypeAsSynonymFilter(TokenStream input, String prefix) {
     super(input);
@@ -55,7 +54,7 @@ public final class TypeAsSynonymFilter extends TokenFilter {
 
   @Override
   public boolean incrementToken() throws IOException {
-    if (savedToken != null) {         // Emit last token's type at the same position
+    if (savedToken != null) { // Emit last token's type at the same position
       restoreState(savedToken);
       savedToken = null;
       termAtt.setEmpty();

@@ -21,9 +21,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.junit.Test;
 
-/**
- * Basic error checking of ConfigSetAdminRequests.
- */
+/** Basic error checking of ConfigSetAdminRequests. */
 public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
 
   @Test
@@ -47,23 +45,27 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     verifyException(delete, "ConfigSet");
   }
 
-  private void verifyException(@SuppressWarnings({"rawtypes"})ConfigSetAdminRequest request, String errorContains) {
+  private void verifyException(
+      @SuppressWarnings({"rawtypes"}) ConfigSetAdminRequest request, String errorContains) {
     Exception e = expectThrows(Exception.class, request::getParams);
-    assertTrue("Expected exception message to contain: " + errorContains,
+    assertTrue(
+        "Expected exception message to contain: " + errorContains,
         e.getMessage().contains(errorContains));
   }
 
-  private static class MyConfigSetAdminRequest extends ConfigSetAdminRequest<MyConfigSetAdminRequest, ConfigSetAdminResponse> {
-      public MyConfigSetAdminRequest() {}
+  private static class MyConfigSetAdminRequest
+      extends ConfigSetAdminRequest<MyConfigSetAdminRequest, ConfigSetAdminResponse> {
+    public MyConfigSetAdminRequest() {}
 
-      @Override
-      public MyConfigSetAdminRequest getThis() {
-        return this;
-      }
+    @Override
+    public MyConfigSetAdminRequest getThis() {
+      return this;
+    }
 
-      @Override
-      public ConfigSetAdminResponse createResponse(SolrClient client) {
-        return new ConfigSetAdminResponse();
-      }
-    };
+    @Override
+    public ConfigSetAdminResponse createResponse(SolrClient client) {
+      return new ConfigSetAdminResponse();
+    }
+  }
+  ;
 }

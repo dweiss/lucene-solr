@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.io.graph;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +32,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
@@ -52,17 +53,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 
-import static org.apache.solr.common.params.CommonParams.SORT;
-
-/**
- * @since 6.1.0
- */
+/** @since 6.1.0 */
 public class GatherNodesStream extends TupleStream implements Expressible {
 
   private String zkHost;
   private String collection;
   private StreamContext streamContext;
-  private Map<String,String> queryParams;
+  private Map<String, String> queryParams;
   private String traverseFrom;
   private String traverseTo;
   private String gather;
@@ -76,19 +73,21 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private List<Metric> metrics;
   private int maxDocFreq;
 
-  public GatherNodesStream(String zkHost,
-                           String collection,
-                           TupleStream tupleStream,
-                           String traverseFrom,
-                           String traverseTo,
-                           String gather,
-                           @SuppressWarnings({"rawtypes"})Map queryParams,
-                           List<Metric> metrics,
-                           boolean trackTraversal,
-                           Set<Traversal.Scatter> scatter,
-                           int maxDocFreq) {
+  public GatherNodesStream(
+      String zkHost,
+      String collection,
+      TupleStream tupleStream,
+      String traverseFrom,
+      String traverseTo,
+      String gather,
+      @SuppressWarnings({"rawtypes"}) Map queryParams,
+      List<Metric> metrics,
+      boolean trackTraversal,
+      Set<Traversal.Scatter> scatter,
+      int maxDocFreq) {
 
-    init(zkHost,
+    init(
+        zkHost,
         collection,
         tupleStream,
         traverseFrom,
@@ -103,30 +102,35 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
   public GatherNodesStream(StreamExpression expression, StreamFactory factory) throws IOException {
 
-
     String collectionName = factory.getValueOperand(expression, 0);
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
 
-    List<StreamExpression> streamExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, TupleStream.class);
+    List<StreamExpression> streamExpressions =
+        factory.getExpressionOperandsRepresentingTypes(
+            expression, Expressible.class, TupleStream.class);
     // Collection Name
-    if(null == collectionName) {
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    if (null == collectionName) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - collectionName expected as first operand",
+              expression));
     }
-
 
     Set<Traversal.Scatter> scatter = new HashSet<>();
 
-    StreamExpressionNamedParameter scatterExpression = factory.getNamedOperand(expression, "scatter");
+    StreamExpressionNamedParameter scatterExpression =
+        factory.getNamedOperand(expression, "scatter");
 
-    if(scatterExpression == null) {
+    if (scatterExpression == null) {
       scatter.add(Traversal.Scatter.LEAVES);
     } else {
-      String s =  ((StreamExpressionValue)scatterExpression.getParameter()).getValue();
+      String s = ((StreamExpressionValue) scatterExpression.getParameter()).getValue();
       String[] sArray = s.split(",");
-      for(String sv : sArray) {
+      for (String sv : sArray) {
         sv = sv.trim();
-        if(Traversal.Scatter.BRANCHES.toString().equalsIgnoreCase(sv)) {
+        if (Traversal.Scatter.BRANCHES.toString().equalsIgnoreCase(sv)) {
           scatter.add(Traversal.Scatter.BRANCHES);
         } else if (Traversal.Scatter.LEAVES.toString().equalsIgnoreCase(sv)) {
           scatter.add(Traversal.Scatter.LEAVES);
@@ -137,10 +141,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     String gather = null;
     StreamExpressionNamedParameter gatherExpression = factory.getNamedOperand(expression, "gather");
 
-    if(gatherExpression == null) {
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - from param is required",expression));
+    if (gatherExpression == null) {
+      throw new IOException(
+          String.format(Locale.ROOT, "invalid expression %s - from param is required", expression));
     } else {
-      gather = ((StreamExpressionValue)gatherExpression.getParameter()).getValue();
+      gather = ((StreamExpressionValue) gatherExpression.getParameter()).getValue();
     }
 
     String traverseFrom = null;
@@ -149,15 +154,20 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     TupleStream stream = null;
 
-    if(edgeExpression == null) {
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - walk param is required", expression));
+    if (edgeExpression == null) {
+      throw new IOException(
+          String.format(Locale.ROOT, "invalid expression %s - walk param is required", expression));
     } else {
-      if(streamExpressions.size() > 0) {
+      if (streamExpressions.size() > 0) {
         stream = factory.constructStream(streamExpressions.get(0));
         String edge = ((StreamExpressionValue) edgeExpression.getParameter()).getValue();
         String[] fields = edge.split("->");
         if (fields.length != 2) {
-          throw new IOException(String.format(Locale.ROOT, "invalid expression %s - walk param separated by an -> and must contain two fields", expression));
+          throw new IOException(
+              String.format(
+                  Locale.ROOT,
+                  "invalid expression %s - walk param separated by an -> and must contain two fields",
+                  expression));
         }
         traverseFrom = fields[0].trim();
         traverseTo = fields[1].trim();
@@ -165,12 +175,16 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         String edge = ((StreamExpressionValue) edgeExpression.getParameter()).getValue();
         String[] fields = edge.split("->");
         if (fields.length != 2) {
-          throw new IOException(String.format(Locale.ROOT, "invalid expression %s - walk param separated by an -> and must contain two fields", expression));
+          throw new IOException(
+              String.format(
+                  Locale.ROOT,
+                  "invalid expression %s - walk param separated by an -> and must contain two fields",
+                  expression));
         }
 
         String[] rootNodes = fields[0].split(",");
         List<String> l = new ArrayList<>();
-        for(String n : rootNodes) {
+        for (String n : rootNodes) {
           l.add(n.trim());
         }
 
@@ -180,83 +194,94 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
     }
 
-    List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
+    List<StreamExpression> metricExpressions =
+        factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
     List<Metric> metrics = new ArrayList<>();
-    for(int idx = 0; idx < metricExpressions.size(); ++idx){
+    for (int idx = 0; idx < metricExpressions.size(); ++idx) {
       metrics.add(factory.constructMetric(metricExpressions.get(idx)));
     }
 
     boolean trackTraversal = false;
 
-    StreamExpressionNamedParameter trackExpression = factory.getNamedOperand(expression, "trackTraversal");
+    StreamExpressionNamedParameter trackExpression =
+        factory.getNamedOperand(expression, "trackTraversal");
 
-    if(trackExpression != null) {
-      trackTraversal = Boolean.parseBoolean(((StreamExpressionValue) trackExpression.getParameter()).getValue());
+    if (trackExpression != null) {
+      trackTraversal =
+          Boolean.parseBoolean(((StreamExpressionValue) trackExpression.getParameter()).getValue());
     } else {
       useDefaultTraversal = true;
     }
 
-    StreamExpressionNamedParameter docFreqExpression = factory.getNamedOperand(expression, "maxDocFreq");
+    StreamExpressionNamedParameter docFreqExpression =
+        factory.getNamedOperand(expression, "maxDocFreq");
     int docFreq = -1;
 
-    if(docFreqExpression != null) {
-      docFreq = Integer.parseInt(((StreamExpressionValue) docFreqExpression.getParameter()).getValue());
+    if (docFreqExpression != null) {
+      docFreq =
+          Integer.parseInt(((StreamExpressionValue) docFreqExpression.getParameter()).getValue());
     }
 
-    Map<String,String> params = new HashMap<String,String>();
-    for(StreamExpressionNamedParameter namedParam : namedParams){
-      if(!namedParam.getName().equals("zkHost") &&
-          !namedParam.getName().equals("gather") &&
-          !namedParam.getName().equals("walk") &&
-          !namedParam.getName().equals("scatter") &&
-          !namedParam.getName().equals("maxDocFreq") &&
-          !namedParam.getName().equals("trackTraversal"))
-      {
+    Map<String, String> params = new HashMap<String, String>();
+    for (StreamExpressionNamedParameter namedParam : namedParams) {
+      if (!namedParam.getName().equals("zkHost")
+          && !namedParam.getName().equals("gather")
+          && !namedParam.getName().equals("walk")
+          && !namedParam.getName().equals("scatter")
+          && !namedParam.getName().equals("maxDocFreq")
+          && !namedParam.getName().equals("trackTraversal")) {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
 
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
-    if(null == zkHostExpression){
+    if (null == zkHostExpression) {
       zkHost = factory.getCollectionZkHost(collectionName);
-      if(zkHost == null) {
+      if (zkHost == null) {
         zkHost = factory.getDefaultZkHost();
       }
-    } else if(zkHostExpression.getParameter() instanceof StreamExpressionValue) {
-      zkHost = ((StreamExpressionValue)zkHostExpression.getParameter()).getValue();
+    } else if (zkHostExpression.getParameter() instanceof StreamExpressionValue) {
+      zkHost = ((StreamExpressionValue) zkHostExpression.getParameter()).getValue();
     }
 
-    if(null == zkHost){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - zkHost not found for collection '%s'",expression,collectionName));
+    if (null == zkHost) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - zkHost not found for collection '%s'",
+              expression,
+              collectionName));
     }
 
     // We've got all the required items
-    init(zkHost,
-         collectionName,
-         stream,
-         traverseFrom,
-         traverseTo ,
-         gather,
-         params,
-         metrics,
-         trackTraversal,
-         scatter,
-         docFreq);
+    init(
+        zkHost,
+        collectionName,
+        stream,
+        traverseFrom,
+        traverseTo,
+        gather,
+        params,
+        metrics,
+        trackTraversal,
+        scatter,
+        docFreq);
   }
 
   @SuppressWarnings({"unchecked"})
-  private void init(String zkHost,
-                    String collection,
-                    TupleStream tupleStream,
-                    String traverseFrom,
-                    String traverseTo,
-                    String gather,
-                    @SuppressWarnings({"rawtypes"})Map queryParams,
-                    List<Metric> metrics,
-                    boolean trackTraversal,
-                    Set<Traversal.Scatter> scatter,
-                    int maxDocFreq) {
+  private void init(
+      String zkHost,
+      String collection,
+      TupleStream tupleStream,
+      String traverseFrom,
+      String traverseTo,
+      String gather,
+      @SuppressWarnings({"rawtypes"}) Map queryParams,
+      List<Metric> metrics,
+      boolean trackTraversal,
+      Set<Traversal.Scatter> scatter,
+      int maxDocFreq) {
     this.zkHost = zkHost;
     this.collection = collection;
     this.tupleStream = tupleStream;
@@ -271,32 +296,32 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     return toExpression(factory, true);
   }
-  
-  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
+
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams)
+      throws IOException {
 
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
     // collection
     expression.addParameter(collection);
 
-    if(includeStreams && !(tupleStream instanceof NodeStream)){
-      if(tupleStream instanceof Expressible){
-        expression.addParameter(((Expressible)tupleStream).toExpression(factory));
+    if (includeStreams && !(tupleStream instanceof NodeStream)) {
+      if (tupleStream instanceof Expressible) {
+        expression.addParameter(((Expressible) tupleStream).toExpression(factory));
+      } else {
+        throw new IOException(
+            "This GatherNodesStream contains a non-expressible TupleStream - it cannot be converted to an expression");
       }
-      else{
-        throw new IOException("This GatherNodesStream contains a non-expressible TupleStream - it cannot be converted to an expression");
-      }
-    }
-    else{
+    } else {
       expression.addParameter("<stream>");
     }
 
-    Set<Map.Entry<String,String>> entries =  queryParams.entrySet();
+    Set<Map.Entry<String, String>> entries = queryParams.entrySet();
     // parameters
-    for(@SuppressWarnings({"rawtypes"})Map.Entry param : entries){
+    for (@SuppressWarnings({"rawtypes"}) Map.Entry param : entries) {
       String value = param.getValue().toString();
 
       // SOLR-8409: This is a special case where the params contain a " character
@@ -307,7 +332,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       expression.addParameter(new StreamExpressionNamedParameter(param.getKey().toString(), value));
     }
 
-    if(metrics != null) {
+    if (metrics != null) {
       for (Metric metric : metrics) {
         expression.addParameter(metric.toExpression(factory));
       }
@@ -315,22 +340,26 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
     expression.addParameter(new StreamExpressionNamedParameter("gather", zkHost));
-    if(maxDocFreq > -1) {
-      expression.addParameter(new StreamExpressionNamedParameter("maxDocFreq", Integer.toString(maxDocFreq)));
+    if (maxDocFreq > -1) {
+      expression.addParameter(
+          new StreamExpressionNamedParameter("maxDocFreq", Integer.toString(maxDocFreq)));
     }
-    if(tupleStream instanceof NodeStream) {
-      NodeStream nodeStream = (NodeStream)tupleStream;
-      expression.addParameter(new StreamExpressionNamedParameter("walk", nodeStream.toString() + "->" + traverseTo));
+    if (tupleStream instanceof NodeStream) {
+      NodeStream nodeStream = (NodeStream) tupleStream;
+      expression.addParameter(
+          new StreamExpressionNamedParameter("walk", nodeStream.toString() + "->" + traverseTo));
 
     } else {
-      expression.addParameter(new StreamExpressionNamedParameter("walk", traverseFrom + "->" + traverseTo));
+      expression.addParameter(
+          new StreamExpressionNamedParameter("walk", traverseFrom + "->" + traverseTo));
     }
 
-    expression.addParameter(new StreamExpressionNamedParameter("trackTraversal", Boolean.toString(trackTraversal)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter("trackTraversal", Boolean.toString(trackTraversal)));
 
     StringBuilder buf = new StringBuilder();
-    for(Traversal.Scatter sc : scatter) {
-      if(buf.length() > 0 ) {
+    for (Traversal.Scatter sc : scatter) {
+      if (buf.length() > 0) {
         buf.append(",");
       }
       buf.append(sc.toString());
@@ -340,43 +369,46 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     return expression;
   }
-  
+
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
 
     StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
-    
+
     explanation.setFunctionName(factory.getFunctionName(this.getClass()));
     explanation.setImplementingClass(this.getClass().getName());
     explanation.setExpressionType(ExpressionType.GRAPH_SOURCE);
     explanation.setExpression(toExpression(factory).toString());
-    
+
     // one child is a stream
     explanation.addChild(tupleStream.toExplanation(factory));
-    
+
     // one child is a datastore so add it at this point
     StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
     child.setFunctionName("solr (graph)");
     child.setImplementingClass("Solr/Lucene");
-    child.setExpressionType(ExpressionType.DATASTORE);    
-    child.setExpression(queryParams.entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));    
+    child.setExpressionType(ExpressionType.DATASTORE);
+    child.setExpression(
+        queryParams.entrySet().stream()
+            .map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue()))
+            .collect(Collectors.joining(",")));
     explanation.addChild(child);
-    
-    if(null != metrics){
-      for(Metric metric : metrics){
-          explanation.addHelper(metric.toExplanation(factory));
+
+    if (null != metrics) {
+      for (Metric metric : metrics) {
+        explanation.addHelper(metric.toExplanation(factory));
       }
     }
-    
+
     return explanation;
   }
-
 
   public void setStreamContext(StreamContext context) {
     this.traversal = (Traversal) context.get("traversal");
     if (traversal == null) {
-      //No traversal in the context. So create a new context and a new traversal.
-      //This ensures that two separate traversals in the same expression don't pollute each others traversal.
+      // No traversal in the context. So create a new context and a new traversal.
+      // This ensures that two separate traversals in the same expression don't pollute each others
+      // traversal.
       StreamContext localContext = new StreamContext();
 
       localContext.numWorkers = context.numWorkers;
@@ -384,7 +416,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       localContext.setSolrClientCache(context.getSolrClientCache());
       localContext.setStreamFactory(context.getStreamFactory());
 
-      for(Object key :context.getEntries().keySet()) {
+      for (Object key : context.getEntries().keySet()) {
         localContext.put(key, context.get(key));
       }
 
@@ -401,7 +433,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList<>();
+    List<TupleStream> l = new ArrayList<>();
     l.add(tupleStream);
     return l;
   }
@@ -422,65 +454,69 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     public List<Tuple> call() {
 
-
       Set<String> flSet = new HashSet<>();
       flSet.add(gather);
       flSet.add(traverseTo);
 
-      //Add the metric columns
+      // Add the metric columns
 
-      if(metrics != null) {
-        for(Metric metric : metrics) {
-          for(String column : metric.getColumns()) {
+      if (metrics != null) {
+        for (Metric metric : metrics) {
+          for (String column : metric.getColumns()) {
             flSet.add(column);
           }
         }
       }
 
-      if(queryParams.containsKey("fl")) {
+      if (queryParams.containsKey("fl")) {
         String flString = queryParams.get("fl");
         String[] flArray = flString.split(",");
-        for(String f : flArray) {
+        for (String f : flArray) {
           flSet.add(f.trim());
         }
       }
 
       Iterator<String> it = flSet.iterator();
       StringBuilder buf = new StringBuilder();
-      while(it.hasNext()) {
+      while (it.hasNext()) {
         buf.append(it.next());
-        if(it.hasNext()) {
+        if (it.hasNext()) {
           buf.append(",");
         }
       }
-      
+
       ModifiableSolrParams joinSParams = new ModifiableSolrParams();
       queryParams.forEach(joinSParams::add);
       joinSParams.set("fl", buf.toString());
       joinSParams.set("qt", "/export");
-      joinSParams.set(SORT, gather + " asc,"+traverseTo +" asc");
+      joinSParams.set(SORT, gather + " asc," + traverseTo + " asc");
 
       StringBuffer nodeQuery = new StringBuffer();
 
       boolean comma = false;
-      for(String node : nodes) {
-        if(comma) {
+      for (String node : nodes) {
+        if (comma) {
           nodeQuery.append(",");
         }
         nodeQuery.append(node);
         comma = true;
       }
 
-      if(maxDocFreq > -1) {
-        String docFreqParam = " maxDocFreq="+maxDocFreq;
-        joinSParams.set("q", "{!graphTerms f=" + traverseTo + docFreqParam + "}" + nodeQuery.toString());
+      if (maxDocFreq > -1) {
+        String docFreqParam = " maxDocFreq=" + maxDocFreq;
+        joinSParams.set(
+            "q", "{!graphTerms f=" + traverseTo + docFreqParam + "}" + nodeQuery.toString());
       } else {
-        joinSParams.set("q", "{!terms f=" + traverseTo+"}" + nodeQuery.toString());
+        joinSParams.set("q", "{!terms f=" + traverseTo + "}" + nodeQuery.toString());
       }
 
       TupleStream stream = null;
       try {
-        stream = new UniqueStream(new CloudSolrStream(zkHost, collection, joinSParams), new MultipleFieldEqualitor(new FieldEqualitor(gather), new FieldEqualitor(traverseTo)));
+        stream =
+            new UniqueStream(
+                new CloudSolrStream(zkHost, collection, joinSParams),
+                new MultipleFieldEqualitor(
+                    new FieldEqualitor(gather), new FieldEqualitor(traverseTo)));
         stream.setStreamContext(streamContext);
         stream.open();
         BATCH:
@@ -497,14 +533,13 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       } finally {
         try {
           stream.close();
-        } catch(Exception ce) {
+        } catch (Exception ce) {
           throw new RuntimeException(ce);
         }
       }
       return edges;
     }
   }
-
 
   public void close() throws IOException {
     tupleStream.close();
@@ -520,7 +555,9 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
       ExecutorService threadPool = null;
       try {
-        threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(4, new SolrNamedThreadFactory("GatherNodesStream"));
+        threadPool =
+            ExecutorUtil.newMDCAwareFixedThreadPool(
+                4, new SolrNamedThreadFactory("GatherNodesStream"));
 
         Map<String, Node> roots = new HashMap<>();
 
@@ -538,11 +575,12 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
           String value = tuple.getString(traverseFrom);
 
-          if(traversal.getDepth() == 0) {
-            //This gathers the root nodes
-            //We check to see if there are dupes in the root nodes because root streams may not have been uniqued.
-            String key = collection+"."+value;
-            if(!roots.containsKey(key)) {
+          if (traversal.getDepth() == 0) {
+            // This gathers the root nodes
+            // We check to see if there are dupes in the root nodes because root streams may not
+            // have been uniqued.
+            String key = collection + "." + value;
+            if (!roots.containsKey(key)) {
               Node node = new Node(value, trackTraversal);
               if (metrics != null) {
                 List<Metric> _metrics = new ArrayList<>();
@@ -568,13 +606,13 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           }
         }
 
-        if(traversal.getDepth() == 0) {
+        if (traversal.getDepth() == 0) {
           traversal.addLevel(roots, collection, traverseFrom);
         }
 
         this.traversal.setScatter(scatter);
 
-        if(useDefaultTraversal) {
+        if (useDefaultTraversal) {
           this.trackTraversal = traversal.getTrackTraversal();
         } else {
           this.traversal.setTrackTraversal(trackTraversal);
@@ -589,7 +627,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             if (!traversal.visited(key, _traverseTo, tuple)) {
               Node node = level.get(key);
               if (node != null) {
-                node.add((traversal.getDepth()-1)+"^"+_traverseTo, tuple);
+                node.add((traversal.getDepth() - 1) + "^" + _traverseTo, tuple);
               } else {
                 node = new Node(_gather, trackTraversal);
                 if (metrics != null) {
@@ -599,7 +637,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                   }
                   node.setMetrics(_metrics);
                 }
-                node.add((traversal.getDepth()-1)+"^"+_traverseTo, tuple);
+                node.add((traversal.getDepth() - 1) + "^" + _traverseTo, tuple);
                 level.put(key, node);
               }
             }
@@ -608,7 +646,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
         traversal.addLevel(level, collection, gather);
         out = traversal.iterator();
-      } catch(Exception e) {
+      } catch (Exception e) {
         throw new RuntimeException(e);
       } finally {
         threadPool.shutdown();
@@ -640,15 +678,25 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       this.ids = ids;
     }
 
-    public void open() {this.it = ids.iterator();}
+    public void open() {
+      this.it = ids.iterator();
+    }
+
     public void close() {}
-    public StreamComparator getStreamSort() {return null;}
-    public List<TupleStream> children() {return new ArrayList<>();}
+
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    public List<TupleStream> children() {
+      return new ArrayList<>();
+    }
+
     public void setStreamContext(StreamContext context) {}
 
     public Tuple read() {
-      if(it.hasNext()) {
-        return new Tuple("node",it.next());
+      if (it.hasNext()) {
+        return new Tuple("node", it.next());
       } else {
         return Tuple.EOF();
       }
@@ -657,8 +705,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     public String toString() {
       StringBuilder builder = new StringBuilder();
       boolean comma = false;
-      for(String s : ids) {
-        if(comma) {
+      for (String s : ids) {
+        if (comma) {
           builder.append(",");
         }
         builder.append(s);
@@ -666,15 +714,15 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
       return builder.toString();
     }
-    
+
     @Override
     public Explanation toExplanation(StreamFactory factory) throws IOException {
 
       return new StreamExplanation(getStreamNodeId().toString())
-        .withFunctionName("non-expressible")
-        .withImplementingClass(this.getClass().getName())
-        .withExpressionType(ExpressionType.STREAM_SOURCE)
-        .withExpression("non-expressible");
+          .withFunctionName("non-expressible")
+          .withImplementingClass(this.getClass().getName())
+          .withExpressionType(ExpressionType.STREAM_SOURCE)
+          .withExpression("non-expressible");
     }
   }
 }

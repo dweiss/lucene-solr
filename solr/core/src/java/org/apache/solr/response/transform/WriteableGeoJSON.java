@@ -17,21 +17,18 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
-
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.TextWriter;
 import org.apache.solr.common.util.WriteableValue;
 import org.locationtech.spatial4j.io.ShapeWriter;
 import org.locationtech.spatial4j.shape.Shape;
 
-/**
- * This will let the writer add values to the response directly
- */
+/** This will let the writer add values to the response directly */
 public class WriteableGeoJSON extends WriteableValue {
 
   public final Shape shape;
   public final ShapeWriter jsonWriter;
-  
+
   public WriteableGeoJSON(Shape shape, ShapeWriter jsonWriter) {
     this.shape = shape;
     this.jsonWriter = jsonWriter;

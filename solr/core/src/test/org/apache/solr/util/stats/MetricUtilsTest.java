@@ -17,11 +17,6 @@
 
 package org.apache.solr.util.stats;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -30,6 +25,10 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.AggregateMetric;
@@ -47,10 +46,17 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
       timer.update(Math.abs(random().nextInt()) + 1, TimeUnit.NANOSECONDS);
     }
     // obtain timer metrics
-    Map<String,Object> map = new HashMap<>();
-    MetricUtils.convertTimer("", timer, MetricUtils.PropertyFilter.ALL, false, false, ".", (k, v) -> {
-      map.putAll((Map<String,Object>)v);
-    });
+    Map<String, Object> map = new HashMap<>();
+    MetricUtils.convertTimer(
+        "",
+        timer,
+        MetricUtils.PropertyFilter.ALL,
+        false,
+        false,
+        ".",
+        (k, v) -> {
+          map.putAll((Map<String, Object>) v);
+        });
     @SuppressWarnings({"rawtypes"})
     NamedList lst = new NamedList(map);
     // check that expected metrics were obtained
@@ -101,50 +107,69 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
 
     Gauge<String> gauge = () -> "foobar";
     registry.register("gauge", gauge);
-    Gauge<Long> error = () -> {throw new InternalError("Memory Pool not found error");};
+    Gauge<Long> error =
+        () -> {
+          throw new InternalError("Memory Pool not found error");
+        };
     registry.register("memory.expected.error", error);
-    MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
-        MetricUtils.PropertyFilter.ALL, false, false, false, false, (k, o) -> {
-      @SuppressWarnings({"rawtypes"})
-      Map v = (Map)o;
-      if (k.startsWith("counter")) {
-        assertEquals(1L, v.get("count"));
-      } else if (k.startsWith("gauge")) {
-        assertEquals("foobar", v.get("value"));
-      } else if (k.startsWith("timer")) {
-        assertEquals(1L, v.get("count"));
-        assertTrue(((Number)v.get("min_ms")).intValue() > 100);
-      } else if (k.startsWith("meter")) {
-        assertEquals(1L, v.get("count"));
-      } else if (k.startsWith("histogram")) {
-        assertEquals(1L, v.get("count"));
-      } else if (k.startsWith("aggregate1")) {
-        assertEquals(4, v.get("count"));
-        Map<String, Object> values = (Map<String, Object>)v.get("values");
-        assertNotNull(values);
-        assertEquals(4, values.size());
-        Map<String, Object> update = (Map<String, Object>)values.get("a");
-        assertEquals(-10, update.get("value"));
-        assertEquals(1, update.get("updateCount"));
-        update = (Map<String, Object>)values.get("b");
-        assertEquals(-2, update.get("value"));
-        assertEquals(2, update.get("updateCount"));
-        assertEquals(-10D, v.get("min"));
-        assertEquals(-2D, v.get("max"));
-        assertEquals(-5D, v.get("mean"));
-      } else if (k.startsWith("aggregate2")) {
-        // SOLR-14252: non-Number metric aggregations should return 0 rather than throwing NPE
-        assertEquals(2, v.get("count"));
-        assertEquals(0D, v.get("min"));
-        assertEquals(0D, v.get("max"));
-        assertEquals(0D, v.get("mean"));
-      } else if (k.startsWith("memory.expected.error")) {
-        assertNull(v);
-      }
-    });
+    MetricUtils.toMaps(
+        registry,
+        Collections.singletonList(MetricFilter.ALL),
+        MetricFilter.ALL,
+        MetricUtils.PropertyFilter.ALL,
+        false,
+        false,
+        false,
+        false,
+        (k, o) -> {
+          @SuppressWarnings({"rawtypes"})
+          Map v = (Map) o;
+          if (k.startsWith("counter")) {
+            assertEquals(1L, v.get("count"));
+          } else if (k.startsWith("gauge")) {
+            assertEquals("foobar", v.get("value"));
+          } else if (k.startsWith("timer")) {
+            assertEquals(1L, v.get("count"));
+            assertTrue(((Number) v.get("min_ms")).intValue() > 100);
+          } else if (k.startsWith("meter")) {
+            assertEquals(1L, v.get("count"));
+          } else if (k.startsWith("histogram")) {
+            assertEquals(1L, v.get("count"));
+          } else if (k.startsWith("aggregate1")) {
+            assertEquals(4, v.get("count"));
+            Map<String, Object> values = (Map<String, Object>) v.get("values");
+            assertNotNull(values);
+            assertEquals(4, values.size());
+            Map<String, Object> update = (Map<String, Object>) values.get("a");
+            assertEquals(-10, update.get("value"));
+            assertEquals(1, update.get("updateCount"));
+            update = (Map<String, Object>) values.get("b");
+            assertEquals(-2, update.get("value"));
+            assertEquals(2, update.get("updateCount"));
+            assertEquals(-10D, v.get("min"));
+            assertEquals(-2D, v.get("max"));
+            assertEquals(-5D, v.get("mean"));
+          } else if (k.startsWith("aggregate2")) {
+            // SOLR-14252: non-Number metric aggregations should return 0 rather than throwing NPE
+            assertEquals(2, v.get("count"));
+            assertEquals(0D, v.get("min"));
+            assertEquals(0D, v.get("max"));
+            assertEquals(0D, v.get("mean"));
+          } else if (k.startsWith("memory.expected.error")) {
+            assertNull(v);
+          }
+        });
     // test compact format
-    MetricUtils.toMaps(registry, Collections.singletonList(MetricFilter.ALL), MetricFilter.ALL,
-        MetricUtils.PropertyFilter.ALL, false, false, true, false, (k, o) -> {
+    MetricUtils.toMaps(
+        registry,
+        Collections.singletonList(MetricFilter.ALL),
+        MetricFilter.ALL,
+        MetricUtils.PropertyFilter.ALL,
+        false,
+        false,
+        true,
+        false,
+        (k, o) -> {
           if (k.startsWith("counter")) {
             assertTrue(o instanceof Long);
             assertEquals(1L, o);
@@ -154,57 +179,54 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
           } else if (k.startsWith("timer")) {
             assertTrue(o instanceof Map);
             @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            Map v = (Map) o;
             assertEquals(1L, v.get("count"));
-            assertTrue(((Number)v.get("min_ms")).intValue() > 100);
+            assertTrue(((Number) v.get("min_ms")).intValue() > 100);
           } else if (k.startsWith("meter")) {
             assertTrue(o instanceof Map);
             @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            Map v = (Map) o;
             assertEquals(1L, v.get("count"));
           } else if (k.startsWith("histogram")) {
             assertTrue(o instanceof Map);
             @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            Map v = (Map) o;
             assertEquals(1L, v.get("count"));
           } else if (k.startsWith("aggregate1")) {
             assertTrue(o instanceof Map);
             @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            Map v = (Map) o;
             assertEquals(4, v.get("count"));
-            Map<String, Object> values = (Map<String, Object>)v.get("values");
+            Map<String, Object> values = (Map<String, Object>) v.get("values");
             assertNotNull(values);
             assertEquals(4, values.size());
-            Map<String, Object> update = (Map<String, Object>)values.get("a");
+            Map<String, Object> update = (Map<String, Object>) values.get("a");
             assertEquals(-10, update.get("value"));
             assertEquals(1, update.get("updateCount"));
-            update = (Map<String, Object>)values.get("b");
+            update = (Map<String, Object>) values.get("b");
             assertEquals(-2, update.get("value"));
             assertEquals(2, update.get("updateCount"));
           } else if (k.startsWith("aggregate2")) {
             assertTrue(o instanceof Map);
             @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            Map v = (Map) o;
             assertEquals(2, v.get("count"));
-            Map<String, Object> values = (Map<String, Object>)v.get("values");
+            Map<String, Object> values = (Map<String, Object>) v.get("values");
             assertNotNull(values);
             assertEquals(2, values.size());
-            Map<String, Object> update = (Map<String, Object>)values.get("a");
+            Map<String, Object> update = (Map<String, Object>) values.get("a");
             assertEquals(false, update.get("value"));
             assertEquals(1, update.get("updateCount"));
-            update = (Map<String, Object>)values.get("b");
+            update = (Map<String, Object>) values.get("b");
             assertEquals(true, update.get("value"));
             assertEquals(1, update.get("updateCount"));
           } else if (k.startsWith("memory.expected.error")) {
             assertNull(o);
           } else {
             @SuppressWarnings({"rawtypes"})
-            Map v = (Map)o;
+            Map v = (Map) o;
             assertEquals(1L, v.get("count"));
           }
         });
-
   }
-
 }
-

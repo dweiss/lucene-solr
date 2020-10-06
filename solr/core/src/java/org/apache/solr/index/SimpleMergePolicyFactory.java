@@ -21,12 +21,14 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
 /**
- * A {@link MergePolicyFactory} for simple {@link MergePolicy} objects. Implementations need only create the policy
- * {@link #getMergePolicyInstance() instance} and this class will then configure it with all set properties.
+ * A {@link MergePolicyFactory} for simple {@link MergePolicy} objects. Implementations need only
+ * create the policy {@link #getMergePolicyInstance() instance} and this class will then configure
+ * it with all set properties.
  */
 public abstract class SimpleMergePolicyFactory extends MergePolicyFactory {
 
-  protected SimpleMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+  protected SimpleMergePolicyFactory(
+      SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
   }
 
@@ -38,5 +40,4 @@ public abstract class SimpleMergePolicyFactory extends MergePolicyFactory {
     args.invokeSetters(mp);
     return mp;
   }
-
 }

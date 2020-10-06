@@ -16,6 +16,9 @@
  */
 package org.apache.solr.handler.sql;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
@@ -27,25 +30,16 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.Pair;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-/**
- * Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in Solr.
- */
+/** Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in Solr. */
 class SolrFilter extends Filter implements SolrRel {
-  SolrFilter(
-      RelOptCluster cluster,
-      RelTraitSet traitSet,
-      RelNode child,
-      RexNode condition) {
+  SolrFilter(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition) {
     super(cluster, traitSet, child, condition);
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
   }
 
-  @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+  @Override
+  public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
     return super.computeSelfCost(planner, mq).multiplyBy(0.1);
   }
 
@@ -55,8 +49,10 @@ class SolrFilter extends Filter implements SolrRel {
 
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
-    if(getInput() instanceof SolrAggregate) {
-      HavingTranslator translator = new HavingTranslator(SolrRules.solrFieldNames(getRowType()), implementor.reverseAggMappings);
+    if (getInput() instanceof SolrAggregate) {
+      HavingTranslator translator =
+          new HavingTranslator(
+              SolrRules.solrFieldNames(getRowType()), implementor.reverseAggMappings);
       String havingPredicate = translator.translateMatch(condition);
       implementor.setHavingPredicate(havingPredicate);
     } else {
@@ -104,7 +100,6 @@ class SolrFilter extends Filter implements SolrRel {
       List<RexNode> nots = new ArrayList<>();
       RelOptUtil.decomposeConjunction(node0, ands, nots);
 
-
       for (RexNode node : ands) {
         andStrings.add(translateMatch(node));
       }
@@ -133,7 +128,7 @@ class SolrFilter extends Filter implements SolrRel {
           return "-" + translateComparison(((RexCall) node).getOperands().get(0));
         case EQUALS:
           String terms = binaryTranslated.getValue().toString().trim();
-          terms = terms.replace("'","");
+          terms = terms.replace("'", "");
           if (!terms.startsWith("(") && !terms.startsWith("[") && !terms.startsWith("{")) {
             terms = "\"" + terms + "\"";
           }
@@ -145,24 +140,38 @@ class SolrFilter extends Filter implements SolrRel {
           return "-(" + binaryTranslated.getKey() + ":" + binaryTranslated.getValue() + ")";
         case LESS_THAN:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue() + " })";
+          return "("
+              + binaryTranslated.getKey()
+              + ": [ * TO "
+              + binaryTranslated.getValue()
+              + " })";
         case LESS_THAN_OR_EQUAL:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue() + " ])";
+          return "("
+              + binaryTranslated.getKey()
+              + ": [ * TO "
+              + binaryTranslated.getValue()
+              + " ])";
         case GREATER_THAN:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": { " + binaryTranslated.getValue() + " TO * ])";
+          return "("
+              + binaryTranslated.getKey()
+              + ": { "
+              + binaryTranslated.getValue()
+              + " TO * ])";
         case GREATER_THAN_OR_EQUAL:
           this.negativeQuery = false;
-          return "(" + binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue() + " TO * ])";
+          return "("
+              + binaryTranslated.getKey()
+              + ": [ "
+              + binaryTranslated.getValue()
+              + " TO * ])";
         default:
           throw new AssertionError("cannot translate " + node);
       }
     }
 
-    /**
-     * Translates a call to a binary operator, reversing arguments if necessary.
-     */
+    /** Translates a call to a binary operator, reversing arguments if necessary. */
     private Pair<String, RexLiteral> translateBinary(RexCall call) {
       List<RexNode> operands = call.getOperands();
       if (operands.size() != 2) {
@@ -181,9 +190,7 @@ class SolrFilter extends Filter implements SolrRel {
       throw new AssertionError("cannot translate call " + call);
     }
 
-    /**
-     * Translates a call to a binary operator. Returns whether successful.
-     */
+    /** Translates a call to a binary operator. Returns whether successful. */
     private Pair<String, RexLiteral> translateBinary2(RexNode left, RexNode right) {
       switch (right.getKind()) {
         case LITERAL:
@@ -199,11 +206,11 @@ class SolrFilter extends Filter implements SolrRel {
           return new Pair<>(name, rightLiteral);
         case CAST:
           return translateBinary2(((RexCall) left).operands.get(0), right);
-//        case OTHER_FUNCTION:
-//          String itemName = SolrRules.isItem((RexCall) left);
-//          if (itemName != null) {
-//            return translateOp2(op, itemName, rightLiteral);
-//          }
+          //        case OTHER_FUNCTION:
+          //          String itemName = SolrRules.isItem((RexCall) left);
+          //          if (itemName != null) {
+          //            return translateOp2(op, itemName, rightLiteral);
+          //          }
         default:
           return null;
       }
@@ -213,7 +220,7 @@ class SolrFilter extends Filter implements SolrRel {
   private static class HavingTranslator {
 
     private final List<String> fieldNames;
-    private Map<String,String> reverseAggMappings;
+    private Map<String, String> reverseAggMappings;
 
     HavingTranslator(List<String> fieldNames, Map<String, String> reverseAggMappings) {
       this.fieldNames = fieldNames;
@@ -277,15 +284,14 @@ class SolrFilter extends Filter implements SolrRel {
       }
       builder.append(")");
 
-
       if (nots.size() > 0) {
         for (RexNode node : nots) {
           notStrings.add(translateMatch(node));
         }
 
         StringBuilder notBuilder = new StringBuilder();
-        for(int i=0; i< notStrings.size(); i++) {
-          if(i > 0) {
+        for (int i = 0; i < notStrings.size(); i++) {
+          if (i > 0) {
             notBuilder.append(",");
           }
           notBuilder.append("not(");
@@ -293,7 +299,7 @@ class SolrFilter extends Filter implements SolrRel {
           notBuilder.append(")");
         }
 
-        return "and(" + builder.toString() + ","+ notBuilder.toString()+")";
+        return "and(" + builder.toString() + "," + notBuilder.toString() + ")";
       } else {
         return builder.toString();
       }
@@ -325,9 +331,7 @@ class SolrFilter extends Filter implements SolrRel {
       }
     }
 
-    /**
-     * Translates a call to a binary operator, reversing arguments if necessary.
-     */
+    /** Translates a call to a binary operator, reversing arguments if necessary. */
     private Pair<String, RexLiteral> translateBinary(RexCall call) {
       List<RexNode> operands = call.getOperands();
       if (operands.size() != 2) {
@@ -338,8 +342,8 @@ class SolrFilter extends Filter implements SolrRel {
       final Pair<String, RexLiteral> a = translateBinary2(left, right);
 
       if (a != null) {
-        if(reverseAggMappings.containsKey(a.getKey())) {
-          return new Pair<String, RexLiteral>(reverseAggMappings.get(a.getKey()),a.getValue());
+        if (reverseAggMappings.containsKey(a.getKey())) {
+          return new Pair<String, RexLiteral>(reverseAggMappings.get(a.getKey()), a.getValue());
         }
         return a;
       }
@@ -350,9 +354,7 @@ class SolrFilter extends Filter implements SolrRel {
       throw new AssertionError("cannot translate call " + call);
     }
 
-    /**
-     * Translates a call to a binary operator. Returns whether successful.
-     */
+    /** Translates a call to a binary operator. Returns whether successful. */
     private Pair<String, RexLiteral> translateBinary2(RexNode left, RexNode right) {
       switch (right.getKind()) {
         case LITERAL:
@@ -369,11 +371,11 @@ class SolrFilter extends Filter implements SolrRel {
           return new Pair<>(name, rightLiteral);
         case CAST:
           return translateBinary2(((RexCall) left).operands.get(0), right);
-//        case OTHER_FUNCTION:
-//          String itemName = SolrRules.isItem((RexCall) left);
-//          if (itemName != null) {
-//            return translateOp2(op, itemName, rightLiteral);
-//          }
+          //        case OTHER_FUNCTION:
+          //          String itemName = SolrRules.isItem((RexCall) left);
+          //          if (itemName != null) {
+          //            return translateOp2(op, itemName, rightLiteral);
+          //          }
         default:
           return null;
       }

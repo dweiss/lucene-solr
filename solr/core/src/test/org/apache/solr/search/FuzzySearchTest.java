@@ -18,7 +18,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -33,7 +32,7 @@ import org.junit.Test;
 
 @LuceneTestCase.Slow
 public class FuzzySearchTest extends SolrCloudTestCase {
-  private final static String COLLECTION = "c1";
+  private static final String COLLECTION = "c1";
   private CloudSolrClient client;
 
   @BeforeClass
@@ -59,9 +58,11 @@ public class FuzzySearchTest extends SolrCloudTestCase {
     client.add(doc);
     client.commit(); // Must have index files written, but the contents don't matter
 
-    SolrQuery query = new SolrQuery("text:headquarters\\(在日米海軍横須賀基地司令部庁舎\\/旧横須賀鎮守府会議所・横須賀海軍艦船部\\)~");
+    SolrQuery query =
+        new SolrQuery("text:headquarters\\(在日米海軍横須賀基地司令部庁舎\\/旧横須賀鎮守府会議所・横須賀海軍艦船部\\)~");
 
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(query));
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(query));
     assertTrue("Should be client error, not server error", e.code() >= 400 && e.code() < 500);
   }
 }

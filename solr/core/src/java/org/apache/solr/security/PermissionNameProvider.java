@@ -17,10 +17,6 @@
 
 package org.apache.solr.security;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.unmodifiableMap;
@@ -28,9 +24,13 @@ import static java.util.Collections.unmodifiableSet;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
- * A requestHandler should implement this interface to provide the well known permission
- * at request time
+ * A requestHandler should implement this interface to provide the well known permission at request
+ * time
  */
 public interface PermissionNameProvider {
   enum Name {
@@ -54,15 +54,15 @@ public interface PermissionNameProvider {
     PACKAGE_EDIT_PERM("package-edit", null),
     PACKAGE_READ_PERM("package-read", null),
 
-    ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))))
-    ;
+    ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))));
     final String name;
     final Set<String> collName;
 
     @SuppressWarnings({"unchecked"})
     Name(String s, Object collName) {
       name = s;
-      this.collName = collName instanceof Set? (Set<String>)collName : singleton((String)collName);
+      this.collName =
+          collName instanceof Set ? (Set<String>) collName : singleton((String) collName);
     }
 
     public static Name get(String s) {
@@ -77,7 +77,9 @@ public interface PermissionNameProvider {
   Set<String> NULL = singleton(null);
   Set<String> ANY = singleton("*");
 
-  Map<String, Name> values = unmodifiableMap(asList(Name.values()).stream().collect(toMap(Name::getPermissionName, identity())));
+  Map<String, Name> values =
+      unmodifiableMap(
+          asList(Name.values()).stream().collect(toMap(Name::getPermissionName, identity())));
 
   Name getPermissionName(AuthorizationContext request);
 }

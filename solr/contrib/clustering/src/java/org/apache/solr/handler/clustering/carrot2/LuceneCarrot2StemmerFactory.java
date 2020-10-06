@@ -17,10 +17,8 @@
 package org.apache.solr.handler.clustering.carrot2;
 
 import java.lang.invoke.MethodHandles;
-
 import java.nio.CharBuffer;
 import java.util.HashMap;
-
 import org.apache.lucene.analysis.ar.ArabicNormalizer;
 import org.apache.lucene.analysis.ar.ArabicStemmer;
 import org.carrot2.core.LanguageCode;
@@ -47,10 +45,9 @@ import org.tartarus.snowball.ext.SwedishStemmer;
 import org.tartarus.snowball.ext.TurkishStemmer;
 
 /**
- * An implementation of Carrot2's {@link IStemmerFactory} based on Lucene's
- * APIs. Should the relevant Lucene APIs need to change, the changes can be made
- * in this class.
- * 
+ * An implementation of Carrot2's {@link IStemmerFactory} based on Lucene's APIs. Should the
+ * relevant Lucene APIs need to change, the changes can be made in this class.
+ *
  * @lucene.experimental
  */
 public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
@@ -59,31 +56,28 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
   @Override
   public IStemmer getStemmer(LanguageCode language) {
     switch (language) {
-    case ARABIC:
-      return ArabicStemmerFactory.createStemmer();
+      case ARABIC:
+        return ArabicStemmerFactory.createStemmer();
 
-    case CHINESE_SIMPLIFIED:
-      return IdentityStemmer.INSTANCE;
+      case CHINESE_SIMPLIFIED:
+        return IdentityStemmer.INSTANCE;
 
-    default:
-      /*
-       * For other languages, try to use snowball's stemming.
-       */
-      return SnowballStemmerFactory.createStemmer(language);
+      default:
+        /*
+         * For other languages, try to use snowball's stemming.
+         */
+        return SnowballStemmerFactory.createStemmer(language);
     }
   }
 
-  /**
-   * Factory of {@link IStemmer} implementations from the <code>snowball</code>
-   * project.
-   */
-  private final static class SnowballStemmerFactory {
+  /** Factory of {@link IStemmer} implementations from the <code>snowball</code> project. */
+  private static final class SnowballStemmerFactory {
     /**
-     * Static hard mapping from language codes to stemmer classes in Snowball.
-     * This mapping is not dynamic because we want to keep the possibility to
-     * obfuscate these classes.
+     * Static hard mapping from language codes to stemmer classes in Snowball. This mapping is not
+     * dynamic because we want to keep the possibility to obfuscate these classes.
      */
     private static HashMap<LanguageCode, Class<? extends SnowballStemmer>> snowballStemmerClasses;
+
     static {
       snowballStemmerClasses = new HashMap<>();
       snowballStemmerClasses.put(LanguageCode.DANISH, DanishStemmer.class);
@@ -92,13 +86,10 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
       snowballStemmerClasses.put(LanguageCode.FINNISH, FinnishStemmer.class);
       snowballStemmerClasses.put(LanguageCode.FRENCH, FrenchStemmer.class);
       snowballStemmerClasses.put(LanguageCode.GERMAN, GermanStemmer.class);
-      snowballStemmerClasses
-          .put(LanguageCode.HUNGARIAN, HungarianStemmer.class);
+      snowballStemmerClasses.put(LanguageCode.HUNGARIAN, HungarianStemmer.class);
       snowballStemmerClasses.put(LanguageCode.ITALIAN, ItalianStemmer.class);
-      snowballStemmerClasses
-          .put(LanguageCode.NORWEGIAN, NorwegianStemmer.class);
-      snowballStemmerClasses.put(LanguageCode.PORTUGUESE,
-          PortugueseStemmer.class);
+      snowballStemmerClasses.put(LanguageCode.NORWEGIAN, NorwegianStemmer.class);
+      snowballStemmerClasses.put(LanguageCode.PORTUGUESE, PortugueseStemmer.class);
       snowballStemmerClasses.put(LanguageCode.ROMANIAN, RomanianStemmer.class);
       snowballStemmerClasses.put(LanguageCode.RUSSIAN, RussianStemmer.class);
       snowballStemmerClasses.put(LanguageCode.SPANISH, SpanishStemmer.class);
@@ -106,9 +97,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
       snowballStemmerClasses.put(LanguageCode.TURKISH, TurkishStemmer.class);
     }
 
-    /**
-     * An adapter converting Snowball programs into {@link IStemmer} interface.
-     */
+    /** An adapter converting Snowball programs into {@link IStemmer} interface. */
     private static class SnowballStemmerAdapter implements IStemmer {
       private final SnowballStemmer snowballStemmer;
 
@@ -128,26 +117,27 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
     }
 
     /**
-     * Create and return an {@link IStemmer} adapter for a
-     * {@link SnowballStemmer} for a given language code. An identity stemmer is
-     * returned for unknown languages.
+     * Create and return an {@link IStemmer} adapter for a {@link SnowballStemmer} for a given
+     * language code. An identity stemmer is returned for unknown languages.
      */
     public static IStemmer createStemmer(LanguageCode language) {
-      final Class<? extends SnowballStemmer> stemmerClazz = snowballStemmerClasses
-          .get(language);
+      final Class<? extends SnowballStemmer> stemmerClazz = snowballStemmerClasses.get(language);
 
       if (stemmerClazz == null) {
-        log.warn("No Snowball stemmer class for: {}. "
-            + "Quality of clustering may be degraded.", language.name());
+        log.warn(
+            "No Snowball stemmer class for: {}. " + "Quality of clustering may be degraded.",
+            language.name());
         return IdentityStemmer.INSTANCE;
       }
 
       try {
         return new SnowballStemmerAdapter(stemmerClazz.getConstructor().newInstance());
       } catch (Exception e) {
-        log.warn("Could not instantiate snowball stemmer for language: {}"
-                + ". Quality of clustering may be degraded."
-            , language.name(), e);
+        log.warn(
+            "Could not instantiate snowball stemmer for language: {}"
+                + ". Quality of clustering may be degraded.",
+            language.name(),
+            e);
 
         return IdentityStemmer.INSTANCE;
       }
@@ -155,10 +145,9 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
   }
 
   /**
-   * Factory of {@link IStemmer} implementations for the
-   * {@link LanguageCode#ARABIC} language. Requires <code>lucene-contrib</code>
-   * to be present in classpath, otherwise an empty (identity) stemmer is
-   * returned.
+   * Factory of {@link IStemmer} implementations for the {@link LanguageCode#ARABIC} language.
+   * Requires <code>lucene-contrib</code> to be present in classpath, otherwise an empty (identity)
+   * stemmer is returned.
    */
   private static class ArabicStemmerFactory {
     static {
@@ -166,18 +155,15 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
         ReflectionUtils.classForName(ArabicStemmer.class.getName(), false);
         ReflectionUtils.classForName(ArabicNormalizer.class.getName(), false);
       } catch (ClassNotFoundException e) {
-        log
-            .warn(
-                "Could not instantiate Lucene stemmer for Arabic, clustering quality "
-                    + "of Arabic content may be degraded. For best quality clusters, "
-                    + "make sure Lucene's Arabic analyzer JAR is in the classpath",
-                e);
+        log.warn(
+            "Could not instantiate Lucene stemmer for Arabic, clustering quality "
+                + "of Arabic content may be degraded. For best quality clusters, "
+                + "make sure Lucene's Arabic analyzer JAR is in the classpath",
+            e);
       }
     }
 
-    /**
-     * Adapter to lucene-contrib Arabic analyzers.
-     */
+    /** Adapter to lucene-contrib Arabic analyzers. */
     private static class LuceneStemmerAdapter implements IStemmer {
       private final org.apache.lucene.analysis.ar.ArabicStemmer delegate;
       private final org.apache.lucene.analysis.ar.ArabicNormalizer normalizer;
@@ -214,8 +200,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
         assert len == word.length();
 
         for (int i = 0; i < len; i++) {
-          if (buffer[i] != word.charAt(i))
-            return false;
+          if (buffer[i] != word.charAt(i)) return false;
         }
 
         return true;
@@ -232,11 +217,11 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
   }
 
   /**
-   * An implementation of {@link IStemmer} that always returns <code>null</code>
-   * which means no stemming.
+   * An implementation of {@link IStemmer} that always returns <code>null</code> which means no
+   * stemming.
    */
   private static class IdentityStemmer implements IStemmer {
-    private final static IdentityStemmer INSTANCE = new IdentityStemmer();
+    private static final IdentityStemmer INSTANCE = new IdentityStemmer();
 
     @Override
     public CharSequence stem(CharSequence word) {

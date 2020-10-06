@@ -18,7 +18,6 @@ package org.apache.solr.handler.clustering.carrot2;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.carrot2.core.Cluster;
 import org.carrot2.core.Document;
 import org.carrot2.core.IClusteringAlgorithm;
@@ -38,8 +37,8 @@ import org.carrot2.util.attribute.Input;
 import org.carrot2.util.attribute.Output;
 
 /**
- * A mock Carrot2 clustering algorithm that outputs stem of each token of each
- * document as a separate cluster. Useful only in tests.
+ * A mock Carrot2 clustering algorithm that outputs stem of each token of each document as a
+ * separate cluster. Useful only in tests.
  */
 @Bindable(prefix = "EchoTokensClusteringAlgorithm")
 public class EchoStemsClusteringAlgorithm extends ProcessingComponentBase
@@ -48,26 +47,26 @@ public class EchoStemsClusteringAlgorithm extends ProcessingComponentBase
   @Processing
   @Attribute(key = AttributeNames.DOCUMENTS)
   public List<Document> documents;
-  
+
   @Output
   @Processing
   @Attribute(key = AttributeNames.CLUSTERS)
   public List<Cluster> clusters;
 
   public BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
-  
+
   @Override
   public void process() throws ProcessingException {
-    final PreprocessingContext preprocessingContext = preprocessing.preprocess(
-        documents, "", LanguageCode.ENGLISH);
+    final PreprocessingContext preprocessingContext =
+        preprocessing.preprocess(documents, "", LanguageCode.ENGLISH);
     final AllTokens allTokens = preprocessingContext.allTokens;
     final AllWords allWords = preprocessingContext.allWords;
     final AllStems allStems = preprocessingContext.allStems;
     clusters = new ArrayList<>();
     for (int i = 0; i < allTokens.image.length; i++) {
       if (allTokens.wordIndex[i] >= 0) {
-        clusters.add(new Cluster(new String(
-            allStems.image[allWords.stemIndex[allTokens.wordIndex[i]]])));
+        clusters.add(
+            new Cluster(new String(allStems.image[allWords.stemIndex[allTokens.wordIndex[i]]])));
       }
     }
   }

@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -48,7 +47,7 @@ public class NodeMutator {
       String collection = entry.getKey();
       DocCollection docCollection = entry.getValue();
 
-      Map<String,Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
+      Map<String, Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 
       boolean needToUpdateCollection = false;
       for (Entry<String, Slice> sliceEntry : slicesCopy.entrySet()) {
@@ -64,23 +63,31 @@ public class NodeMutator {
           if (rNodeName.equals(nodeName)) {
             log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
             Map<String, Object> props = replica.shallowCopy();
-            Replica newReplica = new Replica(replica.getName(), replica.node, replica.collection, slice.getName(), replica.core,
-                Replica.State.DOWN, replica.type, props);
+            Replica newReplica =
+                new Replica(
+                    replica.getName(),
+                    replica.node,
+                    replica.collection,
+                    slice.getName(),
+                    replica.core,
+                    Replica.State.DOWN,
+                    replica.type,
+                    props);
             newReplicas.put(replica.getName(), newReplica);
             needToUpdateCollection = true;
           }
         }
 
-        Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(),collection);
+        Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(), collection);
         slicesCopy.put(slice.getName(), newSlice);
       }
 
       if (needToUpdateCollection) {
-        zkWriteCommands.add(new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
+        zkWriteCommands.add(
+            new ZkWriteCommand(collection, docCollection.copyWithSlices(slicesCopy)));
       }
     }
 
     return zkWriteCommands;
   }
 }
-

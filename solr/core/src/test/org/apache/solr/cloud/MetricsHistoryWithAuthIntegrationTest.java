@@ -16,8 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.util.List;
+import static org.apache.solr.cloud.MetricsHistoryIntegrationTest.createHistoryRequest;
 
+import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.params.CommonParams;
@@ -27,43 +28,43 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.cloud.MetricsHistoryIntegrationTest.createHistoryRequest;
-
 /**
- * Tests that metrics history works even with Authentication enabled.
- * We test that the scheduled calls to /admin/metrics use PKI auth and therefore succeeds
+ * Tests that metrics history works even with Authentication enabled. We test that the scheduled
+ * calls to /admin/metrics use PKI auth and therefore succeeds
  */
 @LogLevel("org.apache.solr.handler.admin=DEBUG,org.apache.solr.security=DEBUG")
 public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
 
   private static SolrCloudManager cloudManager;
   private static SolrClient solrClient;
-  private static final String SECURITY_JSON = "{\n" +
-      "  'authentication':{\n" +
-      "    'blockUnknown': false, \n" +
-      "    'class':'solr.BasicAuthPlugin',\n" +
-      "    'credentials':{'solr':'orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw='}},\n" +
-      "  'authorization':{\n" +
-      "    'class':'solr.RuleBasedAuthorizationPlugin',\n" +
-      "    'user-role':{'solr':'admin'},\n" +
-      "    'permissions':[{'name':'metrics','collection': null,'path':'/admin/metrics','role':'admin'},\n" +
-      "      {'name':'metrics','collection': null,'path':'/api/cluster/metrics','role':'admin'}]}}";
+  private static final String SECURITY_JSON =
+      "{\n"
+          + "  'authentication':{\n"
+          + "    'blockUnknown': false, \n"
+          + "    'class':'solr.BasicAuthPlugin',\n"
+          + "    'credentials':{'solr':'orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw='}},\n"
+          + "  'authorization':{\n"
+          + "    'class':'solr.RuleBasedAuthorizationPlugin',\n"
+          + "    'user-role':{'solr':'admin'},\n"
+          + "    'permissions':[{'name':'metrics','collection': null,'path':'/admin/metrics','role':'admin'},\n"
+          + "      {'name':'metrics','collection': null,'path':'/api/cluster/metrics','role':'admin'}]}}";
   private static final CharSequence SOLR_XML_HISTORY_CONFIG =
-      "<history>\n" +
-      "  <str name=\"collectPeriod\">2</str>\n" +
-      "</history>\n";
+      "<history>\n" + "  <str name=\"collectPeriod\">2</str>\n" + "</history>\n";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace("<metrics>\n",
-        "<metrics>\n" + SOLR_XML_HISTORY_CONFIG);
-    // Spin up a cluster with a protected /admin/metrics handler, and a 2 seconds metrics collectPeriod
+    String solrXml =
+        MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
+            "<metrics>\n", "<metrics>\n" + SOLR_XML_HISTORY_CONFIG);
+    // Spin up a cluster with a protected /admin/metrics handler, and a 2 seconds metrics
+    // collectPeriod
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .withSecurityJson(SECURITY_JSON)
         .withSolrXml(solrXml)
         .configure();
-    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    cloudManager =
+        cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     solrClient = cluster.getSolrClient();
     // sleep a little to allow the handler to collect some metrics
     cloudManager.getTimeSource().sleep(3000);
@@ -78,15 +79,18 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   @Test
   public void testValuesAreCollected() throws Exception {
-    NamedList<Object> rsp = solrClient.request(createHistoryRequest(params(
-        CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm")));
+    NamedList<Object> rsp =
+        solrClient.request(
+            createHistoryRequest(
+                params(CommonParams.ACTION, "get", CommonParams.NAME, "solr.jvm")));
     assertNotNull(rsp);
     // default format is LIST
-    NamedList<Object> data = (NamedList<Object>)rsp.findRecursive("metrics", "solr.jvm", "data");
+    NamedList<Object> data = (NamedList<Object>) rsp.findRecursive("metrics", "solr.jvm", "data");
     assertNotNull(data);
 
     // Has actual values. These will be 0.0 if metrics could not be collected
-    NamedList<Object> memEntry = (NamedList<Object>) ((NamedList<Object>) data.iterator().next().getValue()).get("values");
+    NamedList<Object> memEntry =
+        (NamedList<Object>) ((NamedList<Object>) data.iterator().next().getValue()).get("values");
     List<Double> heap = (List<Double>) memEntry.getAll("memory.heap.used").get(0);
     assertTrue("Expected memory.heap.used > 0 in history", heap.get(240) > 0.01);
   }

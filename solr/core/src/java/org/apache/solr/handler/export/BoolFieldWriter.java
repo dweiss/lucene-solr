@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -37,13 +36,14 @@ class BoolFieldWriter extends FieldWriter {
     this.fieldType = fieldType;
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex)
+      throws IOException {
     BytesRef ref;
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
       if (sortValue.isPresent()) {
         ref = (BytesRef) sortValue.getCurrentValue();
-      } else { //empty-value
+      } else { // empty-value
         return false;
       }
     } else {

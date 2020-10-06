@@ -17,21 +17,20 @@
 
 package org.apache.solr.cloud.rule;
 
+import static org.apache.solr.common.cloud.rule.ImplicitSnitch.CORES;
+import static org.apache.solr.common.cloud.rule.ImplicitSnitch.DISK;
+import static org.apache.solr.common.cloud.rule.ImplicitSnitch.SYSPROP;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
 
-import static org.apache.solr.common.cloud.rule.ImplicitSnitch.CORES;
-import static org.apache.solr.common.cloud.rule.ImplicitSnitch.DISK;
-import static org.apache.solr.common.cloud.rule.ImplicitSnitch.SYSPROP;
-
-//this is the server-side component which provides the tag values
+// this is the server-side component which provides the tag values
 public class ImplicitSnitch implements CoreAdminHandler.Invocable {
 
   static long getUsableSpaceInGB(Path path) throws IOException {
@@ -61,5 +60,4 @@ public class ImplicitSnitch implements CoreAdminHandler.Invocable {
     }
     return result;
   }
-
 }

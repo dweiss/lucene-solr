@@ -16,6 +16,16 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.net.URISyntaxException;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -37,58 +47,44 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.net.URISyntaxException;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-
 /**
- * This handler uses the RawResponseWriter to give client access to
- * files inside ${solr.home}/conf
- * <p>
- * If you want to selectively restrict access some configuration files, you can list
- * these files in the {@link #HIDDEN} invariants.  For example to hide 
- * synonyms.txt and anotherfile.txt, you would register:
- * <br>
+ * This handler uses the RawResponseWriter to give client access to files inside ${solr.home}/conf
+ *
+ * <p>If you want to selectively restrict access some configuration files, you can list these files
+ * in the {@link #HIDDEN} invariants. For example to hide synonyms.txt and anotherfile.txt, you
+ * would register: <br>
+ *
  * <pre>
  * &lt;requestHandler name="/admin/file" class="org.apache.solr.handler.admin.ShowFileRequestHandler" &gt;
  *   &lt;lst name="defaults"&gt;
  *    &lt;str name="echoParams"&gt;explicit&lt;/str&gt;
  *   &lt;/lst&gt;
  *   &lt;lst name="invariants"&gt;
- *    &lt;str name="hidden"&gt;synonyms.txt&lt;/str&gt; 
+ *    &lt;str name="hidden"&gt;synonyms.txt&lt;/str&gt;
  *    &lt;str name="hidden"&gt;anotherfile.txt&lt;/str&gt;
  *    &lt;str name="hidden"&gt;*&lt;/str&gt;
  *   &lt;/lst&gt;
  * &lt;/requestHandler&gt;
  * </pre>
  *
- * At present, there is only explicit file names (including path) or the glob '*' are supported. Variants like '*.xml'
- * are NOT supported.ere
+ * At present, there is only explicit file names (including path) or the glob '*' are supported.
+ * Variants like '*.xml' are NOT supported.ere
  *
- * <p>
- * The ShowFileRequestHandler uses the {@link RawResponseWriter} (wt=raw) to return
- * file contents.  If you need to use a different writer, you will need to change 
- * the registered invariant param for wt.
- * <p>
- * If you want to override the contentType header returned for a given file, you can
- * set it directly using: {@link #USE_CONTENT_TYPE}.  For example, to get a plain text
- * version of schema.xml, try:
+ * <p>The ShowFileRequestHandler uses the {@link RawResponseWriter} (wt=raw) to return file
+ * contents. If you need to use a different writer, you will need to change the registered invariant
+ * param for wt.
+ *
+ * <p>If you want to override the contentType header returned for a given file, you can set it
+ * directly using: {@link #USE_CONTENT_TYPE}. For example, to get a plain text version of
+ * schema.xml, try:
+ *
  * <pre>
  *   http://localhost:8983/solr/admin/file?file=schema.xml&amp;contentType=text/plain
  * </pre>
  *
- *
  * @since solr 1.3
  */
-public class ShowFileRequestHandler extends RequestHandlerBase
-{
+public class ShowFileRequestHandler extends RequestHandlerBase {
   public static final String HIDDEN = "hidden";
   public static final String USE_CONTENT_TYPE = "contentType";
 
@@ -96,15 +92,13 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
-  public ShowFileRequestHandler()
-  {
+  public ShowFileRequestHandler() {
     super();
   }
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    super.init( args );
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
+    super.init(args);
     hiddenFiles = initHidden(invariants);
   }
 
@@ -136,9 +130,9 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   }
 
   // Get a list of files from ZooKeeper for from the path in the file= parameter.
-  private void showFromZooKeeper(SolrQueryRequest req, SolrQueryResponse rsp,
-      CoreContainer coreContainer) throws KeeperException,
-      InterruptedException, UnsupportedEncodingException {
+  private void showFromZooKeeper(
+      SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer coreContainer)
+      throws KeeperException, InterruptedException, UnsupportedEncodingException {
 
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
 
@@ -151,7 +145,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     // Show a directory listing
     List<String> children = zkClient.getChildren(adminFile, null, true);
     if (children.size() > 0) {
-      
+
       NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<>();
       for (String f : children) {
         if (isHiddenFile(req, rsp, f, false, hiddenFiles)) {
@@ -177,9 +171,11 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set(CommonParams.WT, "raw");
       req.setParams(params);
-      ContentStreamBase content = new ContentStreamBase.ByteArrayStream(zkClient.getData(adminFile, null, null, true), adminFile);
+      ContentStreamBase content =
+          new ContentStreamBase.ByteArrayStream(
+              zkClient.getData(adminFile, null, null, true), adminFile);
       content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
-      
+
       rsp.add(RawResponseWriter.CONTENT, content);
     }
     rsp.setHttpCaching(false);
@@ -194,55 +190,55 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     }
 
     // Make sure the file exists, is readable and is not a hidden file
-    if( !adminFile.exists() ) {
+    if (!adminFile.exists()) {
       log.error("Can not find: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
-      rsp.setException(new SolrException
-                       ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName() 
-                         + " ["+adminFile.getAbsolutePath()+"]" ));
+      rsp.setException(
+          new SolrException(
+              ErrorCode.NOT_FOUND,
+              "Can not find: " + adminFile.getName() + " [" + adminFile.getAbsolutePath() + "]"));
       return;
     }
-    if( !adminFile.canRead() || adminFile.isHidden() ) {
+    if (!adminFile.canRead() || adminFile.isHidden()) {
       log.error("Can not show: {} [{}]", adminFile.getName(), adminFile.getAbsolutePath());
-      rsp.setException(new SolrException
-                       ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName() 
-                         + " ["+adminFile.getAbsolutePath()+"]" ));
+      rsp.setException(
+          new SolrException(
+              ErrorCode.NOT_FOUND,
+              "Can not show: " + adminFile.getName() + " [" + adminFile.getAbsolutePath() + "]"));
       return;
     }
-    
+
     // Show a directory listing
-    if( adminFile.isDirectory() ) {
+    if (adminFile.isDirectory()) {
       // it's really a directory, just go for it.
       int basePath = adminFile.getAbsolutePath().length() + 1;
       NamedList<SimpleOrderedMap<Object>> files = new SimpleOrderedMap<>();
-      for( File f : adminFile.listFiles() ) {
-        String path = f.getAbsolutePath().substring( basePath );
-        path = path.replace( '\\', '/' ); // normalize slashes
+      for (File f : adminFile.listFiles()) {
+        String path = f.getAbsolutePath().substring(basePath);
+        path = path.replace('\\', '/'); // normalize slashes
 
         if (isHiddenFile(req, rsp, f.getName().replace('\\', '/'), false, hiddenFiles)) {
           continue;
         }
 
         SimpleOrderedMap<Object> fileInfo = new SimpleOrderedMap<>();
-        files.add( path, fileInfo );
-        if( f.isDirectory() ) {
-          fileInfo.add( "directory", true ); 
-        }
-        else {
+        files.add(path, fileInfo);
+        if (f.isDirectory()) {
+          fileInfo.add("directory", true);
+        } else {
           // TODO? content type
-          fileInfo.add( "size", f.length() );
+          fileInfo.add("size", f.length());
         }
-        fileInfo.add( "modified", new Date( f.lastModified() ) );
+        fileInfo.add("modified", new Date(f.lastModified()));
       }
       rsp.add("files", files);
-    }
-    else {
+    } else {
       // Include the file contents
-      //The file logic depends on RawResponseWriter, so force its use.
-      ModifiableSolrParams params = new ModifiableSolrParams( req.getParams() );
-      params.set( CommonParams.WT, "raw" );
+      // The file logic depends on RawResponseWriter, so force its use.
+      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      params.set(CommonParams.WT, "raw");
       req.setParams(params);
 
-      ContentStreamBase content = new ContentStreamBase.FileStream( adminFile );
+      ContentStreamBase content = new ContentStreamBase.FileStream(adminFile);
       content.setContentType(req.getParams().get(USE_CONTENT_TYPE));
 
       rsp.add(RawResponseWriter.CONTENT, content);
@@ -252,23 +248,30 @@ public class ShowFileRequestHandler extends RequestHandlerBase
 
   //////////////////////// Static methods //////////////////////////////
 
-  public static boolean isHiddenFile(SolrQueryRequest req, SolrQueryResponse rsp, String fnameIn, boolean reportError,
-                                     Set<String> hiddenFiles) {
+  public static boolean isHiddenFile(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      String fnameIn,
+      boolean reportError,
+      Set<String> hiddenFiles) {
     String fname = fnameIn.toUpperCase(Locale.ROOT);
     if (hiddenFiles.contains(fname) || hiddenFiles.contains("*")) {
       if (reportError) {
         log.error("Cannot access {}", fname);
-        rsp.setException(new SolrException(SolrException.ErrorCode.FORBIDDEN, "Can not access: " + fnameIn));
+        rsp.setException(
+            new SolrException(SolrException.ErrorCode.FORBIDDEN, "Can not access: " + fnameIn));
       }
       return true;
     }
 
-    // This is slightly off, a valid path is something like ./schema.xml. I don't think it's worth the effort though
+    // This is slightly off, a valid path is something like ./schema.xml. I don't think it's worth
+    // the effort though
     // to fix it to handle all possibilities though.
     if (fname.indexOf("..") >= 0 || fname.startsWith(".")) {
       if (reportError) {
         log.error("Invalid path: {}", fname);
-        rsp.setException(new SolrException(SolrException.ErrorCode.FORBIDDEN, "Invalid path: " + fnameIn));
+        rsp.setException(
+            new SolrException(SolrException.ErrorCode.FORBIDDEN, "Invalid path: " + fnameIn));
       }
       return true;
     }
@@ -280,14 +283,13 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   //
   // Assumes that the file is in a parameter called "file".
 
-  public static String getAdminFileFromZooKeeper(SolrQueryRequest req, SolrQueryResponse rsp, SolrZkClient zkClient,
-                                                 Set<String> hiddenFiles)
+  public static String getAdminFileFromZooKeeper(
+      SolrQueryRequest req, SolrQueryResponse rsp, SolrZkClient zkClient, Set<String> hiddenFiles)
       throws KeeperException, InterruptedException {
     String adminFile = null;
     SolrCore core = req.getCore();
 
-    final ZkSolrResourceLoader loader = (ZkSolrResourceLoader) core
-        .getResourceLoader();
+    final ZkSolrResourceLoader loader = (ZkSolrResourceLoader) core.getResourceLoader();
     String confPath = loader.getConfigSetZkPath();
 
     String fname = req.getParams().get("file", null);
@@ -307,49 +309,53 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     // Make sure the file exists, is readable and is not a hidden file
     if (!zkClient.exists(adminFile, true)) {
       log.error("Can not find: {}", adminFile);
-      rsp.setException(new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find: "
-          + adminFile));
+      rsp.setException(
+          new SolrException(SolrException.ErrorCode.NOT_FOUND, "Can not find: " + adminFile));
       return null;
     }
 
     return adminFile;
   }
 
-
-  // Find the file indicated by the "file=XXX" parameter or the root of the conf directory on the local
-  // file system. Respects all the "interesting" stuff around what the resource loader does to find files.
-  public static File getAdminFileFromFileSystem(SolrQueryRequest req, SolrQueryResponse rsp,
-                                                Set<String> hiddenFiles) {
+  // Find the file indicated by the "file=XXX" parameter or the root of the conf directory on the
+  // local
+  // file system. Respects all the "interesting" stuff around what the resource loader does to find
+  // files.
+  public static File getAdminFileFromFileSystem(
+      SolrQueryRequest req, SolrQueryResponse rsp, Set<String> hiddenFiles) {
     File adminFile = null;
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
-    File configdir = new File( loader.getConfigDir() );
+    File configdir = new File(loader.getConfigDir());
     if (!configdir.exists()) {
       // TODO: maybe we should just open it this way to start with?
       try {
-        configdir = new File( loader.getClassLoader().getResource(loader.getConfigDir()).toURI() );
+        configdir = new File(loader.getClassLoader().getResource(loader.getConfigDir()).toURI());
       } catch (URISyntaxException e) {
         log.error("Can not access configuration directory!");
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access configuration directory!", e));
+        rsp.setException(
+            new SolrException(
+                SolrException.ErrorCode.FORBIDDEN, "Can not access configuration directory!", e));
         return null;
       }
     }
     String fname = req.getParams().get("file", null);
-    if( fname == null ) {
+    if (fname == null) {
       adminFile = configdir;
-    }
-    else {
-      fname = fname.replace( '\\', '/' ); // normalize slashes
-      if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
+    } else {
+      fname = fname.replace('\\', '/'); // normalize slashes
+      if (hiddenFiles.contains(fname.toUpperCase(Locale.ROOT))) {
         log.error("Can not access: {}", fname);
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Can not access: "+fname ));
+        rsp.setException(
+            new SolrException(SolrException.ErrorCode.FORBIDDEN, "Can not access: " + fname));
         return null;
       }
-      if( fname.indexOf( ".." ) >= 0 ) {
+      if (fname.indexOf("..") >= 0) {
         log.error("Invalid path: {}", fname);
-        rsp.setException(new SolrException( SolrException.ErrorCode.FORBIDDEN, "Invalid path: "+fname ));
+        rsp.setException(
+            new SolrException(SolrException.ErrorCode.FORBIDDEN, "Invalid path: " + fname));
         return null;
       }
-      adminFile = new File( configdir, fname );
+      adminFile = new File(configdir, fname);
     }
     return adminFile;
   }
@@ -364,6 +370,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   public String getDescription() {
     return "Admin Config File -- view or update config files directly";
   }
+
   @Override
   public Category getCategory() {
     return Category.ADMIN;

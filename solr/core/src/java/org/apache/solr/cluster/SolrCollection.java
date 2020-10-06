@@ -17,57 +17,59 @@
 
 package org.apache.solr.cluster;
 
+import java.util.Iterator;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementRequest;
 
-import java.util.Iterator;
-
 /**
- * Represents a Collection in SolrCloud (unrelated to {@link java.util.Collection} that uses the nicer name).
+ * Represents a Collection in SolrCloud (unrelated to {@link java.util.Collection} that uses the
+ * nicer name).
  */
 public interface SolrCollection {
-  /**
-   * The collection name (value passed to {@link Cluster#getCollection(String)}).
-   */
+  /** The collection name (value passed to {@link Cluster#getCollection(String)}). */
   String getName();
 
   /**
-   * <p>Returns the {@link Shard} of the given name for that collection, if such a shard exists.</p>
+   * Returns the {@link Shard} of the given name for that collection, if such a shard exists.
    *
-   * <p>Note that when a request for adding replicas for a collection is received by a {@link PlacementPlugin}, it is
-   * possible that replicas need to be added to non existing shards (see {@link PlacementRequest#getShardNames()}.
-   * Non existing shards <b>will not</b> be returned by this method. Only shards already existing will be returned.</p>
+   * <p>Note that when a request for adding replicas for a collection is received by a {@link
+   * PlacementPlugin}, it is possible that replicas need to be added to non existing shards (see
+   * {@link PlacementRequest#getShardNames()}. Non existing shards <b>will not</b> be returned by
+   * this method. Only shards already existing will be returned.
    *
    * @return {@code null} if the shard does not or does not yet exist for the collection.
    */
   Shard getShard(String name);
 
-  /**
-   * @return an iterator over {@link Shard}s of this {@link SolrCollection}.
-   */
+  /** @return an iterator over {@link Shard}s of this {@link SolrCollection}. */
   Iterator<Shard> iterator();
 
   /**
-   * Allow foreach iteration on shards such as: {@code for (Shard s : solrCollection.shards()) {...}}.
+   * Allow foreach iteration on shards such as: {@code for (Shard s : solrCollection.shards())
+   * {...}}.
    */
   Iterable<Shard> shards();
 
   /**
-   * <p>Returns the value of a custom property name set on the {@link SolrCollection} or {@code null} when no such
-   * property was set. Properties are set through the Collection API. See for example {@code COLLECTIONPROP} in the Solr reference guide.
+   * Returns the value of a custom property name set on the {@link SolrCollection} or {@code null}
+   * when no such property was set. Properties are set through the Collection API. See for example
+   * {@code COLLECTIONPROP} in the Solr reference guide.
    *
-   * <p><b>{@link PlacementPlugin} related note:</b></p>
-   * <p>Using custom properties in conjunction with ad hoc {@link PlacementPlugin} code allows customizing placement
-   * decisions per collection.
+   * <p><b>{@link PlacementPlugin} related note:</b>
    *
-   * <p>For example if a collection is to be placed only on nodes using SSD storage and not rotating disks, it can be
-   * identified as such using some custom property (collection property could for example be called "driveType" and have
-   * value "ssd" in that case), and the placement plugin (implementing {@link PlacementPlugin}) would then
-   * {@link AttributeFetcher#requestNodeSystemProperty(String)} for that property from all nodes and only place replicas
-   * of this collection on {@link Node}'s for which
-   * {@link AttributeValues#getDiskType(Node)} is non empty and equal to {@link org.apache.solr.cluster.placement.AttributeFetcher.DiskHardwareType#SSD}.
+   * <p>Using custom properties in conjunction with ad hoc {@link PlacementPlugin} code allows
+   * customizing placement decisions per collection.
+   *
+   * <p>For example if a collection is to be placed only on nodes using SSD storage and not rotating
+   * disks, it can be identified as such using some custom property (collection property could for
+   * example be called "driveType" and have value "ssd" in that case), and the placement plugin
+   * (implementing {@link PlacementPlugin}) would then {@link
+   * AttributeFetcher#requestNodeSystemProperty(String)} for that property from all nodes and only
+   * place replicas of this collection on {@link Node}'s for which {@link
+   * AttributeValues#getDiskType(Node)} is non empty and equal to {@link
+   * org.apache.solr.cluster.placement.AttributeFetcher.DiskHardwareType#SSD}.
    */
   String getCustomProperty(String customPropertyName);
 

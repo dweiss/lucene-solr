@@ -17,48 +17,48 @@
 
 package org.apache.solr.core;
 
-
 import java.util.Collection;
 import java.util.Set;
 
 /**
- * The base class for custom transient core maintenance. Any custom plugin that want's to take control of transient
- * caches (i.e. any core defined with transient=true) should override this class.
+ * The base class for custom transient core maintenance. Any custom plugin that want's to take
+ * control of transient caches (i.e. any core defined with transient=true) should override this
+ * class.
  *
- * Register your plugin in solr.xml similarly to:
+ * <p>Register your plugin in solr.xml similarly to:
  *
- *   &lt;transientCoreCacheFactory name="transientCoreCacheFactory" class="TransientSolrCoreCacheFactoryDefault"&gt;
- *        &lt;int name="transientCacheSize"&gt;4&lt;/int&gt;
- *   &lt;/transientCoreCacheFactory&gt;
+ * <p>&lt;transientCoreCacheFactory name="transientCoreCacheFactory"
+ * class="TransientSolrCoreCacheFactoryDefault"&gt; &lt;int
+ * name="transientCacheSize"&gt;4&lt;/int&gt; &lt;/transientCoreCacheFactory&gt;
  *
+ * <p>WARNING: There is quite a bit of higher-level locking done by the CoreContainer to avoid
+ * various race conditions etc. You should _only_ manipulate them within the method calls designed
+ * to change them. E.g. only add to the transient core descriptors in addTransientDescriptor etc.
  *
- * WARNING: There is quite a bit of higher-level locking done by the CoreContainer to avoid various race conditions
- *          etc. You should _only_ manipulate them within the method calls designed to change them. E.g.
- *          only add to the transient core descriptors in addTransientDescriptor etc.
- *          
- *          Trust the higher-level code (mainly SolrCores and CoreContainer) to call the appropriate operations when
- *          necessary and to coordinate shutting down cores, manipulating the internal structures and the like..
- *          
- *          The only real action you should _initiate_ is to close a core for whatever reason, and do that by 
- *          calling notifyCoreCloseListener(coreToClose); The observer will call back to removeCore(name) at the appropriate 
- *          time. There is no need to directly remove the core _at that time_ from the transientCores list, a call
- *          will come back to this class when CoreContainer is closing this core.
- *          
- *          CoreDescriptors are read-once. During "core discovery" all valid descriptors are enumerated and added to
- *          the appropriate list. Thereafter, they are NOT re-read from disk. In those situations where you want
- *          to re-define the coreDescriptor, maintain a "side list" of changed core descriptors. Then override
- *          getTransientDescriptor to return your new core descriptor. NOTE: assuming you've already closed the
- *          core, the _next_ time that core is required getTransientDescriptor will be called and if you return the
- *          new core descriptor your re-definition should be honored. You'll have to maintain this list for the
- *          duration of this Solr instance running. If you persist the coreDescriptor, then next time Solr starts
- *          up the new definition will be read.
- *          
+ * <p>Trust the higher-level code (mainly SolrCores and CoreContainer) to call the appropriate
+ * operations when necessary and to coordinate shutting down cores, manipulating the internal
+ * structures and the like..
  *
- *  If you need to manipulate the return, for instance block a core from being loaded for some period of time, override
- *  say getTransientDescriptor and return null.
- *  
- *  In particular, DO NOT reach into the transientCores structure from a method called to manipulate core descriptors
- *  or vice-versa.
+ * <p>The only real action you should _initiate_ is to close a core for whatever reason, and do that
+ * by calling notifyCoreCloseListener(coreToClose); The observer will call back to removeCore(name)
+ * at the appropriate time. There is no need to directly remove the core _at that time_ from the
+ * transientCores list, a call will come back to this class when CoreContainer is closing this core.
+ *
+ * <p>CoreDescriptors are read-once. During "core discovery" all valid descriptors are enumerated
+ * and added to the appropriate list. Thereafter, they are NOT re-read from disk. In those
+ * situations where you want to re-define the coreDescriptor, maintain a "side list" of changed core
+ * descriptors. Then override getTransientDescriptor to return your new core descriptor. NOTE:
+ * assuming you've already closed the core, the _next_ time that core is required
+ * getTransientDescriptor will be called and if you return the new core descriptor your
+ * re-definition should be honored. You'll have to maintain this list for the duration of this Solr
+ * instance running. If you persist the coreDescriptor, then next time Solr starts up the new
+ * definition will be read.
+ *
+ * <p>If you need to manipulate the return, for instance block a core from being loaded for some
+ * period of time, override say getTransientDescriptor and return null.
+ *
+ * <p>In particular, DO NOT reach into the transientCores structure from a method called to
+ * manipulate core descriptors or vice-versa.
  */
 public abstract class TransientSolrCoreCache {
 
@@ -70,11 +70,11 @@ public abstract class TransientSolrCoreCache {
 
   // Return the names of all possible cores, whether they are currently loaded or not.
   public abstract Set<String> getAllCoreNames();
-  
+
   // Return the names of all currently loaded cores
   public abstract Set<String> getLoadedCoreNames();
 
-  // Remove a core from the internal structures, presumably it 
+  // Remove a core from the internal structures, presumably it
   // being closed. If the core is re-opened, it will be readded by CoreContainer.
   public abstract SolrCore removeCore(String name);
 
@@ -83,36 +83,33 @@ public abstract class TransientSolrCoreCache {
 
   // reutrn true if the cache contains the named core.
   public abstract boolean containsCore(String name);
-  
+
   // This method will be called when the container is to be shut down. It should return all
   // transient solr cores and clear any internal structures that hold them.
   public abstract Collection<SolrCore> prepareForShutdown();
 
   // These methods allow the implementation to maintain control over the core descriptors.
-  
+
   // This method will only be called during core discovery at startup.
   public abstract void addTransientDescriptor(String rawName, CoreDescriptor cd);
-  
-  // This method is used when opening cores and the like. If you want to change a core's descriptor, override this
+
+  // This method is used when opening cores and the like. If you want to change a core's descriptor,
+  // override this
   // method and return the current core descriptor.
   public abstract CoreDescriptor getTransientDescriptor(String name);
-
 
   // Remove the core descriptor from your list of transient descriptors.
   public abstract CoreDescriptor removeTransientDescriptor(String name);
 
-  /**
-   * Must be called in order to free resources!
-   */
-  public  void close(){
+  /** Must be called in order to free resources! */
+  public void close() {
     // Nothing to do currently
-  };
+  }
+  ;
 
-
-  // These two methods allow custom implementations to communicate arbitrary information as necessary.
+  // These two methods allow custom implementations to communicate arbitrary information as
+  // necessary.
   public abstract int getStatus(String coreName);
+
   public abstract void setStatus(String coreName, int status);
 }
-
-
-  

@@ -18,7 +18,6 @@ package org.apache.solr.handler.clustering.carrot2;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.carrot2.core.Cluster;
 import org.carrot2.core.Document;
 import org.carrot2.core.IClusteringAlgorithm;
@@ -34,10 +33,9 @@ import org.carrot2.util.attribute.Bindable;
 import org.carrot2.util.attribute.Input;
 import org.carrot2.util.attribute.Output;
 
-
 /**
- * A mock Carrot2 clustering algorithm that outputs each token of each document
- * as a separate cluster. Useful only in tests.
+ * A mock Carrot2 clustering algorithm that outputs each token of each document as a separate
+ * cluster. Useful only in tests.
  */
 @Bindable(prefix = "EchoTokensClusteringAlgorithm")
 public class EchoTokensClusteringAlgorithm extends ProcessingComponentBase
@@ -46,18 +44,18 @@ public class EchoTokensClusteringAlgorithm extends ProcessingComponentBase
   @Processing
   @Attribute(key = AttributeNames.DOCUMENTS)
   public List<Document> documents;
-  
+
   @Output
   @Processing
   @Attribute(key = AttributeNames.CLUSTERS)
   public List<Cluster> clusters;
-  
+
   public BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
-  
+
   @Override
   public void process() throws ProcessingException {
-    final PreprocessingContext preprocessingContext = preprocessing.preprocess(
-        documents, "", LanguageCode.ENGLISH);
+    final PreprocessingContext preprocessingContext =
+        preprocessing.preprocess(documents, "", LanguageCode.ENGLISH);
     clusters = new ArrayList<>();
     for (char[] token : preprocessingContext.allTokens.image) {
       if (token != null) {

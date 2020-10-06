@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
@@ -63,22 +62,21 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
     // 'yes' to maybe wrapping in general
     final boolean maybeWrap = true;
     final boolean wrapWithAssertions = false;
-     // 'no' to asserting wrap because lucene AssertingWeight
-     // cannot be cast to solr LTRScoringQuery$ModelWeight
+    // 'no' to asserting wrap because lucene AssertingWeight
+    // cannot be cast to solr LTRScoringQuery$ModelWeight
     final IndexSearcher searcher = newSearcher(r, maybeWrap, wrapWithAssertions);
 
     return searcher;
   }
 
-  private static List<Feature> makeFieldValueFeatures(int[] featureIds,
-      String field) {
+  private static List<Feature> makeFieldValueFeatures(int[] featureIds, String field) {
     final List<Feature> features = new ArrayList<>();
     for (final int i : featureIds) {
-      final Map<String,Object> params = new HashMap<String,Object>();
+      final Map<String, Object> params = new HashMap<String, Object>();
       params.put("field", field);
-      final Feature f = Feature.getInstance(solrResourceLoader,
-          FieldValueFeature.class.getName(),
-          "f" + i, params);
+      final Feature f =
+          Feature.getInstance(
+              solrResourceLoader, FieldValueFeature.class.getName(), "f" + i, params);
       f.setIndex(i);
       features.add(f);
     }
@@ -87,10 +85,13 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
   private static class MockModel extends LTRScoringModel {
 
-    public MockModel(String name, List<Feature> features,
+    public MockModel(
+        String name,
+        List<Feature> features,
         List<Normalizer> norms,
-        String featureStoreName, List<Feature> allFeatures,
-        Map<String,Object> params) {
+        String featureStoreName,
+        List<Feature> allFeatures,
+        Map<String, Object> params) {
       super(name, features, norms, featureStoreName, allFeatures, params);
     }
 
@@ -100,11 +101,13 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
     }
 
     @Override
-    public Explanation explain(LeafReaderContext context, int doc,
-        float finalScore, List<Explanation> featureExplanations) {
+    public Explanation explain(
+        LeafReaderContext context,
+        int doc,
+        float finalScore,
+        List<Explanation> featureExplanations) {
       return null;
     }
-
   }
 
   @Test
@@ -114,16 +117,14 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
     Document doc = new Document();
     doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz",
-        Field.Store.NO));
+    doc.add(newTextField("field", "wizard the the the the the oz", Field.Store.NO));
     doc.add(newStringField("final-score", "F", Field.Store.YES)); // TODO: change to numeric field
 
     w.addDocument(doc);
     doc = new Document();
     doc.add(newStringField("id", "1", Field.Store.YES));
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the",
-        Field.Store.NO));
+    doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
     doc.add(newStringField("final-score", "T", Field.Store.YES)); // TODO: change to numeric field
     w.addDocument(doc);
 
@@ -141,15 +142,20 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
-    final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2},
-        "final-score");
+    final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2}, "final-score");
     final List<Normalizer> norms =
         new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
-        2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
-    final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
-        features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
+            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+    final List<Feature> allFeatures =
+        makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
+    final LTRScoringModel ltrScoringModel =
+        TestLinearModel.createLinearModel(
+            "test",
+            features,
+            norms,
+            "test",
+            allFeatures,
+            TestLinearModel.makeFeatureWeights(features));
 
     final LTRRescorer rescorer = new LTRRescorer(new LTRScoringQuery(ltrScoringModel));
     hits = rescorer.rescore(searcher, hits, 2);
@@ -160,7 +166,6 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
     r.close();
     dir.close();
-
   }
 
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
@@ -187,14 +192,12 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
     w.addDocument(doc);
     doc = new Document();
     doc.add(newStringField("id", "3", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz the the the the ",
-        Field.Store.NO));
+    doc.add(newTextField("field", "wizard oz oz the the the the ", Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 4.0f));
     w.addDocument(doc);
     doc = new Document();
     doc.add(newStringField("id", "4", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz the the the the the the",
-        Field.Store.NO));
+    doc.add(newTextField("field", "wizard oz the the the the the the", Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 5.0f));
     w.addDocument(doc);
 
@@ -217,15 +220,20 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
     assertEquals("3", searcher.doc(hits.scoreDocs[3].doc).get("id"));
     assertEquals("4", searcher.doc(hits.scoreDocs[4].doc).get("id"));
 
-    final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2},
-        "final-score");
+    final List<Feature> features = makeFieldValueFeatures(new int[] {0, 1, 2}, "final-score");
     final List<Normalizer> norms =
         new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    final List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0, 1,
-        2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
-    final LTRScoringModel ltrScoringModel = TestLinearModel.createLinearModel("test",
-        features, norms, "test", allFeatures, TestLinearModel.makeFeatureWeights(features));
+            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+    final List<Feature> allFeatures =
+        makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
+    final LTRScoringModel ltrScoringModel =
+        TestLinearModel.createLinearModel(
+            "test",
+            features,
+            norms,
+            "test",
+            allFeatures,
+            TestLinearModel.makeFeatureWeights(features));
 
     final LTRRescorer rescorer = new LTRRescorer(new LTRScoringQuery(ltrScoringModel));
 
@@ -249,58 +257,50 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
       hits = rescorer.rescore(searcher, hits, topN);
       for (int i = topN - 1, j = 0; i >= 0; i--, j++) {
         if (log.isInfoEnabled()) {
-          log.info("doc {} in pos {}", searcher.doc(hits.scoreDocs[j].doc)
-              .get("id"), j);
+          log.info("doc {} in pos {}", searcher.doc(hits.scoreDocs[j].doc).get("id"), j);
         }
 
-        assertEquals(i,
-            Integer.parseInt(searcher.doc(hits.scoreDocs[j].doc).get("id")));
+        assertEquals(i, Integer.parseInt(searcher.doc(hits.scoreDocs[j].doc).get("id")));
         assertEquals(i + 1, hits.scoreDocs[j].score, 0.00001);
-
       }
     }
 
     r.close();
     dir.close();
-
   }
 
   @Test
   public void testDocParam() throws Exception {
-    final Map<String,Object> test = new HashMap<String,Object>();
+    final Map<String, Object> test = new HashMap<String, Object>();
     test.put("fake", 2);
-    List<Feature> features = makeFieldValueFeatures(new int[] {0},
-        "final-score");
+    List<Feature> features = makeFieldValueFeatures(new int[] {0}, "final-score");
     List<Normalizer> norms =
         new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0},
-        "final-score");
-    MockModel ltrScoringModel = new MockModel("test",
-        features, norms, "test", allFeatures, null);
+            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+    List<Feature> allFeatures = makeFieldValueFeatures(new int[] {0}, "final-score");
+    MockModel ltrScoringModel = new MockModel("test", features, norms, "test", allFeatures, null);
     LTRScoringQuery query = new LTRScoringQuery(ltrScoringModel);
     LTRScoringQuery.ModelWeight wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     LTRScoringQuery.ModelWeight.ModelScorer modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(1f);
     for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
-      assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
+      assertNotNull(
+          ((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
 
     features = makeFieldValueFeatures(new int[] {0, 1, 2}, "final-score");
     norms =
         new ArrayList<Normalizer>(
-            Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    allFeatures = makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8,
-        9}, "final-score");
-    ltrScoringModel = new MockModel("test", features, norms,
-        "test", allFeatures, null);
+            Collections.nCopies(features.size(), IdentityNormalizer.INSTANCE));
+    allFeatures = makeFieldValueFeatures(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, "final-score");
+    ltrScoringModel = new MockModel("test", features, norms, "test", allFeatures, null);
     query = new LTRScoringQuery(ltrScoringModel);
     wgt = query.createWeight(null, ScoreMode.COMPLETE, 1f);
     modelScr = wgt.scorer(null);
     modelScr.getDocInfo().setOriginalDocScore(1f);
     for (final Scorable.ChildScorable feat : modelScr.getChildren()) {
-      assertNotNull(((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
+      assertNotNull(
+          ((Feature.FeatureWeight.FeatureScorer) feat.child).getDocInfo().getOriginalDocScore());
     }
   }
-
 }

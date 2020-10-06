@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.TestBackwardsCompatibility;
 import org.apache.lucene.util.TestUtil;
@@ -39,7 +38,8 @@ import org.junit.Test;
 /** Verify we can read/write previous versions' Lucene indexes. */
 public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
   private static final String[] oldNames = TestBackwardsCompatibility.getOldNames();
-  private static final String[] oldSingleSegmentNames = TestBackwardsCompatibility.getOldSingleSegmentNames();
+  private static final String[] oldSingleSegmentNames =
+      TestBackwardsCompatibility.getOldSingleSegmentNames();
 
   @Test
   public void testOldIndexes() throws Exception {
@@ -57,7 +57,7 @@ public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
       deleteCore();
     }
   }
-  
+
   private void setupCore(String coreName) throws Exception {
     if (h != null) {
       h.close();
@@ -74,13 +74,16 @@ public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
     Files.copy(getFile("solr/solr.xml").toPath(), solrHome.resolve("solr.xml"));
     FileUtils.copyDirectory(configset("backcompat").toFile(), confDir.toFile());
 
-    try (Writer writer = new OutputStreamWriter(Files.newOutputStream(coreDir.resolve("core.properties")), StandardCharsets.UTF_8)) {
+    try (Writer writer =
+        new OutputStreamWriter(
+            Files.newOutputStream(coreDir.resolve("core.properties")), StandardCharsets.UTF_8)) {
       Properties coreProps = new Properties();
       coreProps.put("name", coreName);
       coreProps.store(writer, null);
     }
 
-    InputStream resource = TestBackwardsCompatibility.class.getResourceAsStream("index." + coreName + ".zip");
+    InputStream resource =
+        TestBackwardsCompatibility.class.getResourceAsStream("index." + coreName + ".zip");
     assertNotNull("Index name " + coreName + " not found", resource);
     TestUtil.unzip(resource, indexDir);
 
@@ -91,6 +94,6 @@ public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
     ignoreException("ignore_exception");
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
     h = new TestHarness(coreName, dataDir.toString(), solrConfig, getSchemaFile());
-    lrf = h.getRequestFactory("",0,20, CommonParams.VERSION,"2.2");
+    lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
   }
 }

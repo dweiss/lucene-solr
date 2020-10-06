@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -46,7 +45,7 @@ class StringValue implements SortValue {
   private String lastString;
   private int lastOrd = -1;
 
-  public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
+  public StringValue(SortedDocValues globalDocValues, String field, IntComp comp) {
     this.globalDocValues = globalDocValues;
     this.docValues = globalDocValues;
     if (globalDocValues instanceof MultiDocValues.MultiSortedDocValues) {
@@ -75,7 +74,8 @@ class StringValue implements SortValue {
 
   public void setCurrentValue(int docId) throws IOException {
     if (docId < lastDocID) {
-      throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
+      throw new AssertionError(
+          "docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
 
     lastDocID = docId;
@@ -98,7 +98,7 @@ class StringValue implements SortValue {
   }
 
   public void setCurrentValue(SortValue sv) {
-    StringValue v = (StringValue)sv;
+    StringValue v = (StringValue) sv;
     this.currentOrd = v.currentOrd;
     this.present = v.present;
   }

@@ -16,13 +16,14 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import static java.util.Collections.singletonMap;
+
+import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import com.codahale.metrics.Timer;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
@@ -35,24 +36,23 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonMap;
-
 /**
- * ZkStateWriter is responsible for writing updates to the cluster state stored in ZooKeeper for collections
- * each of which gets their own individual state.json in ZK.
+ * ZkStateWriter is responsible for writing updates to the cluster state stored in ZooKeeper for
+ * collections each of which gets their own individual state.json in ZK.
  *
- * Updates to the cluster state are specified using the
- * {@link #enqueueUpdate(ClusterState, List, ZkWriteCallback)} method. The class buffers updates
- * to reduce the number of writes to ZK. The buffered updates are flushed during <code>enqueueUpdate</code>
- * automatically if necessary. The {@link #writePendingUpdates()} can be used to force flush any pending updates.
+ * <p>Updates to the cluster state are specified using the {@link #enqueueUpdate(ClusterState, List,
+ * ZkWriteCallback)} method. The class buffers updates to reduce the number of writes to ZK. The
+ * buffered updates are flushed during <code>enqueueUpdate</code> automatically if necessary. The
+ * {@link #writePendingUpdates()} can be used to force flush any pending updates.
  *
- * If either {@link #enqueueUpdate(ClusterState, List, ZkWriteCallback)} or {@link #writePendingUpdates()}
- * throws a {@link org.apache.zookeeper.KeeperException.BadVersionException} then the internal buffered state of the
- * class is suspect and the current instance of the class should be discarded and a new instance should be created
- * and used for any future updates.
+ * <p>If either {@link #enqueueUpdate(ClusterState, List, ZkWriteCallback)} or {@link
+ * #writePendingUpdates()} throws a {@link org.apache.zookeeper.KeeperException.BadVersionException}
+ * then the internal buffered state of the class is suspect and the current instance of the class
+ * should be discarded and a new instance should be created and used for any future updates.
  */
 public class ZkStateWriter {
-  private static final long MAX_FLUSH_INTERVAL = TimeUnit.NANOSECONDS.convert(Overseer.STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
+  private static final long MAX_FLUSH_INTERVAL =
+      TimeUnit.NANOSECONDS.convert(Overseer.STATE_UPDATE_DELAY, TimeUnit.MILLISECONDS);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -69,8 +69,8 @@ public class ZkStateWriter {
   protected long lastUpdatedTime = 0;
 
   /**
-   * Set to true if we ever get a BadVersionException so that we can disallow future operations
-   * with this instance
+   * Set to true if we ever get a BadVersionException so that we can disallow future operations with
+   * this instance
    */
   protected boolean invalidState = false;
 
@@ -83,30 +83,36 @@ public class ZkStateWriter {
   }
 
   /**
-   * Applies the given {@link ZkWriteCommand} on the <code>prevState</code>. The modified
-   * {@link ClusterState} is returned and it is expected that the caller will use the returned
-   * cluster state for the subsequent invocation of this method.
-   * <p>
-   * The modified state may be buffered or flushed to ZooKeeper depending on the internal buffering
-   * logic of this class. The {@link #hasPendingUpdates()} method may be used to determine if the
-   * last enqueue operation resulted in buffered state. The method {@link #writePendingUpdates()} can
-   * be used to force an immediate flush of pending cluster state changes.
+   * Applies the given {@link ZkWriteCommand} on the <code>prevState</code>. The modified {@link
+   * ClusterState} is returned and it is expected that the caller will use the returned cluster
+   * state for the subsequent invocation of this method.
+   *
+   * <p>The modified state may be buffered or flushed to ZooKeeper depending on the internal
+   * buffering logic of this class. The {@link #hasPendingUpdates()} method may be used to determine
+   * if the last enqueue operation resulted in buffered state. The method {@link
+   * #writePendingUpdates()} can be used to force an immediate flush of pending cluster state
+   * changes.
    *
    * @param prevState the cluster state information on which the given <code>cmd</code> is applied
-   * @param cmds       the list of {@link ZkWriteCommand} which specifies the change to be applied to cluster state in atomic
-   * @param callback  a {@link org.apache.solr.cloud.overseer.ZkStateWriter.ZkWriteCallback} object to be used
-   *                  for any callbacks
-   * @return modified cluster state created after applying <code>cmd</code> to <code>prevState</code>. If
-   * <code>cmd</code> is a no-op ({@link #NO_OP}) then the <code>prevState</code> is returned unmodified.
-   * @throws IllegalStateException if the current instance is no longer usable. The current instance must be
-   *                               discarded.
-   * @throws Exception             on an error in ZK operations or callback. If a flush to ZooKeeper results
-   *                               in a {@link org.apache.zookeeper.KeeperException.BadVersionException} this instance becomes unusable and
-   *                               must be discarded
+   * @param cmds the list of {@link ZkWriteCommand} which specifies the change to be applied to
+   *     cluster state in atomic
+   * @param callback a {@link org.apache.solr.cloud.overseer.ZkStateWriter.ZkWriteCallback} object
+   *     to be used for any callbacks
+   * @return modified cluster state created after applying <code>cmd</code> to <code>prevState
+   *     </code>. If <code>cmd</code> is a no-op ({@link #NO_OP}) then the <code>prevState</code> is
+   *     returned unmodified.
+   * @throws IllegalStateException if the current instance is no longer usable. The current instance
+   *     must be discarded.
+   * @throws Exception on an error in ZK operations or callback. If a flush to ZooKeeper results in
+   *     a {@link org.apache.zookeeper.KeeperException.BadVersionException} this instance becomes
+   *     unusable and must be discarded
    */
-  public ClusterState enqueueUpdate(ClusterState prevState, List<ZkWriteCommand> cmds, ZkWriteCallback callback) throws IllegalStateException, Exception {
+  public ClusterState enqueueUpdate(
+      ClusterState prevState, List<ZkWriteCommand> cmds, ZkWriteCallback callback)
+      throws IllegalStateException, Exception {
     if (invalidState) {
-      throw new IllegalStateException("ZkStateWriter has seen a tragic error, this instance can no longer be used");
+      throw new IllegalStateException(
+          "ZkStateWriter has seen a tragic error, this instance can no longer be used");
     }
     if (cmds.isEmpty()) return prevState;
     if (isNoOps(cmds)) return prevState;
@@ -143,7 +149,8 @@ public class ZkStateWriter {
    * @return true if a flush to ZK is required, false otherwise
    */
   private boolean maybeFlushAfter() {
-    return System.nanoTime() - lastUpdatedTime > MAX_FLUSH_INTERVAL || numUpdates > Overseer.STATE_UPDATE_BATCH_SIZE;
+    return System.nanoTime() - lastUpdatedTime > MAX_FLUSH_INTERVAL
+        || numUpdates > Overseer.STATE_UPDATE_BATCH_SIZE;
   }
 
   public boolean hasPendingUpdates() {
@@ -155,12 +162,14 @@ public class ZkStateWriter {
    *
    * @return the modified cluster state
    * @throws IllegalStateException if the current instance is no longer usable and must be discarded
-   * @throws KeeperException       if any ZooKeeper operation results in an error
-   * @throws InterruptedException  if the current thread is interrupted
+   * @throws KeeperException if any ZooKeeper operation results in an error
+   * @throws InterruptedException if the current thread is interrupted
    */
-  public ClusterState writePendingUpdates() throws IllegalStateException, KeeperException, InterruptedException {
+  public ClusterState writePendingUpdates()
+      throws IllegalStateException, KeeperException, InterruptedException {
     if (invalidState) {
-      throw new IllegalStateException("ZkStateWriter has seen a tragic error, this instance can no longer be used");
+      throw new IllegalStateException(
+          "ZkStateWriter has seen a tragic error, this instance can no longer be used");
     }
     if (!hasPendingUpdates()) return clusterState;
     Timer.Context timerContext = stats.time("update_state");
@@ -173,7 +182,8 @@ public class ZkStateWriter {
           DocCollection c = entry.getValue();
 
           if (c == null) {
-            // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
+            // let's clean up the state.json of this collection only, the rest should be clean by
+            // delete collection cmd
             log.debug("going to delete state.json {}", path);
             reader.getZkClient().clean(path);
           } else {
@@ -183,12 +193,15 @@ public class ZkStateWriter {
                 log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
               }
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
-              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion());
+              DocCollection newCollection =
+                  new DocCollection(
+                      name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion());
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
-              DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
+              DocCollection newCollection =
+                  new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }
@@ -217,18 +230,13 @@ public class ZkStateWriter {
     return clusterState;
   }
 
-  /**
-   * @return the most up-to-date cluster state until the last enqueueUpdate operation
-   */
+  /** @return the most up-to-date cluster state until the last enqueueUpdate operation */
   public ClusterState getClusterState() {
     return clusterState;
   }
 
   public interface ZkWriteCallback {
-    /**
-     * Called by ZkStateWriter if state is flushed to ZK
-     */
+    /** Called by ZkStateWriter if state is flushed to ZK */
     void onWrite() throws Exception;
   }
 }
-

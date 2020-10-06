@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
@@ -44,19 +43,16 @@ import org.apache.solr.store.blockcache.CustomBufferedIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @deprecated since 8.6
- */
-
+/** @deprecated since 8.6 */
 @Deprecated
 public class HdfsDirectory extends BaseDirectory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final int DEFAULT_BUFFER_SIZE = 4096;
-  
+
   private static final String LF_EXT = ".lf";
   protected final Path hdfsDirPath;
   protected final Configuration configuration;
-  
+
   private final FileSystem fileSystem;
   private final FileContext fileContext;
 
@@ -68,8 +64,9 @@ public class HdfsDirectory extends BaseDirectory {
   public HdfsDirectory(Path hdfsDirPath, Configuration configuration) throws IOException {
     this(hdfsDirPath, HdfsLockFactory.INSTANCE, configuration, DEFAULT_BUFFER_SIZE);
   }
-  
-  public HdfsDirectory(Path hdfsDirPath, LockFactory lockFactory, Configuration configuration, int bufferSize)
+
+  public HdfsDirectory(
+      Path hdfsDirPath, LockFactory lockFactory, Configuration configuration, int bufferSize)
       throws IOException {
     super(lockFactory);
     this.hdfsDirPath = hdfsDirPath;
@@ -77,7 +74,7 @@ public class HdfsDirectory extends BaseDirectory {
     this.bufferSize = bufferSize;
     fileSystem = FileSystem.get(hdfsDirPath.toUri(), configuration);
     fileContext = FileContext.getFileContext(hdfsDirPath.toUri(), configuration);
-    
+
     if (fileSystem instanceof DistributedFileSystem) {
       // Make sure dfs is not in safe mode
       while (((DistributedFileSystem) fileSystem).setSafeMode(SafeModeAction.SAFEMODE_GET, true)) {
@@ -90,7 +87,7 @@ public class HdfsDirectory extends BaseDirectory {
         }
       }
     }
-    
+
     try {
       if (!fileSystem.exists(hdfsDirPath)) {
         boolean success = fileSystem.mkdirs(hdfsDirPath);
@@ -104,7 +101,7 @@ public class HdfsDirectory extends BaseDirectory {
     }
     log.warn("HDFS support in Solr has been deprecated as of 8.6. See SOLR-14021 for details.");
   }
-  
+
   @Override
   public void close() throws IOException {
     log.info("Closing hdfs directory {}", hdfsDirPath);
@@ -113,26 +110,31 @@ public class HdfsDirectory extends BaseDirectory {
   }
 
   /**
-   * Check whether this directory is open or closed. This check may return stale results in the form of false negatives.
-   * @return true if the directory is definitely closed, false if the directory is open or is pending closure
+   * Check whether this directory is open or closed. This check may return stale results in the form
+   * of false negatives.
+   *
+   * @return true if the directory is definitely closed, false if the directory is open or is
+   *     pending closure
    */
   public boolean isClosed() {
     return !isOpen;
   }
-  
+
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     try {
       return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name), name);
     } catch (FileAlreadyExistsException e) {
-      java.nio.file.FileAlreadyExistsException ex = new java.nio.file.FileAlreadyExistsException(e.getMessage());
+      java.nio.file.FileAlreadyExistsException ex =
+          new java.nio.file.FileAlreadyExistsException(e.getMessage());
       ex.initCause(e);
       throw ex;
     }
   }
 
   @Override
-  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+      throws IOException {
     while (true) {
       try {
         String name = getTempFileName(prefix, suffix, nextTempFileCounter.getAndIncrement());
@@ -142,7 +144,7 @@ public class HdfsDirectory extends BaseDirectory {
       }
     }
   }
-  
+
   private String[] getNormalNames(List<String> files) {
     int size = files.size();
     for (int i = 0; i < size; i++) {
@@ -151,28 +153,26 @@ public class HdfsDirectory extends BaseDirectory {
     }
     return files.toArray(new String[] {});
   }
-  
+
   private String toNormalName(String name) {
     if (name.endsWith(LF_EXT)) {
       return name.substring(0, name.length() - 3);
     }
     return name;
   }
-  
+
   @Override
-  public IndexInput openInput(String name, IOContext context)
-      throws IOException {
-    return new HdfsIndexInput(name, getFileSystem(), new Path(
-        hdfsDirPath, name), bufferSize);
+  public IndexInput openInput(String name, IOContext context) throws IOException {
+    return new HdfsIndexInput(name, getFileSystem(), new Path(hdfsDirPath, name), bufferSize);
   }
-  
+
   @Override
   public void deleteFile(String name) throws IOException {
     Path path = new Path(hdfsDirPath, name);
     log.debug("Deleting {}", path);
     getFileSystem().delete(path, false);
   }
-  
+
   @Override
   public void rename(String source, String dest) throws IOException {
     Path sourcePath = new Path(hdfsDirPath, source);
@@ -190,13 +190,12 @@ public class HdfsDirectory extends BaseDirectory {
     FileStatus fileStatus = fileSystem.getFileStatus(new Path(hdfsDirPath, name));
     return fileStatus.getLen();
   }
-  
+
   public long fileModified(String name) throws IOException {
-    FileStatus fileStatus = getFileSystem().getFileStatus(
-        new Path(hdfsDirPath, name));
+    FileStatus fileStatus = getFileSystem().getFileStatus(new Path(hdfsDirPath, name));
     return fileStatus.getModificationTime();
   }
-  
+
   @Override
   public String[] listAll() throws IOException {
     FileStatus[] listStatus = getFileSystem().listStatus(hdfsDirPath);
@@ -213,11 +212,11 @@ public class HdfsDirectory extends BaseDirectory {
   public Path getHdfsDirPath() {
     return hdfsDirPath;
   }
-  
+
   public FileSystem getFileSystem() {
     return fileSystem;
   }
-  
+
   public Configuration getConfiguration() {
     return configuration;
   }
@@ -229,14 +228,14 @@ public class HdfsDirectory extends BaseDirectory {
 
   public static class HdfsIndexInput extends CustomBufferedIndexInput {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    
+
     private final Path path;
     private final FSDataInputStream inputStream;
     private final long length;
     private boolean clone = false;
-    
-    public HdfsIndexInput(String name, FileSystem fileSystem, Path path,
-        int bufferSize) throws IOException {
+
+    public HdfsIndexInput(String name, FileSystem fileSystem, Path path, int bufferSize)
+        throws IOException {
       super(name, bufferSize);
       this.path = path;
       log.debug("Opening normal index input on {}", path);
@@ -244,18 +243,15 @@ public class HdfsDirectory extends BaseDirectory {
       length = fileStatus.getLen();
       inputStream = fileSystem.open(path, bufferSize);
     }
-    
+
     @Override
-    protected void readInternal(byte[] b, int offset, int length)
-        throws IOException {
+    protected void readInternal(byte[] b, int offset, int length) throws IOException {
       inputStream.readFully(getFilePointer(), b, offset, length);
     }
-    
-    @Override
-    protected void seekInternal(long pos) throws IOException {
 
-    }
-    
+    @Override
+    protected void seekInternal(long pos) throws IOException {}
+
     @Override
     protected void closeInternal() throws IOException {
       log.debug("Closing normal index input on {}", path);
@@ -263,12 +259,12 @@ public class HdfsDirectory extends BaseDirectory {
         inputStream.close();
       }
     }
-    
+
     @Override
     public long length() {
       return length;
     }
-    
+
     @Override
     public IndexInput clone() {
       HdfsIndexInput clone = (HdfsIndexInput) super.clone();
@@ -276,19 +272,19 @@ public class HdfsDirectory extends BaseDirectory {
       return clone;
     }
   }
-  
+
   @Override
   public void sync(Collection<String> names) throws IOException {
     if (log.isDebugEnabled()) {
       log.debug("Sync called on {}", Arrays.toString(names.toArray()));
     }
   }
-  
+
   @Override
   public int hashCode() {
     return hdfsDirPath.hashCode();
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (obj == this) {

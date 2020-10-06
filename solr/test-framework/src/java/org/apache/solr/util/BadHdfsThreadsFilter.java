@@ -25,7 +25,8 @@ public class BadHdfsThreadsFilter implements ThreadFilter {
     String name = t.getName();
     if (name.startsWith("IPC Parameter Sending Thread ")) { // SOLR-5007
       return true;
-    } if (name.startsWith("IPC Client")) { // SOLR-5007
+    }
+    if (name.startsWith("IPC Client")) { // SOLR-5007
       return true;
     } else if (name.startsWith("org.apache.hadoop.hdfs.PeerCache")) { // SOLR-7288
       return true;
@@ -40,7 +41,7 @@ public class BadHdfsThreadsFilter implements ThreadFilter {
     } else if (name.startsWith("solr-hdfs-threadpool-")) { // SOLR-9515 and HDFS-14251
       return true;
     }
-    
+
     return false;
   }
 }

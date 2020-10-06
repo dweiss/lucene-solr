@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering;
+
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 
 /**
  * A base class for {@link SearchClusteringEngine} and {@link DocumentClusteringEngine}.
+ *
  * @lucene.experimental
  */
 public abstract class ClusteringEngine {

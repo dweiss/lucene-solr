@@ -1,15 +1,10 @@
 /*
- * This software was produced for the U. S. Government
- * under Contract No. W15P7T-11-C-F600, and is
- * subject to the Rights in Noncommercial Computer Software
- * and Noncommercial Computer Software Documentation
- * Clause 252.227-7014 (JUN 1995)
- *
- * Copyright 2013 The MITRE Corporation. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -23,27 +18,25 @@
 package org.apache.solr.handler.tagger;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 /**
- * Simple TokenFilter that lookup only Tokens with more as the parsed number
- * of chars.<p>
- * <b>NOTE:</b>This implementation is only intended to be used as an example
- * and for unit testing the {@link TaggingAttribute} feature. Typically
- * implementations will be based on NLP results (e.g. using POS tags or
- * detected Named Entities).
- * <p>
- * <b>Example Usage:</b><p>
- * Currently the usage requires to modify the Analyzer as defined by the
- * <code>indexedField</code>. An alternative would be to allow the configuration
- * of a special FieldType in the schema.xml and use this Analyzer for processing
- * the text sent to the request.<p>
- * While the current solution is fine for direct API usage, defining the
- * Analyzer in the schema.xml would be better suitable for using this feature
- * with the {@link TaggerRequestHandler}.
+ * Simple TokenFilter that lookup only Tokens with more as the parsed number of chars.
+ *
+ * <p><b>NOTE:</b>This implementation is only intended to be used as an example and for unit testing
+ * the {@link TaggingAttribute} feature. Typically implementations will be based on NLP results
+ * (e.g. using POS tags or detected Named Entities).
+ *
+ * <p><b>Example Usage:</b>
+ *
+ * <p>Currently the usage requires to modify the Analyzer as defined by the <code>indexedField
+ * </code>. An alternative would be to allow the configuration of a special FieldType in the
+ * schema.xml and use this Analyzer for processing the text sent to the request.
+ *
+ * <p>While the current solution is fine for direct API usage, defining the Analyzer in the
+ * schema.xml would be better suitable for using this feature with the {@link TaggerRequestHandler}.
  *
  * <pre class="prettyprint">
  *     Analyzer analyzer = req.getSchema().getField(indexedField).getType().getAnalyzer();
@@ -63,29 +56,28 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
  */
 public class WordLengthTaggingFilter extends TokenFilter {
 
-  /**
-   * The default minimum length is <code>3</code>
-   */
+  /** The default minimum length is <code>3</code> */
   public static final int DEFAULT_MIN_LENGTH = 3;
+
   private final TaggingAttribute lookupAtt = addAttribute(TaggingAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private int minLength;
 
   /**
-   * TokenFilter only marks tokens to be looked up with equals or more as
-   * {@link #DEFAULT_MIN_LENGTH} characters
+   * TokenFilter only marks tokens to be looked up with equals or more as {@link
+   * #DEFAULT_MIN_LENGTH} characters
    */
   public WordLengthTaggingFilter(TokenStream input) {
     this(input, null);
   }
 
   /**
-   * TokenFilter only marks tokens to be looked up with equals or more characters
-   * as the parsed minimum.
+   * TokenFilter only marks tokens to be looked up with equals or more characters as the parsed
+   * minimum.
    *
-   * @param input     the TokenStream to consume tokens from
-   * @param minLength The minimum length to lookup a Token. <code>null</code>
-   *                  or &lt;= 0 to use the #DEFAULT_MIN_LENGTH
+   * @param input the TokenStream to consume tokens from
+   * @param minLength The minimum length to lookup a Token. <code>null</code> or &lt;= 0 to use the
+   *     #DEFAULT_MIN_LENGTH
    */
   public WordLengthTaggingFilter(TokenStream input, Integer minLength) {
     super(input);
@@ -106,5 +98,4 @@ public class WordLengthTaggingFilter extends TokenFilter {
       return false;
     }
   }
-
 }

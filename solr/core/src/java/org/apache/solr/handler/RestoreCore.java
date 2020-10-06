@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -68,18 +67,27 @@ public class RestoreCore implements Callable<Boolean> {
     Directory indexDir = null;
     try {
 
-      restoreIndexDir = core.getDirectoryFactory().get(restoreIndexPath,
-          DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+      restoreIndexDir =
+          core.getDirectoryFactory()
+              .get(
+                  restoreIndexPath,
+                  DirectoryFactory.DirContext.DEFAULT,
+                  core.getSolrConfig().indexConfig.lockType);
 
-      //Prefer local copy.
-      indexDir = core.getDirectoryFactory().get(indexDirPath,
-          DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+      // Prefer local copy.
+      indexDir =
+          core.getDirectoryFactory()
+              .get(
+                  indexDirPath,
+                  DirectoryFactory.DirContext.DEFAULT,
+                  core.getSolrConfig().indexConfig.lockType);
 
-      //Move all files from backupDir to restoreIndexDir
+      // Move all files from backupDir to restoreIndexDir
       for (String filename : backupRepo.listAll(backupPath)) {
         checkInterrupted();
         log.info("Copying file {} to restore directory ", filename);
-        try (IndexInput indexInput = backupRepo.openInput(backupPath, filename, IOContext.READONCE)) {
+        try (IndexInput indexInput =
+            backupRepo.openInput(backupPath, filename, IOContext.READONCE)) {
           Long checksum = null;
           try {
             checksum = CodecUtil.retrieveChecksum(indexInput);
@@ -87,17 +95,20 @@ public class RestoreCore implements Callable<Boolean> {
             log.warn("Could not read checksum from index file: {}", filename, e);
           }
           long length = indexInput.length();
-          IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);
-          if (!compareResult.equal ||
-              (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(filename, length, compareResult))) {
+          IndexFetcher.CompareResult compareResult =
+              IndexFetcher.compareFile(indexDir, filename, length, checksum);
+          if (!compareResult.equal
+              || (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(
+                  filename, length, compareResult))) {
             backupRepo.copyFileTo(backupPath, filename, restoreIndexDir);
           } else {
-            //prefer local copy
+            // prefer local copy
             restoreIndexDir.copyFrom(indexDir, filename, filename, IOContext.READONCE);
           }
         } catch (Exception e) {
           log.warn("Exception while restoring the backup index ", e);
-          throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
+          throw new SolrException(
+              SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
         }
       }
       log.debug("Switching directories");
@@ -110,12 +121,17 @@ public class RestoreCore implements Callable<Boolean> {
         success = true;
         log.info("Successfully restored to the backup index");
       } catch (Exception e) {
-        //Rollback to the old index directory. Delete the restore index directory and mark the restore as failed.
+        // Rollback to the old index directory. Delete the restore index directory and mark the
+        // restore as failed.
         log.warn("Could not switch to restored index. Rolling back to the current index", e);
         Directory dir = null;
         try {
-          dir = core.getDirectoryFactory().get(core.getDataDir(), DirectoryFactory.DirContext.META_DATA,
-              core.getSolrConfig().indexConfig.lockType);
+          dir =
+              core.getDirectoryFactory()
+                  .get(
+                      core.getDataDir(),
+                      DirectoryFactory.DirContext.META_DATA,
+                      core.getSolrConfig().indexConfig.lockType);
           dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
         } finally {
           if (dir != null) {
@@ -127,7 +143,8 @@ public class RestoreCore implements Callable<Boolean> {
         core.getDirectoryFactory().remove(restoreIndexDir);
         core.getUpdateHandler().newIndexWriter(false);
         openNewSearcher();
-        throw new SolrException(SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
+        throw new SolrException(
+            SolrException.ErrorCode.UNKNOWN, "Exception while restoring the backup index", e);
       }
       if (success) {
         core.getDirectoryFactory().doneWithDirectory(indexDir);

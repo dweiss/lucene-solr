@@ -17,6 +17,11 @@
 
 package org.apache.solr.security;
 
+import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
+import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -26,18 +31,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.common.SolrException;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONUtil;
-
-import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
-import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class JWTIssuerConfigTest {
   private JWTIssuerConfig testIssuer;
@@ -46,24 +45,26 @@ public class JWTIssuerConfigTest {
 
   @Before
   public void setUp() throws Exception {
-    testIssuer = new JWTIssuerConfig("name")
-        .setJwksUrl("https://issuer/path")
-        .setIss("issuer")
-        .setAud("audience")
-        .setClientId("clientid")
-        .setWellKnownUrl("wellknown")
-        .setAuthorizationEndpoint("https://issuer/authz");
+    testIssuer =
+        new JWTIssuerConfig("name")
+            .setJwksUrl("https://issuer/path")
+            .setIss("issuer")
+            .setAud("audience")
+            .setClientId("clientid")
+            .setWellKnownUrl("wellknown")
+            .setAuthorizationEndpoint("https://issuer/authz");
 
     testIssuerConfigMap = testIssuer.asConfig();
 
-    testIssuerJson = "{\n" +
-        "  \"aud\":\"audience\",\n" +
-        "  \"wellKnownUrl\":\"wellknown\",\n" +
-        "  \"clientId\":\"clientid\",\n" +
-        "  \"jwksUrl\":[\"https://issuer/path\"],\n" +
-        "  \"name\":\"name\",\n" +
-        "  \"iss\":\"issuer\",\n" +
-        "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
+    testIssuerJson =
+        "{\n"
+            + "  \"aud\":\"audience\",\n"
+            + "  \"wellKnownUrl\":\"wellknown\",\n"
+            + "  \"clientId\":\"clientid\",\n"
+            + "  \"jwksUrl\":[\"https://issuer/path\"],\n"
+            + "  \"name\":\"name\",\n"
+            + "  \"iss\":\"issuer\",\n"
+            + "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
   }
 
   @Test
@@ -128,7 +129,8 @@ public class JWTIssuerConfigTest {
   @Test
   public void wellKnownConfigFromInputstream() throws IOException {
     Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
-    JWTIssuerConfig.WellKnownDiscoveryConfig config = JWTIssuerConfig.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
+    JWTIssuerConfig.WellKnownDiscoveryConfig config =
+        JWTIssuerConfig.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
   }
 
@@ -136,12 +138,25 @@ public class JWTIssuerConfigTest {
   public void wellKnownConfigFromString() throws IOException {
     Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     String configString = StringUtils.join(Files.readAllLines(configJson), "\n");
-    JWTIssuerConfig.WellKnownDiscoveryConfig config = JWTIssuerConfig.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
+    JWTIssuerConfig.WellKnownDiscoveryConfig config =
+        JWTIssuerConfig.WellKnownDiscoveryConfig.parse(configString, StandardCharsets.UTF_8);
     assertEquals("https://acmepaymentscorp/oauth/jwks", config.getJwksUrl());
     assertEquals("http://acmepaymentscorp", config.getIssuer());
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", config.getAuthorizationEndpoint());
-    assertEquals(Arrays.asList("READ", "WRITE", "DELETE", "openid", "scope", "profile", "email", "address", "phone"), config.getScopesSupported());
-    assertEquals(Arrays.asList("code", "code id_token", "code token", "code id_token token", "token", "id_token", "id_token token"), config.getResponseTypesSupported());
+    assertEquals(
+        Arrays.asList(
+            "READ", "WRITE", "DELETE", "openid", "scope", "profile", "email", "address", "phone"),
+        config.getScopesSupported());
+    assertEquals(
+        Arrays.asList(
+            "code",
+            "code id_token",
+            "code token",
+            "code id_token token",
+            "token",
+            "id_token",
+            "id_token token"),
+        config.getResponseTypesSupported());
   }
 
   @Test(expected = SolrException.class)

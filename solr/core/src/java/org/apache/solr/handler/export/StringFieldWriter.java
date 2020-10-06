@@ -20,7 +20,6 @@ package org.apache.solr.handler.export;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -36,30 +35,32 @@ class StringFieldWriter extends FieldWriter {
   private FieldType fieldType;
   private Map<Integer, SortedDocValues> lastDocValues = new HashMap<>();
   private CharsRefBuilder cref = new CharsRefBuilder();
-  final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
-    @Override
-    public String toString() {
-      String str = super.utf16;
-      if (str != null) return str;
-      fieldType.indexedToReadable(new BytesRef(super.buf, super.offset, super.length), cref);
-      str = cref.toString();
-      super.utf16 = str;
-      return str;
-    }
-  };
+  final ByteArrayUtf8CharSequence utf8 =
+      new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
+        @Override
+        public String toString() {
+          String str = super.utf16;
+          if (str != null) return str;
+          fieldType.indexedToReadable(new BytesRef(super.buf, super.offset, super.length), cref);
+          str = cref.toString();
+          super.utf16 = str;
+          return str;
+        }
+      };
 
   public StringFieldWriter(String field, FieldType fieldType) {
     this.field = field;
     this.fieldType = fieldType;
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex)
+      throws IOException {
     BytesRef ref;
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
       if (sortValue.isPresent()) {
         ref = (BytesRef) sortValue.getCurrentValue();
-      } else { //empty-value
+      } else { // empty-value
         return false;
       }
     } else {
@@ -93,7 +94,6 @@ class StringFieldWriter extends FieldWriter {
       }
 
       ew.put(this.field, v);
-
     }
     return true;
   }

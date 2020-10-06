@@ -20,9 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-
 import junit.framework.Assert;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -41,69 +39,70 @@ import org.apache.solr.SolrTestCase;
 
 public class TestFilteredDocIdSet extends SolrTestCase {
   public void testFilteredDocIdSet() throws Exception {
-    final int maxdoc=10;
-    final DocIdSet innerSet = new DocIdSet() {
+    final int maxdoc = 10;
+    final DocIdSet innerSet =
+        new DocIdSet() {
 
-      @Override
-      public long ramBytesUsed() {
-        return 0L;
-      }
+          @Override
+          public long ramBytesUsed() {
+            return 0L;
+          }
 
-        @Override
-        public DocIdSetIterator iterator() {
-          return new DocIdSetIterator() {
+          @Override
+          public DocIdSetIterator iterator() {
+            return new DocIdSetIterator() {
 
-            int docid = -1;
-            
-            @Override
-            public int docID() {
-              return docid;
-            }
-            
-            @Override
-            public int nextDoc() {
-              docid++;
-              return docid < maxdoc ? docid : (docid = NO_MORE_DOCS);
-            }
+              int docid = -1;
 
-            @Override
-            public int advance(int target) throws IOException {
-              return slowAdvance(target);
-            }
-            
-            @Override
-            public long cost() {
-              return 1;
-            } 
-          };
-        } 
-      };
+              @Override
+              public int docID() {
+                return docid;
+              }
 
+              @Override
+              public int nextDoc() {
+                docid++;
+                return docid < maxdoc ? docid : (docid = NO_MORE_DOCS);
+              }
 
-    DocIdSet filteredSet = new FilteredDocIdSet(innerSet){
-        @Override
-        protected boolean match(int docid) {
-          return docid%2 == 0;  //validate only even docids
-        }
-      };
+              @Override
+              public int advance(int target) throws IOException {
+                return slowAdvance(target);
+              }
+
+              @Override
+              public long cost() {
+                return 1;
+              }
+            };
+          }
+        };
+
+    DocIdSet filteredSet =
+        new FilteredDocIdSet(innerSet) {
+          @Override
+          protected boolean match(int docid) {
+            return docid % 2 == 0; // validate only even docids
+          }
+        };
 
     DocIdSetIterator iter = filteredSet.iterator();
     ArrayList<Integer> list = new ArrayList<>();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
       list.add(Integer.valueOf(doc));
-      while((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         list.add(Integer.valueOf(doc));
       }
     }
 
     int[] docs = new int[list.size()];
-    int c=0;
+    int c = 0;
     Iterator<Integer> intIter = list.iterator();
-    while(intIter.hasNext()) {
+    while (intIter.hasNext()) {
       docs[c++] = intIter.next().intValue();
     }
-    int[] answer = new int[]{4,6,8};
+    int[] answer = new int[] {4, 6, 8};
     boolean same = Arrays.equals(answer, docs);
     if (!same) {
       System.out.println("answer: " + Arrays.toString(answer));
@@ -111,7 +110,7 @@ public class TestFilteredDocIdSet extends SolrTestCase {
       fail();
     }
   }
-  
+
   public void testNullDocIdSet() throws Exception {
     // Tests that if a Filter produces a null DocIdSet, which is given to
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
@@ -122,37 +121,40 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
-    
+
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
-    
-    // Now search w/ a Filter which returns a null DocIdSet
-    Filter f = new Filter() {
-      @Override
-      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-        return null;
-      }
-      @Override
-      public String toString(String field) {
-        return "nullDocIdSetFilter";
-      }
-      
-      @Override
-      public boolean equals(Object other) {
-        return other == this;
-      }
-      
-      @Override
-      public int hashCode() {
-        return System.identityHashCode(this);
-      }
-    };
 
-    Query filtered = new BooleanQuery.Builder()
-        .add(new MatchAllDocsQuery(), Occur.MUST)
-        .add(f, Occur.FILTER)
-        .build();
+    // Now search w/ a Filter which returns a null DocIdSet
+    Filter f =
+        new Filter() {
+          @Override
+          public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
+            return null;
+          }
+
+          @Override
+          public String toString(String field) {
+            return "nullDocIdSetFilter";
+          }
+
+          @Override
+          public boolean equals(Object other) {
+            return other == this;
+          }
+
+          @Override
+          public int hashCode() {
+            return System.identityHashCode(this);
+          }
+        };
+
+    Query filtered =
+        new BooleanQuery.Builder()
+            .add(new MatchAllDocsQuery(), Occur.MUST)
+            .add(f, Occur.FILTER)
+            .build();
     Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
@@ -166,57 +168,59 @@ public class TestFilteredDocIdSet extends SolrTestCase {
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
-    
+
     // First verify the document is searchable.
     IndexSearcher searcher = newSearcher(reader);
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits.value);
-    
-      // Now search w/ a Filter which returns a null DocIdSet
-    Filter f = new Filter() {
-      @Override
-      public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
-        final DocIdSet innerNullIteratorSet = new DocIdSet() {
+
+    // Now search w/ a Filter which returns a null DocIdSet
+    Filter f =
+        new Filter() {
           @Override
-          public DocIdSetIterator iterator() {
-            return null;
-          } 
+          public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) {
+            final DocIdSet innerNullIteratorSet =
+                new DocIdSet() {
+                  @Override
+                  public DocIdSetIterator iterator() {
+                    return null;
+                  }
+
+                  @Override
+                  public long ramBytesUsed() {
+                    return 0L;
+                  }
+                };
+            return new FilteredDocIdSet(innerNullIteratorSet) {
+              @Override
+              protected boolean match(int docid) {
+                return true;
+              }
+            };
+          }
 
           @Override
-          public long ramBytesUsed() {
-            return 0L;
+          public String toString(String field) {
+            return "nullDocIdSetFilter";
           }
-        };
-        return new FilteredDocIdSet(innerNullIteratorSet) {
-          @Override
-          protected boolean match(int docid) {
-            return true;
-          }
-        };
-      }
 
-      @Override
-      public String toString(String field) {
-        return "nullDocIdSetFilter";
-      }
-      
-      @Override
-      public boolean equals(Object other) {
-        return other == this;
-      }
-      
-      @Override
-      public int hashCode() {
-        return System.identityHashCode(this);
-      }
-    };
-    
-    Query filtered = new BooleanQuery.Builder()
-        .add(new MatchAllDocsQuery(), Occur.MUST)
-        .add(f, Occur.FILTER)
-        .build();
+          @Override
+          public boolean equals(Object other) {
+            return other == this;
+          }
+
+          @Override
+          public int hashCode() {
+            return System.identityHashCode(this);
+          }
+        };
+
+    Query filtered =
+        new BooleanQuery.Builder()
+            .add(new MatchAllDocsQuery(), Occur.MUST)
+            .add(f, Occur.FILTER)
+            .build();
     Assert.assertEquals(0, searcher.search(filtered, 10).totalHits.value);
     reader.close();
     dir.close();
   }
-
 }

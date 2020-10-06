@@ -16,14 +16,15 @@
  */
 package org.apache.solr.handler.component;
 
+import static java.util.stream.Collectors.toMap;
+
+import com.google.common.base.MoreObjects;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
-import com.google.common.base.MoreObjects;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
@@ -45,24 +46,23 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-import static java.util.stream.Collectors.toMap;
-
 /**
  * TODO!
  *
- *
  * @since solr 1.3
  */
-public class HighlightComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware
-{
+public class HighlightComponent extends SearchComponent
+    implements PluginInfoInitialized, SolrCoreAware {
   public enum HighlightMethod {
     UNIFIED("unified"),
     FAST_VECTOR("fastVector"),
     POSTINGS("postings"),
     ORIGINAL("original");
 
-    private static final Map<String, HighlightMethod> METHODS = Collections.unmodifiableMap(Stream.of(values())
-        .collect(toMap(HighlightMethod::getMethodName, Function.identity())));
+    private static final Map<String, HighlightMethod> METHODS =
+        Collections.unmodifiableMap(
+            Stream.of(values())
+                .collect(toMap(HighlightMethod::getMethodName, Function.identity())));
 
     private final String methodName;
 
@@ -87,13 +87,14 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   private SolrHighlighter solrConfigHighlighter;
 
   /**
-   * @deprecated instead depend on {@link #process(ResponseBuilder)} to choose the highlighter based on
-   * {@link HighlightParams#METHOD}
+   * @deprecated instead depend on {@link #process(ResponseBuilder)} to choose the highlighter based
+   *     on {@link HighlightParams#METHOD}
    */
   @Deprecated
   public static SolrHighlighter getHighlighter(SolrCore core) {
-    HighlightComponent hl = (HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
-    return hl==null ? null: hl.getHighlighter();
+    HighlightComponent hl =
+        (HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME);
+    return hl == null ? null : hl.getHighlighter();
   }
 
   @Deprecated
@@ -110,12 +111,14 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
     rb.doHighlights = solrConfigHighlighter.isHighlightingEnabled(params);
-    if(rb.doHighlights){
+    if (rb.doHighlights) {
       rb.setNeedDocList(true);
       String hlq = params.get(HighlightParams.Q);
-      String hlparser = MoreObjects.firstNonNull(params.get(HighlightParams.QPARSER),
-                                              params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
-      if(hlq != null){
+      String hlparser =
+          MoreObjects.firstNonNull(
+              params.get(HighlightParams.QPARSER),
+              params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
+      if (hlq != null) {
         try {
           QParser parser = QParser.getParser(hlq, hlparser, rb.req);
           rb.setHighlightQuery(parser.getHighlightQuery());
@@ -129,14 +132,15 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   @Override
   public void inform(SolrCore core) {
     List<PluginInfo> children = info.getChildren("highlighting");
-    if(children.isEmpty()) {
+    if (children.isEmpty()) {
       DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);
       defHighlighter.init(PluginInfo.EMPTY_INFO);
       solrConfigHighlighter = defHighlighter;
     } else {
-      solrConfigHighlighter = core.createInitInstance(children.get(0),SolrHighlighter.class,null, DefaultSolrHighlighter.class.getName());
+      solrConfigHighlighter =
+          core.createInitInstance(
+              children.get(0), SolrHighlighter.class, null, DefaultSolrHighlighter.class.getName());
     }
-
   }
 
   @Override
@@ -148,33 +152,33 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
       SolrHighlighter highlighter = getHighlighter(params);
 
-      //TODO: get from builder by default?
-      String[] defaultHighlightFields = rb.getQparser() != null ? rb.getQparser().getDefaultHighlightFields() : null;
-      
+      // TODO: get from builder by default?
+      String[] defaultHighlightFields =
+          rb.getQparser() != null ? rb.getQparser().getDefaultHighlightFields() : null;
+
       Query highlightQuery = rb.getHighlightQuery();
-      if(highlightQuery==null) {
+      if (highlightQuery == null) {
         if (rb.getQparser() != null) {
           try {
             highlightQuery = rb.getQparser().getHighlightQuery();
-            rb.setHighlightQuery( highlightQuery );
+            rb.setHighlightQuery(highlightQuery);
           } catch (Exception e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
           }
         } else {
           highlightQuery = rb.getQuery();
-          rb.setHighlightQuery( highlightQuery );
+          rb.setHighlightQuery(highlightQuery);
         }
       }
 
       // No highlighting if there is no query -- consider q.alt=*:*
-      if( highlightQuery != null ) {
+      if (highlightQuery != null) {
         @SuppressWarnings({"rawtypes"})
-        NamedList sumData = highlighter.doHighlighting(
-                rb.getResults().docList,
-                highlightQuery,
-                req, defaultHighlightFields );
-        
-        if(sumData != null) {
+        NamedList sumData =
+            highlighter.doHighlighting(
+                rb.getResults().docList, highlightQuery, req, defaultHighlightFields);
+
+        if (sumData != null) {
           // TODO ???? add this directly to the response?
           rb.rsp.add(highlightingResponseField(), convertHighlights(sumData));
         }
@@ -204,11 +208,18 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
         if (solrConfigHighlighter instanceof DefaultSolrHighlighter) {
           return solrConfigHighlighter;
         } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "In order to use " + HighlightParams.METHOD + "=" + method.getMethodName() + " the configured" +
-                  " highlighter in solrconfig must be " + DefaultSolrHighlighter.class);
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "In order to use "
+                  + HighlightParams.METHOD
+                  + "="
+                  + method.getMethodName()
+                  + " the configured"
+                  + " highlighter in solrconfig must be "
+                  + DefaultSolrHighlighter.class);
         }
-      default: throw new AssertionError();
+      default:
+        throw new AssertionError();
     }
   }
 
@@ -218,17 +229,16 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
     // Turn on highlighting only only when retrieving fields
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
-        sreq.purpose |= ShardRequest.PURPOSE_GET_HIGHLIGHTS;
-        // should already be true...
-        sreq.params.set(HighlightParams.HIGHLIGHT, "true");      
+      sreq.purpose |= ShardRequest.PURPOSE_GET_HIGHLIGHTS;
+      // should already be true...
+      sreq.params.set(HighlightParams.HIGHLIGHT, "true");
     } else {
-      sreq.params.set(HighlightParams.HIGHLIGHT, "false");      
+      sreq.params.set(HighlightParams.HIGHLIGHT, "false");
     }
   }
 
   @Override
-  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-  }
+  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {}
 
   @Override
   public void finishStage(ResponseBuilder rb) {
@@ -258,7 +268,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
   ////////////////////////////////////////////
   ///  SolrInfoBean
   ////////////////////////////////////////////
-  
+
   @Override
   public String getDescription() {
     return "Highlighting";
@@ -277,7 +287,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     return "highlighting";
   }
 
-  protected Object convertHighlights(@SuppressWarnings({"rawtypes"})NamedList hl) {
+  protected Object convertHighlights(@SuppressWarnings({"rawtypes"}) NamedList hl) {
     return hl;
   }
 
@@ -288,17 +298,16 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
   protected void addHighlights(Object[] objArr, Object obj, Map<Object, ShardDoc> resultIds) {
     @SuppressWarnings({"unchecked"})
-    Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[])objArr;
+    Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[]) objArr;
     @SuppressWarnings({"rawtypes"})
-    NamedList hl = (NamedList)obj;
+    NamedList hl = (NamedList) obj;
     SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(hl, resultIds, arr);
   }
 
   protected Object getAllHighlights(Object[] objArr) {
     @SuppressWarnings({"unchecked"})
-    final Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[])objArr;
-      // remove nulls in case not all docs were able to be retrieved
-      return SolrPluginUtils.removeNulls(arr, new SimpleOrderedMap<>());
+    final Map.Entry<String, Object>[] arr = (Map.Entry<String, Object>[]) objArr;
+    // remove nulls in case not all docs were able to be retrieved
+    return SolrPluginUtils.removeNulls(arr, new SimpleOrderedMap<>());
   }
-
 }

@@ -19,7 +19,6 @@ package org.apache.solr.prometheus.exporter;
 
 import java.util.Collections;
 import java.util.List;
-
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Node;
@@ -75,12 +74,13 @@ public class MetricsConfiguration {
     Node searchConfiguration = config.getNode("/config/rules/search", false);
 
     return new MetricsConfiguration(
-        settings == null ? PrometheusExporterSettings.builder().build() : PrometheusExporterSettings.from(settings),
+        settings == null
+            ? PrometheusExporterSettings.builder().build()
+            : PrometheusExporterSettings.from(settings),
         toMetricQueries(pingConfig),
         toMetricQueries(metricsConfig),
         toMetricQueries(collectionsConfig),
-        toMetricQueries(searchConfiguration)
-    );
+        toMetricQueries(searchConfiguration));
   }
 
   private static List<MetricsQuery> toMetricQueries(Node node) throws JsonQueryException {
@@ -90,5 +90,4 @@ public class MetricsConfiguration {
 
     return MetricsQuery.from(node);
   }
-
 }

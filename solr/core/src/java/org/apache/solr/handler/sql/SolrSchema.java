@@ -16,12 +16,12 @@
  */
 package org.apache.solr.handler.sql;
 
+import com.google.common.collect.ImmutableMap;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
@@ -38,8 +38,6 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
-
-import com.google.common.collect.ImmutableMap;
 
 class SolrSchema extends AbstractSchema implements Closeable {
   final Properties properties;
@@ -111,12 +109,12 @@ class SolrSchema extends AbstractSchema implements Closeable {
     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
     Map<String, LukeResponse.FieldInfo> luceneFieldInfoMap = getFieldInfo(collection);
 
-    for(Map.Entry<String, LukeResponse.FieldInfo> entry : luceneFieldInfoMap.entrySet()) {
+    for (Map.Entry<String, LukeResponse.FieldInfo> entry : luceneFieldInfoMap.entrySet()) {
       LukeResponse.FieldInfo luceneFieldInfo = entry.getValue();
 
       String luceneFieldType = luceneFieldInfo.getType();
       // SOLR-13414: Luke can return a field definition with no type in rare situations
-      if(luceneFieldType == null) {
+      if (luceneFieldType == null) {
         continue;
       }
 
@@ -154,8 +152,8 @@ class SolrSchema extends AbstractSchema implements Closeable {
 
       fieldInfo.add(entry.getKey(), type).nullable(true);
     }
-    fieldInfo.add("_query_",typeFactory.createJavaType(String.class));
-    fieldInfo.add("score",typeFactory.createJavaType(Double.class));
+    fieldInfo.add("_query_", typeFactory.createJavaType(String.class));
+    fieldInfo.add("score", typeFactory.createJavaType(Double.class));
 
     return RelDataTypeImpl.proto(fieldInfo.build());
   }

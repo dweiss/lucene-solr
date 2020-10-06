@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
@@ -33,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A {@link IResourceLocator} that delegates resource searches to {@link SolrCore}.
- * 
+ *
  * @lucene.experimental
  */
 class SolrResourceLocator implements IResourceLocator {
@@ -44,9 +43,10 @@ class SolrResourceLocator implements IResourceLocator {
 
   public SolrResourceLocator(SolrCore core, SolrParams initParams) {
     resourceLoader = core.getResourceLoader();
-    
+
     String resourcesDir = initParams.get(CarrotParams.RESOURCES_DIR);
-    carrot2ResourcesDir = firstNonNull(resourcesDir, CarrotClusteringEngine.CARROT_RESOURCES_PREFIX);
+    carrot2ResourcesDir =
+        firstNonNull(resourcesDir, CarrotClusteringEngine.CARROT_RESOURCES_PREFIX);
   }
 
   @SuppressWarnings("unchecked")
@@ -63,13 +63,15 @@ class SolrResourceLocator implements IResourceLocator {
     log.debug("Looking for Solr resource: {}", resourceName);
 
     InputStream resourceStream = null;
-    final byte [] asBytes;
+    final byte[] asBytes;
     try {
       resourceStream = resourceLoader.openResource(resourceName);
       asBytes = IOUtils.toByteArray(resourceStream);
     } catch (IOException e) {
-      log.debug("Resource not found in Solr's config: {}. Using the default {} from Carrot JAR."
-          , resourceName,  resource);
+      log.debug(
+          "Resource not found in Solr's config: {}. Using the default {} from Carrot JAR.",
+          resourceName,
+          resource);
       return new IResource[] {};
     } finally {
       if (resourceStream != null) {
@@ -83,33 +85,36 @@ class SolrResourceLocator implements IResourceLocator {
 
     log.info("Loaded Solr resource: {}", resourceName);
 
-    final IResource foundResource = new IResource() {
-      @Override
-      public InputStream open() {
-        return new ByteArrayInputStream(asBytes);
-      }
+    final IResource foundResource =
+        new IResource() {
+          @Override
+          public InputStream open() {
+            return new ByteArrayInputStream(asBytes);
+          }
 
-      @Override
-      public int hashCode() {
-        // In case multiple resources are found they will be deduped, but we don't use it in Solr,
-        // so simply rely on instance equivalence.
-        return super.hashCode();
-      }
-      
-      @Override
-      public boolean equals(Object obj) {
-        // In case multiple resources are found they will be deduped, but we don't use it in Solr,
-        // so simply rely on instance equivalence.
-        return super.equals(obj);
-      }
+          @Override
+          public int hashCode() {
+            // In case multiple resources are found they will be deduped, but we don't use it in
+            // Solr,
+            // so simply rely on instance equivalence.
+            return super.hashCode();
+          }
 
-      @Override
-      public String toString() {
-        return "Solr config resource: " + resourceName;
-      }
-    };
+          @Override
+          public boolean equals(Object obj) {
+            // In case multiple resources are found they will be deduped, but we don't use it in
+            // Solr,
+            // so simply rely on instance equivalence.
+            return super.equals(obj);
+          }
 
-    return new IResource[] { foundResource };
+          @Override
+          public String toString() {
+            return "Solr config resource: " + resourceName;
+          }
+        };
+
+    return new IResource[] {foundResource};
   }
 
   @Override
@@ -135,8 +140,10 @@ class SolrResourceLocator implements IResourceLocator {
       // If we get the exception, the resource loader implementation
       // probably does not support getConfigDir(). Not a big problem.
     }
-    
-    return "SolrResourceLocator, " + configDir
-        + "Carrot2 relative lexicalResourcesDir=" + carrot2ResourcesDir;
+
+    return "SolrResourceLocator, "
+        + configDir
+        + "Carrot2 relative lexicalResourcesDir="
+        + carrot2ResourcesDir;
   }
 }

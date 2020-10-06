@@ -19,12 +19,11 @@ package org.apache.solr.client.solrj.io;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.Optional;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
+import java.util.Optional;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -32,11 +31,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-/**
- *  The SolrClientCache caches SolrClients so they can be reused by different TupleStreams.
- **/
-
+/** The SolrClientCache caches SolrClients so they can be reused by different TupleStreams. */
 public class SolrClientCache implements Serializable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -59,7 +54,10 @@ public class SolrClientCache implements Serializable {
     } else {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000);
+      CloudSolrClient.Builder builder =
+          new CloudSolrClient.Builder(hosts, Optional.empty())
+              .withSocketTimeout(30000)
+              .withConnectionTimeout(15000);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
@@ -87,7 +85,7 @@ public class SolrClientCache implements Serializable {
   }
 
   public synchronized void close() {
-    for(Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
+    for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
       try {
         entry.getValue().close();
       } catch (IOException e) {

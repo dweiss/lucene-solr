@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering;
-/**
- * @lucene.experimental
- */
+/** @lucene.experimental */
 public interface ClusteringParams {
 
   public static final String CLUSTERING_PREFIX = "clustering.";
@@ -28,8 +26,6 @@ public interface ClusteringParams {
 
   public static final String USE_COLLECTION = CLUSTERING_PREFIX + "collection";
 
-  /**
-   * When clustering full documents, cluster on the Doc Set.
-   */
+  /** When clustering full documents, cluster on the Doc Set. */
   public static final String USE_DOC_SET = CLUSTERING_PREFIX + "docs.useDocSet";
 }

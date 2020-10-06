@@ -18,7 +18,6 @@
 package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

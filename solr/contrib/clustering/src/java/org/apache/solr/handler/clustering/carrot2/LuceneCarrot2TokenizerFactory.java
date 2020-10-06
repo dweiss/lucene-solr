@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -35,11 +34,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of Carrot2's {@link ITokenizerFactory} based on Lucene's
- * Smart Chinese tokenizer. If Smart Chinese tokenizer is not available in
- * classpath at runtime, the default Carrot2's tokenizer is used. Should the
- * Lucene APIs need to change, the changes can be made in this class.
- * 
+ * An implementation of Carrot2's {@link ITokenizerFactory} based on Lucene's Smart Chinese
+ * tokenizer. If Smart Chinese tokenizer is not available in classpath at runtime, the default
+ * Carrot2's tokenizer is used. Should the Lucene APIs need to change, the changes can be made in
+ * this class.
+ *
  * @lucene.experimental
  */
 public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
@@ -48,38 +47,37 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
   @Override
   public ITokenizer getTokenizer(LanguageCode language) {
     switch (language) {
-    case CHINESE_SIMPLIFIED:
-      return ChineseTokenizerFactory.createTokenizer();
+      case CHINESE_SIMPLIFIED:
+        return ChineseTokenizerFactory.createTokenizer();
 
-      /*
-       * We use our own analyzer for Arabic. Lucene's version has special
-       * support for Nonspacing-Mark characters (see
-       * http://www.fileformat.info/info/unicode/category/Mn/index.htm), but we
-       * have them included as letters in the parser.
-       */
-    case ARABIC:
-      // Intentional fall-through.
+        /*
+         * We use our own analyzer for Arabic. Lucene's version has special
+         * support for Nonspacing-Mark characters (see
+         * http://www.fileformat.info/info/unicode/category/Mn/index.htm), but we
+         * have them included as letters in the parser.
+         */
+      case ARABIC:
+        // Intentional fall-through.
 
-    default:
-      return new ExtendedWhitespaceTokenizer();
+      default:
+        return new ExtendedWhitespaceTokenizer();
     }
   }
 
   /**
-   * Creates tokenizers that adapt Lucene's Smart Chinese Tokenizer to Carrot2's
-   * {@link ITokenizer}. If Smart Chinese is not available in the classpath, the
-   * factory will fall back to the default white space tokenizer.
+   * Creates tokenizers that adapt Lucene's Smart Chinese Tokenizer to Carrot2's {@link ITokenizer}.
+   * If Smart Chinese is not available in the classpath, the factory will fall back to the default
+   * white space tokenizer.
    */
   private static final class ChineseTokenizerFactory {
     static {
       try {
-        ReflectionUtils.classForName(
-            "org.apache.lucene.analysis.cn.smart.WordTokenFilter", false);
+        ReflectionUtils.classForName("org.apache.lucene.analysis.cn.smart.WordTokenFilter", false);
         ReflectionUtils.classForName(
             "org.apache.lucene.analysis.cn.smart.SentenceTokenizer", false);
       } catch (Throwable e) {
-        log
-            .warn("Could not instantiate Smart Chinese Analyzer, clustering quality "
+        log.warn(
+            "Could not instantiate Smart Chinese Analyzer, clustering quality "
                 + "of Chinese content may be degraded. For best quality clusters, "
                 + "make sure Lucene's Smart Chinese Analyzer JAR is in the classpath");
         if (e instanceof Error) {
@@ -99,9 +97,8 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
       }
     }
 
-    private final static class ChineseTokenizer implements ITokenizer {
-      private final static Pattern numeric = Pattern
-          .compile("[\\-+'$]?\\d+([:\\-/,.]?\\d+)*[%$]?");
+    private static final class ChineseTokenizer implements ITokenizer {
+      private static final Pattern numeric = Pattern.compile("[\\-+'$]?\\d+([:\\-/,.]?\\d+)*[%$]?");
 
       private Tokenizer sentenceTokenizer;
       private TokenStream wordTokenFilter;
@@ -115,12 +112,14 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
 
         // As Smart Chinese is not available during compile time,
         // we need to resort to reflection.
-        final Class<?> tokenizerClass = ReflectionUtils.classForName(
-            "org.apache.lucene.analysis.cn.smart.SentenceTokenizer", false);
-        this.sentenceTokenizer = (Tokenizer) tokenizerClass.getConstructor(
-            Reader.class).newInstance((Reader) null);
-        this.tokenFilterClass = ReflectionUtils.classForName(
-            "org.apache.lucene.analysis.cn.smart.WordTokenFilter", false);
+        final Class<?> tokenizerClass =
+            ReflectionUtils.classForName(
+                "org.apache.lucene.analysis.cn.smart.SentenceTokenizer", false);
+        this.sentenceTokenizer =
+            (Tokenizer) tokenizerClass.getConstructor(Reader.class).newInstance((Reader) null);
+        this.tokenFilterClass =
+            ReflectionUtils.classForName(
+                "org.apache.lucene.analysis.cn.smart.WordTokenFilter", false);
       }
 
       @Override
@@ -155,8 +154,9 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
       public void reset(Reader input) {
         try {
           sentenceTokenizer.setReader(input);
-          wordTokenFilter = (TokenStream) tokenFilterClass.getConstructor(
-              TokenStream.class).newInstance(sentenceTokenizer);
+          wordTokenFilter =
+              (TokenStream)
+                  tokenFilterClass.getConstructor(TokenStream.class).newInstance(sentenceTokenizer);
           term = wordTokenFilter.addAttribute(CharTermAttribute.class);
         } catch (Exception e) {
           throw ExceptionUtils.wrapAsRuntimeException(e);

@@ -18,13 +18,15 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYRectangle;
 
-/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code x, y} points */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code
+ * x, y} points
+ */
 public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
@@ -35,8 +37,8 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   protected Point[] nextShape() {
     int n = random().nextInt(4) + 1;
     Point[] points = new Point[n];
-    for (int i =0; i < n; i++) {
-      points[i] = (Point)ShapeType.POINT.nextShape();
+    for (int i = 0; i < n; i++) {
+      points[i] = (Point) ShapeType.POINT.nextShape();
     }
     return points;
   }
@@ -61,6 +63,7 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
 
   protected class MultiPointValidator extends Validator {
     TestXYPointShapeQueries.PointValidator POINTVALIDATOR;
+
     MultiPointValidator(Encoder encoder) {
       super(encoder);
       POINTVALIDATOR = new TestXYPointShapeQueries.PointValidator(encoder);
@@ -75,7 +78,9 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
+      Component2D rectangle2D =
+          XYGeometry.create(
+              new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
       return testComponentQuery(rectangle2D, shape);
     }
 

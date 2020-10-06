@@ -16,6 +16,8 @@
  */
 package org.apache.solr.metrics.reporters.solr;
 
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
@@ -26,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
 import org.apache.http.client.HttpClient;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
@@ -43,31 +44,39 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 /**
  * This reporter sends selected metrics from local registries to {@link Overseer}.
- * <p>The following configuration properties are supported:</p>
+ *
+ * <p>The following configuration properties are supported:
+ *
  * <ul>
- *   <li>handler - (optional str) handler path where reports are sent. Default is
- *   {@link MetricsCollectorHandler#HANDLER_PATH}.</li>
+ *   <li>handler - (optional str) handler path where reports are sent. Default is {@link
+ *       MetricsCollectorHandler#HANDLER_PATH}.
  *   <li>period - (optional int) how often reports are sent, in seconds. Default is 60. Setting this
- *   to 0 disables the reporter.</li>
- *   <li>report - (optional multiple lst) report configuration(s), see below.</li>
+ *       to 0 disables the reporter.
+ *   <li>report - (optional multiple lst) report configuration(s), see below.
  * </ul>
+ *
  * Each report configuration consist of the following properties:
+ *
  * <ul>
- *   <li>registry - (required str) regex pattern matching source registries (see {@link SolrMetricManager#registryNames(String...)}),
- *   may contain capture groups.</li>
- *   <li>group - (required str) target registry name where metrics will be grouped. This can be a regex pattern that
- *   contains back-references to capture groups collected by <code>registry</code> pattern</li>
- *   <li>label - (optional str) optional prefix to prepend to metric names, may contain back-references to
- *   capture groups collected by <code>registry</code> pattern</li>
- *   <li>filter - (optional multiple str) regex expression(s) matching selected metrics to be reported.</li>
+ *   <li>registry - (required str) regex pattern matching source registries (see {@link
+ *       SolrMetricManager#registryNames(String...)}), may contain capture groups.
+ *   <li>group - (required str) target registry name where metrics will be grouped. This can be a
+ *       regex pattern that contains back-references to capture groups collected by <code>registry
+ *       </code> pattern
+ *   <li>label - (optional str) optional prefix to prepend to metric names, may contain
+ *       back-references to capture groups collected by <code>registry</code> pattern
+ *   <li>filter - (optional multiple str) regex expression(s) matching selected metrics to be
+ *       reported.
  * </ul>
- * NOTE: this reporter uses predefined "cluster" group, and it's always created even if explicit configuration
- * is missing. Default configuration uses report specifications from {@link #DEFAULT_REPORTS}.
- * <p>Example configuration:</p>
+ *
+ * NOTE: this reporter uses predefined "cluster" group, and it's always created even if explicit
+ * configuration is missing. Default configuration uses report specifications from {@link
+ * #DEFAULT_REPORTS}.
+ *
+ * <p>Example configuration:
+ *
  * <pre>
  *       &lt;reporter name="test" group="cluster" class="solr.SolrClusterReporter"&gt;
  *         &lt;str name="handler"&gt;/admin/metrics/collector&lt;/str&gt;
@@ -89,41 +98,64 @@ import static org.apache.solr.common.params.CommonParams.ID;
  *         &lt;/lst&gt;
  *       &lt;/reporter&gt;
  * </pre>
- *
  */
 public class SolrClusterReporter extends SolrCoreContainerReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String CLUSTER_GROUP = SolrMetricManager.enforcePrefix(SolrInfoBean.Group.cluster.toString());
+  public static final String CLUSTER_GROUP =
+      SolrMetricManager.enforcePrefix(SolrInfoBean.Group.cluster.toString());
 
-  public static final List<SolrReporter.Report> DEFAULT_REPORTS = new ArrayList<SolrReporter.Report>() {{
-    add(new SolrReporter.Report(CLUSTER_GROUP, "jetty",
-        SolrMetricManager.enforcePrefix(SolrInfoBean.Group.jetty.toString()),
-        Collections.emptySet())); // all metrics
-    add(new SolrReporter.Report(CLUSTER_GROUP, "jvm",
-        SolrMetricManager.enforcePrefix(SolrInfoBean.Group.jvm.toString()),
-        new HashSet<String>() {{
-          add("memory\\.total\\..*");
-          add("memory\\.heap\\..*");
-          add("os\\.SystemLoadAverage");
-          add("os\\.FreePhysicalMemorySize");
-          add("os\\.FreeSwapSpaceSize");
-          add("os\\.OpenFileDescriptorCount");
-          add("threads\\.count");
-        }}));
-    add(new SolrReporter.Report(CLUSTER_GROUP, "node", SolrMetricManager.enforcePrefix(SolrInfoBean.Group.node.toString()),
-        new HashSet<String>() {{
-          add("CONTAINER\\.cores\\..*");
-          add("CONTAINER\\.fs\\..*");
-        }}));
-    add(new SolrReporter.Report(CLUSTER_GROUP, "leader.$1", "solr\\.core\\.(.*)\\.leader",
-        new HashSet<String>(){{
-          add("UPDATE\\./update/.*");
-          add("QUERY\\./select.*");
-          add("INDEX\\..*");
-          add("TLOG\\..*");
-    }}));
-  }};
+  public static final List<SolrReporter.Report> DEFAULT_REPORTS =
+      new ArrayList<SolrReporter.Report>() {
+        {
+          add(
+              new SolrReporter.Report(
+                  CLUSTER_GROUP,
+                  "jetty",
+                  SolrMetricManager.enforcePrefix(SolrInfoBean.Group.jetty.toString()),
+                  Collections.emptySet())); // all metrics
+          add(
+              new SolrReporter.Report(
+                  CLUSTER_GROUP,
+                  "jvm",
+                  SolrMetricManager.enforcePrefix(SolrInfoBean.Group.jvm.toString()),
+                  new HashSet<String>() {
+                    {
+                      add("memory\\.total\\..*");
+                      add("memory\\.heap\\..*");
+                      add("os\\.SystemLoadAverage");
+                      add("os\\.FreePhysicalMemorySize");
+                      add("os\\.FreeSwapSpaceSize");
+                      add("os\\.OpenFileDescriptorCount");
+                      add("threads\\.count");
+                    }
+                  }));
+          add(
+              new SolrReporter.Report(
+                  CLUSTER_GROUP,
+                  "node",
+                  SolrMetricManager.enforcePrefix(SolrInfoBean.Group.node.toString()),
+                  new HashSet<String>() {
+                    {
+                      add("CONTAINER\\.cores\\..*");
+                      add("CONTAINER\\.fs\\..*");
+                    }
+                  }));
+          add(
+              new SolrReporter.Report(
+                  CLUSTER_GROUP,
+                  "leader.$1",
+                  "solr\\.core\\.(.*)\\.leader",
+                  new HashSet<String>() {
+                    {
+                      add("UPDATE\\./update/.*");
+                      add("QUERY\\./select.*");
+                      add("INDEX\\..*");
+                      add("TLOG\\..*");
+                    }
+                  }));
+        }
+      };
 
   private String handler = MetricsCollectorHandler.HANDLER_PATH;
   private List<SolrReporter.Report> reports = new ArrayList<>();
@@ -134,7 +166,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
    * Create a reporter for metrics managed in a named registry.
    *
    * @param metricManager metric manager
-   * @param registryName  this is ignored
+   * @param registryName this is ignored
    */
   public SolrClusterReporter(SolrMetricManager metricManager, String registryName) {
     super(metricManager, registryName);
@@ -144,19 +176,20 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
     this.handler = handler;
   }
 
-  public void setReport(@SuppressWarnings({"rawtypes"})List<Map> reportConfig) {
+  public void setReport(@SuppressWarnings({"rawtypes"}) List<Map> reportConfig) {
     if (reportConfig == null || reportConfig.isEmpty()) {
       return;
     }
-    reportConfig.forEach(map -> {
-      SolrReporter.Report r = SolrReporter.Report.fromMap(map);
-      if (r != null) {
-        reports.add(r);
-      }
-    });
+    reportConfig.forEach(
+        map -> {
+          SolrReporter.Report r = SolrReporter.Report.fromMap(map);
+          if (r != null) {
+            reports.add(r);
+          }
+        });
   }
 
-  public void setReport(@SuppressWarnings({"rawtypes"})Map map) {
+  public void setReport(@SuppressWarnings({"rawtypes"}) Map map) {
     if (map == null || map.isEmpty()) {
       return;
     }
@@ -185,7 +218,8 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
   @Override
   public void close() throws IOException {
     if (reporter != null) {
-      reporter.close();;
+      reporter.close();
+      ;
     }
   }
 
@@ -193,7 +227,8 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
   public void init(PluginInfo pluginInfo, CoreContainer cc) {
     super.init(pluginInfo, cc);
     if (reporter != null) {
-      reporter.close();;
+      reporter.close();
+      ;
     }
     if (!enabled) {
       log.info("Reporter disabled for registry {}", registryName);
@@ -211,21 +246,24 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
     HttpClient httpClient = cc.getUpdateShardHandler().getDefaultHttpClient();
     ZkController zk = cc.getZkController();
     String reporterId = zk.getNodeName();
-    reporter = SolrReporter.Builder.forReports(metricManager, reports)
-        .convertRatesTo(TimeUnit.SECONDS)
-        .convertDurationsTo(TimeUnit.MILLISECONDS)
-        .withHandler(handler)
-        .withReporterId(reporterId)
-        .setCompact(true)
-        .cloudClient(false) // we want to send reports specifically to a selected leader instance
-        .skipAggregateValues(true) // we don't want to transport details of aggregates
-        .skipHistograms(true) // we don't want to transport histograms
-        .build(httpClient, new OverseerUrlSupplier(zk));
+    reporter =
+        SolrReporter.Builder.forReports(metricManager, reports)
+            .convertRatesTo(TimeUnit.SECONDS)
+            .convertDurationsTo(TimeUnit.MILLISECONDS)
+            .withHandler(handler)
+            .withReporterId(reporterId)
+            .setCompact(true)
+            .cloudClient(
+                false) // we want to send reports specifically to a selected leader instance
+            .skipAggregateValues(true) // we don't want to transport details of aggregates
+            .skipHistograms(true) // we don't want to transport histograms
+            .build(httpClient, new OverseerUrlSupplier(zk));
 
     reporter.start(period, TimeUnit.SECONDS);
   }
 
-  // TODO: fix this when there is an elegant way to retrieve URL of a node that runs Overseer leader.
+  // TODO: fix this when there is an elegant way to retrieve URL of a node that runs Overseer
+  // leader.
   // package visibility for unit tests
   static class OverseerUrlSupplier implements Supplier<String> {
     private static final long DEFAULT_INTERVAL = 30000000; // 30s
@@ -255,8 +293,9 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       SolrZkClient zkClient = zk.getZkClient();
       ZkNodeProps props;
       try {
-        props = ZkNodeProps.load(zkClient.getData(
-            Overseer.OVERSEER_ELECT + "/leader", null, null, true));
+        props =
+            ZkNodeProps.load(
+                zkClient.getData(Overseer.OVERSEER_ELECT + "/leader", null, null, true));
       } catch (KeeperException e) {
         log.warn("Could not obtain overseer's address, skipping.", e);
         return lastKnownUrl;
@@ -291,5 +330,4 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
       return url;
     }
   }
-
 }

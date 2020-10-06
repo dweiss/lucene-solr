@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexOptions;
@@ -38,9 +37,13 @@ import org.slf4j.LoggerFactory;
  * @see PrefixTreeStrategy
  * @lucene.experimental
  */
-public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStrategy> extends AbstractSpatialFieldType<T> {
+public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStrategy>
+    extends AbstractSpatialFieldType<T> {
 
-  /** @see org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setDefaultFieldValuesArrayLen(int)  */
+  /**
+   * @see
+   *     org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setDefaultFieldValuesArrayLen(int)
+   */
   public static final String DEFAULT_FIELD_VALUES_ARRAY_LEN = "defaultFieldValuesArrayLen";
 
   /*
@@ -53,6 +56,7 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
    * @see PrefixTreeStrategy#FIELD_TYPE
    */
   public static final Map<String, String> FIELD_TYPE_INVARIANTS = new HashMap<>();
+
   static {
     FIELD_TYPE_INVARIANTS.put("omitNorms", "true");
     FIELD_TYPE_INVARIANTS.put("termPositions", "false");
@@ -76,12 +80,23 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
 
       if (args.containsKey(key)) {
         if (userConfiguredValue.equals(hardcodedValue)) {
-          log.warn("FieldType {} does not allow {} to be specified in schema, hardcoded behavior is {}={}",
-                  getClass().getSimpleName(), key, key, hardcodedValue);
+          log.warn(
+              "FieldType {} does not allow {} to be specified in schema, hardcoded behavior is {}={}",
+              getClass().getSimpleName(),
+              key,
+              key,
+              hardcodedValue);
         } else {
-          final String message = String.format(Locale.ROOT, "FieldType %s is incompatible with %s=%s; hardcoded " +
-                          "behavior is %s=%s.  Remove specification in schema",
-                  getClass().getSimpleName(), key, userConfiguredValue, key, hardcodedValue);
+          final String message =
+              String.format(
+                  Locale.ROOT,
+                  "FieldType %s is incompatible with %s=%s; hardcoded "
+                      + "behavior is %s=%s.  Remove specification in schema",
+                  getClass().getSimpleName(),
+                  key,
+                  userConfiguredValue,
+                  key,
+                  hardcodedValue);
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
         }
       }
@@ -95,53 +110,62 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
 
-    args.putIfAbsent(SpatialPrefixTreeFactory.VERSION, schema.getDefaultLuceneMatchVersion().toString());
+    args.putIfAbsent(
+        SpatialPrefixTreeFactory.VERSION, schema.getDefaultLuceneMatchVersion().toString());
 
-    // Convert the maxDistErr to degrees (based on distanceUnits) since Lucene spatial layer depends on degrees
-    if(args.containsKey(SpatialPrefixTreeFactory.MAX_DIST_ERR)) {
-      double maxDistErrOriginal = Double.parseDouble(args.get(SpatialPrefixTreeFactory.MAX_DIST_ERR));
-      args.put(SpatialPrefixTreeFactory.MAX_DIST_ERR, 
+    // Convert the maxDistErr to degrees (based on distanceUnits) since Lucene spatial layer depends
+    // on degrees
+    if (args.containsKey(SpatialPrefixTreeFactory.MAX_DIST_ERR)) {
+      double maxDistErrOriginal =
+          Double.parseDouble(args.get(SpatialPrefixTreeFactory.MAX_DIST_ERR));
+      args.put(
+          SpatialPrefixTreeFactory.MAX_DIST_ERR,
           Double.toString(maxDistErrOriginal * distanceUnits.multiplierFromThisUnitToDegrees()));
     }
 
-    //Solr expects us to remove the parameters we've used.
+    // Solr expects us to remove the parameters we've used.
     MapListener<String, String> argsWrap = new MapListener<>(args);
-    grid = SpatialPrefixTreeFactory.makeSPT(argsWrap, schema.getResourceLoader().getClassLoader(), ctx);
+    grid =
+        SpatialPrefixTreeFactory.makeSPT(
+            argsWrap, schema.getResourceLoader().getClassLoader(), ctx);
     args.keySet().removeAll(argsWrap.getSeenKeys());
 
     String v = args.remove(SpatialArgsParser.DIST_ERR_PCT);
-    if (v != null)
-      distErrPct = Double.valueOf(v);
+    if (v != null) distErrPct = Double.valueOf(v);
 
     v = args.remove(DEFAULT_FIELD_VALUES_ARRAY_LEN);
-    if (v != null)
-      defaultFieldValuesArrayLen = Integer.valueOf(v);
+    if (v != null) defaultFieldValuesArrayLen = Integer.valueOf(v);
   }
 
-  /**
-   *
-   * @see #FIELD_TYPE_INVARIANTS
-   */
+  /** @see #FIELD_TYPE_INVARIANTS */
   @Override
   public void checkSchemaField(final SchemaField field) {
     super.checkSchemaField(field);
 
-    if (! field.omitNorms()) {
-      final String message = String.format(Locale.ROOT, "%s of type %s is incompatible with omitNorms=false; hardcoded " +
-                      "behavior is omitNorms=true.  Remove specification in schema", field.getName(), getClass().getSimpleName());
+    if (!field.omitNorms()) {
+      final String message =
+          String.format(
+              Locale.ROOT,
+              "%s of type %s is incompatible with omitNorms=false; hardcoded "
+                  + "behavior is omitNorms=true.  Remove specification in schema",
+              field.getName(),
+              getClass().getSimpleName());
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
     }
     if (field.indexOptions() != IndexOptions.DOCS) {
-      final String message = String.format(Locale.ROOT,
+      final String message =
+          String.format(
+              Locale.ROOT,
               "%s of type %s is incompatible with termFreq or position storage.  Remove specification in schema.",
-              field.getName(), getClass().getSimpleName());
+              field.getName(),
+              getClass().getSimpleName());
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
     }
   }
-  
+
   /**
-   * This analyzer is not actually used for indexing.  It is implemented here
-   * so that the analysis UI will show reasonable tokens.
+   * This analyzer is not actually used for indexing. It is implemented here so that the analysis UI
+   * will show reasonable tokens.
    */
   @Override
   public Analyzer getIndexAnalyzer() {
@@ -150,20 +174,21 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
       protected TokenStreamComponents createComponents(String fieldName) {
         PrefixTreeStrategy s = newSpatialStrategy(fieldName == null ? getTypeName() : fieldName);
         PrefixTreeStrategy.ShapeTokenStream ts = s.tokenStream();
-        return new TokenStreamComponents(r -> {
-          try {
-            ts.setShape(parseShape(IOUtils.toString(r)));
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        }, ts);
+        return new TokenStreamComponents(
+            r -> {
+              try {
+                ts.setShape(parseShape(IOUtils.toString(r)));
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            },
+            ts);
       }
     };
   }
-  
+
   @Override
-  public Analyzer getQueryAnalyzer()
-  {
+  public Analyzer getQueryAnalyzer() {
     return getIndexAnalyzer();
   }
 
@@ -171,17 +196,19 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
   protected T newSpatialStrategy(String fieldName) {
     T strat = newPrefixTreeStrategy(fieldName);
 
-    if (distErrPct != null)
-      strat.setDistErrPct(distErrPct);
+    if (distErrPct != null) strat.setDistErrPct(distErrPct);
     if (defaultFieldValuesArrayLen != null)
       strat.setDefaultFieldValuesArrayLen(defaultFieldValuesArrayLen);
 
     if (log.isInfoEnabled()) {
-      log.info("{} strat: {} maxLevels: {}", this, strat, grid.getMaxLevels());//TODO output maxDetailKm
+      log.info(
+          "{} strat: {} maxLevels: {}",
+          this,
+          strat,
+          grid.getMaxLevels()); // TODO output maxDetailKm
     }
     return strat;
   }
 
   protected abstract T newPrefixTreeStrategy(String fieldName);
-
 }

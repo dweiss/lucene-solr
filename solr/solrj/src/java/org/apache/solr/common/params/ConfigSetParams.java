@@ -18,14 +18,11 @@ package org.apache.solr.common.params;
 
 import java.util.Locale;
 
-/**
- * ConfigSets API related parameters and actions.
- */
-public interface ConfigSetParams
-{
-  public final static String ACTION = "action";
-  public final static String OVERWRITE = "overwrite";
-  public final static String CLEANUP = "cleanup";
+/** ConfigSets API related parameters and actions. */
+public interface ConfigSetParams {
+  public static final String ACTION = "action";
+  public static final String OVERWRITE = "overwrite";
+  public static final String CLEANUP = "cleanup";
 
   public enum ConfigSetAction {
     CREATE,
@@ -36,8 +33,9 @@ public interface ConfigSetParams
     public static ConfigSetAction get(String p) {
       if (p != null) {
         try {
-          return ConfigSetAction.valueOf( p.toUpperCase(Locale.ROOT) );
-        } catch (Exception ex) {}
+          return ConfigSetAction.valueOf(p.toUpperCase(Locale.ROOT));
+        } catch (Exception ex) {
+        }
       }
       return null;
     }

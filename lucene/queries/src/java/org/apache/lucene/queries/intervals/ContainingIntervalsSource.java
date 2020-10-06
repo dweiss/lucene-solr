@@ -46,15 +46,13 @@ class ContainingIntervalsSource extends ConjunctionIntervalsSource {
     return new FilteringIntervalIterator(a, b) {
       @Override
       public int nextInterval() throws IOException {
-        if (bpos == false)
-          return IntervalIterator.NO_MORE_INTERVALS;
+        if (bpos == false) return IntervalIterator.NO_MORE_INTERVALS;
         while (a.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
           while (b.start() < a.start() && b.end() < a.end()) {
             if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
               return IntervalIterator.NO_MORE_INTERVALS;
           }
-          if (a.start() <= b.start() && a.end() >= b.end())
-            return a.start();
+          if (a.start() <= b.start() && a.end() >= b.end()) return a.start();
         }
         return IntervalIterator.NO_MORE_INTERVALS;
       }

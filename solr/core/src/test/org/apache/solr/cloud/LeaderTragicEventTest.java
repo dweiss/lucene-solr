@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -24,7 +27,6 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
@@ -48,10 +50,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.is;
-
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13237")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13237")
 public class LeaderTragicEventTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -62,7 +61,8 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     System.setProperty(MockDirectoryFactory.SOLR_TESTS_USING_MOCK_DIRECTORY_WRAPPER, "true");
 
     configureCluster(2)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
   }
 
@@ -72,38 +72,43 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     System.clearProperty(MockDirectoryFactory.SOLR_TESTS_USING_MOCK_DIRECTORY_WRAPPER);
   }
 
-
   @Test
   public void test() throws Exception {
     final String collection = "collection1";
     cluster.getSolrClient().setDefaultCollection(collection);
-    CollectionAdminRequest
-        .createCollection(collection, "config", 1, 2)
+    CollectionAdminRequest.createCollection(collection, "config", 1, 2)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collection, 1, 2);
     try {
       List<String> addedIds = new ArrayList<>();
       Replica oldLeader = corruptLeader(collection, addedIds);
 
-      waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState) -> {
-        Slice slice = collectionState.getSlice("shard1");
+      waitForState(
+          "Timeout waiting for new replica become leader",
+          collection,
+          (liveNodes, collectionState) -> {
+            Slice slice = collectionState.getSlice("shard1");
 
-        if (slice.getReplicas().size() != 2) return false;
-        if (slice.getLeader() == null) return false;
-        if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
+            if (slice.getReplicas().size() != 2) return false;
+            if (slice.getLeader() == null) return false;
+            if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
 
-        return true;
-      });
-      ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
+            return true;
+          });
+      ClusterStateUtil.waitForAllActiveAndLiveReplicas(
+          cluster.getSolrClient().getZkStateReader(), collection, 120000);
       Slice shard = getCollectionState(collection).getSlice("shard1");
       assertNotSame(shard.getLeader().getNodeName(), oldLeader.getNodeName());
       assertEquals(getNonLeader(shard).getNodeName(), oldLeader.getNodeName());
 
       for (String id : addedIds) {
-        assertNotNull(cluster.getSolrClient().getById(collection,id));
+        assertNotNull(cluster.getSolrClient().getById(collection, id));
       }
       if (log.isInfoEnabled()) {
-        log.info("The test success oldLeader:{} currentState:{}", oldLeader, getCollectionState(collection));
+        log.info(
+            "The test success oldLeader:{} currentState:{}",
+            oldLeader,
+            getCollectionState(collection));
       }
 
     } finally {
@@ -118,15 +123,20 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
 
     CoreContainer leaderCC = cluster.getReplicaJetty(oldLeader).getCoreContainer();
     SolrCore leaderCore = leaderCC.getCores().iterator().next();
-    MockDirectoryWrapper mockDir = (MockDirectoryWrapper) leaderCore.getDirectoryFactory()
-        .get(leaderCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, leaderCore.getSolrConfig().indexConfig.lockType);
+    MockDirectoryWrapper mockDir =
+        (MockDirectoryWrapper)
+            leaderCore
+                .getDirectoryFactory()
+                .get(
+                    leaderCore.getIndexDir(),
+                    DirectoryFactory.DirContext.DEFAULT,
+                    leaderCore.getSolrConfig().indexConfig.lockType);
     leaderCore.getDirectoryFactory().release(mockDir);
 
-    try (HttpSolrClient solrClient = new HttpSolrClient.Builder(dc.getLeader("shard1").getCoreUrl()).build()) {
+    try (HttpSolrClient solrClient =
+        new HttpSolrClient.Builder(dc.getLeader("shard1").getCoreUrl()).build()) {
       for (int i = 0; i < 100; i++) {
-        new UpdateRequest()
-            .add("id", i + "")
-            .process(solrClient);
+        new UpdateRequest().add("id", i + "").process(solrClient);
         solrClient.commit();
         addedIds.add(i + "");
 
@@ -145,8 +155,8 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       }
     } catch (Exception e) {
       log.info("Corrupt leader ex: ", e);
-      
-      // solrClient.add/commit would throw RemoteSolrException with error code 500 or 
+
+      // solrClient.add/commit would throw RemoteSolrException with error code 500 or
       // 404(when the leader replica is already deleted by giveupLeadership)
       if (e instanceof RemoteSolrException) {
         SolrException se = (SolrException) e;
@@ -154,7 +164,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       } else if (!(e instanceof AlreadyClosedException)) {
         throw new RuntimeException("Unexpected exception", e);
       }
-      //else expected
+      // else expected
     }
     return oldLeader;
   }
@@ -170,8 +180,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     cluster.getSolrClient().setDefaultCollection(collection);
     int numReplicas = random().nextInt(2) + 1;
     // won't do anything if leader is the only one active replica in the shard
-    CollectionAdminRequest
-        .createCollection(collection, "config", 1, numReplicas)
+    CollectionAdminRequest.createCollection(collection, "config", 1, numReplicas)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collection, 1, numReplicas);
 
@@ -181,11 +190,19 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         Slice shard = getCollectionState(collection).getSlice("shard1");
         otherReplicaJetty = cluster.getReplicaJetty(getNonLeader(shard));
         if (log.isInfoEnabled()) {
-          log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
+          log.info(
+              "Stop jetty node : {} state:{}",
+              otherReplicaJetty.getBaseUrl(),
+              getCollectionState(collection));
         }
         otherReplicaJetty.stop();
         cluster.waitForJettyToStop(otherReplicaJetty);
-        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
+        waitForState(
+            "Timeout waiting for replica get down",
+            collection,
+            (liveNodes, collectionState) ->
+                getNonLeader(collectionState.getSlice("shard1")).getState()
+                    != Replica.State.ACTIVE);
       }
 
       Replica oldLeader = corruptLeader(collection, new ArrayList<>());
@@ -201,6 +218,4 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
     }
   }
-
-
 }

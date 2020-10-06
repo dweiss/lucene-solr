@@ -16,24 +16,22 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.common.util.Utils.toJSONString;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
-import static org.apache.solr.common.util.Utils.toJSONString;
-
 /**
- * This class encapsulates the config overlay json file. It is immutable
- * and any edit operations performed on tbhis gives a new copy of the object
- * with the changed value
+ * This class encapsulates the config overlay json file. It is immutable and any edit operations
+ * performed on tbhis gives a new copy of the object with the changed value
  */
 public class ConfigOverlay implements MapSerializable {
   private final int znodeVersion;
@@ -105,18 +103,17 @@ public class ConfigOverlay implements MapSerializable {
     return new ConfigOverlay(jsonObj, znodeVersion);
   }
 
-
   public static final String NOT_EDITABLE = "''{0}'' is not an editable property";
 
   private List<String> checkEditable(String propName, boolean isXPath, boolean failOnError) {
     LinkedList<String> hierarchy = new LinkedList<>();
     if (!isEditableProp(propName, isXPath, hierarchy)) {
       if (failOnError)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, StrUtils.formatString(NOT_EDITABLE, propName));
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, StrUtils.formatString(NOT_EDITABLE, propName));
       else return null;
     }
     return hierarchy;
-
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -146,7 +143,6 @@ public class ConfigOverlay implements MapSerializable {
     return Utils.toJSON(data);
   }
 
-
   public int getZnodeVersion() {
     return znodeVersion;
   }
@@ -155,7 +151,6 @@ public class ConfigOverlay implements MapSerializable {
   public String toString() {
     return toJSONString(data);
   }
-
 
   public static final String RESOURCE_NAME = "configoverlay.json";
 
@@ -167,16 +162,16 @@ public class ConfigOverlay implements MapSerializable {
   private static final Long INT_NODE = 21L;
   private static final Long FLOAT_ATTR = 30L;
   private static final Long FLOAT_NODE = 31L;*/
-  //The path maps to the xml xpath and value of 1 means it is a tag with a string value and value
+  // The path maps to the xml xpath and value of 1 means it is a tag with a string value and value
   // of 0 means it is an attribute with string value
 
   @SuppressWarnings({"rawtypes"})
-  private static Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
+  private static Map editable_prop_map =
+      (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
 
   public static boolean isEditableProp(String path, boolean isXpath, List<String> hierarchy) {
     return !(checkEditable(path, isXpath, hierarchy) == null);
   }
-
 
   @SuppressWarnings({"rawtypes"})
   public static Class checkEditable(String path, boolean isXpath, List<String> hierarchy) {
@@ -204,7 +199,7 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   @SuppressWarnings({"rawtypes"})
-  static Class[] types = new Class[]{String.class, Boolean.class, Integer.class, Float.class};
+  static Class[] types = new Class[] {String.class, Boolean.class, Integer.class, Float.class};
 
   @SuppressWarnings({"rawtypes"})
   private static Class checkType(Object o, boolean isXpath, boolean isAttr) {
@@ -247,7 +242,6 @@ public class ConfigOverlay implements MapSerializable {
     return Collections.unmodifiableMap(reqHandlers);
   }
 
-
   @SuppressWarnings({"unchecked", "rawtypes"})
   public ConfigOverlay addNamedPlugin(Map<String, Object> info, String typ) {
     Map dataCopy = Utils.getDeepCopy(data, 4);
@@ -264,10 +258,8 @@ public class ConfigOverlay implements MapSerializable {
     if (reqHandler == null) return this;
     reqHandler.remove(name);
     return new ConfigOverlay(dataCopy, this.znodeVersion);
-
   }
 
   public static final String ZNODEVER = "znodeVersion";
   public static final String NAME = "overlay";
-
 }

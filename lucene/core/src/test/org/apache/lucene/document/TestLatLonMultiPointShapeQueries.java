@@ -18,11 +18,13 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 
-/** random bounding box, line, and polygon query tests for random indexed arrays of {@code latitude, longitude} points */
+/**
+ * random bounding box, line, and polygon query tests for random indexed arrays of {@code latitude,
+ * longitude} points
+ */
 public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
@@ -34,8 +36,8 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
   protected Point[] nextShape() {
     int n = random().nextInt(4) + 1;
     Point[] points = new Point[n];
-    for (int i =0; i < n; i++) {
-      points[i] = (Point)ShapeType.POINT.nextShape();
+    for (int i = 0; i < n; i++) {
+      points[i] = (Point) ShapeType.POINT.nextShape();
     }
     return points;
   }
@@ -60,6 +62,7 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
 
   protected class MultiPointValidator extends Validator {
     TestLatLonPointShapeQueries.PointValidator POINTVALIDATOR;
+
     MultiPointValidator(Encoder encoder) {
       super(encoder);
       POINTVALIDATOR = new TestLatLonPointShapeQueries.PointValidator(encoder);
@@ -73,7 +76,8 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+    public boolean testBBoxQuery(
+        double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Point[] points = (Point[]) shape;
       for (Point p : points) {
         boolean b = POINTVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);

@@ -22,23 +22,26 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 
 /**
- * Factory for {@link LegacyBM25Similarity}. 
- * Use this to force explicit creation of the BM25 formula that was used by BM25Similarity before Solr/Lucene 8.0.0.
- * Note that {@link SchemaSimilarityFactory} will automatically create an instance of LegacyBM25Similarity if luceneMatchVersion is &lt; 8.0.0
- * <p>
- * Parameters:
+ * Factory for {@link LegacyBM25Similarity}. Use this to force explicit creation of the BM25 formula
+ * that was used by BM25Similarity before Solr/Lucene 8.0.0. Note that {@link
+ * SchemaSimilarityFactory} will automatically create an instance of LegacyBM25Similarity if
+ * luceneMatchVersion is &lt; 8.0.0
+ *
+ * <p>Parameters:
+ *
  * <ul>
- *   <li>k1 (float): Controls non-linear term frequency normalization (saturation).
- *                   The default is <code>1.2</code>
- *   <li>b (float): Controls to what degree document length normalizes tf values.
- *                  The default is <code>0.75</code>
+ *   <li>k1 (float): Controls non-linear term frequency normalization (saturation). The default is
+ *       <code>1.2</code>
+ *   <li>b (float): Controls to what degree document length normalizes tf values. The default is
+ *       <code>0.75</code>
  * </ul>
- * <p>
- * Optional settings:
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link LegacyBM25Similarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {@link LegacyBM25Similarity#setDiscountOverlaps(boolean)}
  * </ul>
+ *
  * @lucene.experimental
  * @since 8.0.0
  */

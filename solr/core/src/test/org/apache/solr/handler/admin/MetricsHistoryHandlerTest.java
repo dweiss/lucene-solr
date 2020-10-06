@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -40,47 +39,54 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.rrd4j.core.RrdDb;
 
-/**
- *
- */
+/** */
 @LogLevel("org.apache.solr.cloud=DEBUG")
 @LuceneTestCase.Nightly
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
-  private volatile static SolrCloudManager cloudManager;
-  private volatile static SolrMetricManager metricManager;
-  private volatile static TimeSource timeSource;
-  private volatile static SolrClient solrClient;
-  private volatile static int SPEED;
+  private static volatile SolrCloudManager cloudManager;
+  private static volatile SolrMetricManager metricManager;
+  private static volatile TimeSource timeSource;
+  private static volatile SolrClient solrClient;
+  private static volatile int SPEED;
 
-  private volatile static MetricsHistoryHandler handler;
-  private volatile static MetricsHandler metricsHandler;
+  private static volatile MetricsHistoryHandler handler;
+  private static volatile MetricsHandler metricsHandler;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     Map<String, Object> args = new HashMap<>();
     args.put(MetricsHistoryHandler.SYNC_PERIOD_PROP, 1);
     args.put(MetricsHistoryHandler.COLLECT_PERIOD_PROP, 1);
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
-    
-    cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+
+    cloudManager =
+        cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     metricManager = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager();
     solrClient = cluster.getSolrClient();
     metricsHandler = new MetricsHandler(metricManager);
-    handler = new MetricsHistoryHandler(cluster.getJettySolrRunner(0).getNodeName(), metricsHandler, solrClient, cloudManager, args);
-    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrInfoBean.Group.node.toString(), "");
+    handler =
+        new MetricsHistoryHandler(
+            cluster.getJettySolrRunner(0).getNodeName(),
+            metricsHandler,
+            solrClient,
+            cloudManager,
+            args);
+    SolrMetricsContext solrMetricsContext =
+        new SolrMetricsContext(metricManager, SolrInfoBean.Group.node.toString(), "");
     handler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
     SPEED = 1;
     timeSource = cloudManager.getTimeSource();
 
     // create .system collection
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL,
-        "conf", 1, 1);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, "conf", 1, 1);
     create.process(solrClient);
-    CloudUtil.waitForState(cloudManager, "failed to create " + CollectionAdminParams.SYSTEM_COLL,
-        CollectionAdminParams.SYSTEM_COLL, CloudUtil.clusterShape(1, 1));
+    CloudUtil.waitForState(
+        cloudManager,
+        "failed to create " + CollectionAdminParams.SYSTEM_COLL,
+        CollectionAdminParams.SYSTEM_COLL,
+        CloudUtil.clusterShape(1, 1));
   }
 
   @AfterClass
@@ -96,14 +102,16 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
+  // Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // added 15-Sep-2018
   public void testBasic() throws Exception {
     timeSource.sleep(15000);
     List<Pair<String, Long>> list = handler.getFactory().list(100);
     // solr.jvm, solr.node, solr.collection..system
     assertEquals(list.toString(), 3, list.size());
     for (Pair<String, Long> p : list) {
-      RrdDb db = new RrdDb(MetricsHistoryHandler.URI_PREFIX + p.first(), true, handler.getFactory());
+      RrdDb db =
+          new RrdDb(MetricsHistoryHandler.URI_PREFIX + p.first(), true, handler.getFactory());
       int dsCount = db.getDsCount();
       int arcCount = db.getArcCount();
       assertTrue("dsCount should be > 0, was " + dsCount, dsCount > 0);

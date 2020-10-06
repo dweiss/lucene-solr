@@ -23,14 +23,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.Test;
 
 public class ShufflingReplicaListTransformerTest extends SolrTestCase {
 
-  private final ShufflingReplicaListTransformer transformer = new ShufflingReplicaListTransformer(random());
+  private final ShufflingReplicaListTransformer transformer =
+      new ShufflingReplicaListTransformer(random());
 
   @Test
   public void testTransformReplicas() throws Exception {
@@ -65,11 +65,11 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
 
   private final List<String> createRandomUrls() throws Exception {
     final List<String> urls = new ArrayList<>();
-    maybeAddUrl(urls, "a"+random().nextDouble());
-    maybeAddUrl(urls, "bb"+random().nextFloat());
-    maybeAddUrl(urls, "ccc"+random().nextGaussian());
-    maybeAddUrl(urls, "dddd"+random().nextInt());
-    maybeAddUrl(urls, "eeeee"+random().nextLong());
+    maybeAddUrl(urls, "a" + random().nextDouble());
+    maybeAddUrl(urls, "bb" + random().nextFloat());
+    maybeAddUrl(urls, "ccc" + random().nextGaussian());
+    maybeAddUrl(urls, "dddd" + random().nextInt());
+    maybeAddUrl(urls, "eeeee" + random().nextLong());
     Collections.shuffle(urls, random());
     return urls;
   }
@@ -79,5 +79,4 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
       urls.add(url);
     }
   }
-
 }

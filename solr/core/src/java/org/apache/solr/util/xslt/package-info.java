@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * XSLT related utilities (deprecated package, do not add new classes)
- */
+
+/** XSLT related utilities (deprecated package, do not add new classes) */
 package org.apache.solr.util.xslt;
-
-

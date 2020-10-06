@@ -17,6 +17,11 @@
 
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,12 +37,6 @@ import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 public class V2ApiIntegrationTest extends SolrCloudTestCase {
   private static String COLL_NAME = "collection1";
 
@@ -45,7 +44,8 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
     CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
         .process(cluster.getSolrClient());
@@ -61,14 +61,19 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertEquals(0, res.getStatus());
   }
 
-  private void testException(ResponseParser responseParser, int expectedCode, String path, String payload) throws IOException, SolrServerException {
-    V2Request v2Request = new V2Request.Builder(path)
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload(payload)
-        .build();
+  private void testException(
+      ResponseParser responseParser, int expectedCode, String path, String payload)
+      throws IOException, SolrServerException {
+    V2Request v2Request =
+        new V2Request.Builder(path)
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload(payload)
+            .build();
     v2Request.setResponseParser(responseParser);
-    BaseHttpSolrClient.RemoteSolrException ex =  expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> v2Request.process(cluster.getSolrClient()));
+    BaseHttpSolrClient.RemoteSolrException ex =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            () -> v2Request.process(cluster.getSolrClient()));
     assertEquals(expectedCode, ex.code());
   }
 
@@ -76,15 +81,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public void testException() throws Exception {
     String notFoundPath = "/c/" + COLL_NAME + "/abccdef";
     String incorrectPayload = "{rebalance-leaders: {maxAtOnce: abc, maxWaitSeconds: xyz}}";
-    testException(new XMLResponseParser(),404,
-        notFoundPath, incorrectPayload);
-    testException(new DelegationTokenResponse.JsonMapResponseParser(),404,
-        notFoundPath, incorrectPayload);
-    testException(new BinaryResponseParser(),404,
-        notFoundPath, incorrectPayload);
+    testException(new XMLResponseParser(), 404, notFoundPath, incorrectPayload);
+    testException(
+        new DelegationTokenResponse.JsonMapResponseParser(), 404, notFoundPath, incorrectPayload);
+    testException(new BinaryResponseParser(), 404, notFoundPath, incorrectPayload);
     testException(new XMLResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
     testException(new BinaryResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
-    testException(new DelegationTokenResponse.JsonMapResponseParser(), 400, "/c/" + COLL_NAME, incorrectPayload);
+    testException(
+        new DelegationTokenResponse.JsonMapResponseParser(),
+        400,
+        "/c/" + COLL_NAME,
+        incorrectPayload);
   }
 
   private long getStatus(V2Response response) {
@@ -99,13 +106,15 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testIntrospect() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("command","XXXX");
+    params.set("command", "XXXX");
     params.set("method", "POST");
     @SuppressWarnings({"rawtypes"})
-    Map result = resAsMap(cluster.getSolrClient(),
-        new V2Request.Builder("/c/"+COLL_NAME+"/_introspect")
-            .withParams(params).build());
-    assertEquals("Command not found!", Utils.getObjectByPath(result, false, "/spec[0]/commands/XXXX"));
+    Map result =
+        resAsMap(
+            cluster.getSolrClient(),
+            new V2Request.Builder("/c/" + COLL_NAME + "/_introspect").withParams(params).build());
+    assertEquals(
+        "Command not found!", Utils.getObjectByPath(result, false, "/spec[0]/commands/XXXX"));
   }
 
   @SuppressWarnings("rawtypes")
@@ -121,7 +130,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
     assertFalse(respString.contains("500"));
     assertFalse(respString.contains("NullPointerException"));
-    assertFalse(respString.contains("<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
+    assertFalse(
+        respString.contains(
+            "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
     // since no-op response writer is used, doing contains match
     assertTrue(respString.contains("/c/collection1/get"));
 
@@ -131,7 +142,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     respString = resp.toString();
 
     assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
-    assertFalse(respString.contains("<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
+    assertFalse(
+        respString.contains(
+            "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
     assertEquals("/c/collection1/get", Utils.getObjectByPath(resp, true, "/spec[0]/url/paths[0]"));
     assertEquals(respString, 0, Utils.getObjectByPath(resp, true, "/responseHeader/status"));
   }
@@ -139,8 +152,10 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testSingleWarning() throws Exception {
     @SuppressWarnings({"rawtypes"})
-    NamedList resp = cluster.getSolrClient().request(
-        new V2Request.Builder("/c/"+COLL_NAME+"/_introspect").build());
+    NamedList resp =
+        cluster
+            .getSolrClient()
+            .request(new V2Request.Builder("/c/" + COLL_NAME + "/_introspect").build());
     @SuppressWarnings({"rawtypes"})
     List warnings = resp.getAll("WARNING");
     assertEquals(1, warnings.size());
@@ -149,11 +164,23 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testSetPropertyValidationOfCluster() throws IOException, SolrServerException {
     @SuppressWarnings({"rawtypes"})
-    NamedList resp = cluster.getSolrClient().request(
-      new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: maxCoresPerNode, val:42}}").build());
+    NamedList resp =
+        cluster
+            .getSolrClient()
+            .request(
+                new V2Request.Builder("/cluster")
+                    .withMethod(SolrRequest.METHOD.POST)
+                    .withPayload("{set-property: {name: maxCoresPerNode, val:42}}")
+                    .build());
     assertTrue(resp.toString().contains("status=0"));
-    resp = cluster.getSolrClient().request(
-        new V2Request.Builder("/cluster").withMethod(SolrRequest.METHOD.POST).withPayload("{set-property: {name: maxCoresPerNode, val:null}}").build());
+    resp =
+        cluster
+            .getSolrClient()
+            .request(
+                new V2Request.Builder("/cluster")
+                    .withMethod(SolrRequest.METHOD.POST)
+                    .withPayload("{set-property: {name: maxCoresPerNode, val:null}}")
+                    .build());
     assertTrue(resp.toString().contains("status=0"));
   }
 
@@ -161,10 +188,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public void testCollectionsApi() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     @SuppressWarnings({"rawtypes"})
-    Map result = resAsMap(client, new V2Request.Builder("/c/"+COLL_NAME+"/get/_introspect").build());
-    assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
-    result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
-    assertEquals("/collections/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
+    Map result =
+        resAsMap(client, new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build());
+    assertEquals(
+        "/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
+    result =
+        resAsMap(
+            client,
+            new V2Request.Builder("/collections/" + COLL_NAME + "/get/_introspect").build());
+    assertEquals(
+        "/collections/collection1/get",
+        Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     String tempDir = createTempDir().toFile().getPath();
     Map<String, Object> backupPayload = new HashMap<>();
     Map<String, Object> backupParams = new HashMap<>();
@@ -172,15 +206,19 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     backupParams.put("name", "backup_test");
     backupParams.put("collection", COLL_NAME);
     backupParams.put("location", tempDir);
-    cluster.getJettySolrRunners().forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
-    client.request(new V2Request.Builder("/c")
-        .withMethod(SolrRequest.METHOD.POST)
-        .withPayload(Utils.toJSONString(backupPayload))
-        .build());
+    cluster
+        .getJettySolrRunners()
+        .forEach(j -> j.getCoreContainer().getAllowPaths().add(Paths.get(tempDir)));
+    client.request(
+        new V2Request.Builder("/c")
+            .withMethod(SolrRequest.METHOD.POST)
+            .withPayload(Utils.toJSONString(backupPayload))
+            .build());
   }
 
   @SuppressWarnings({"rawtypes"})
-  private Map resAsMap(CloudSolrClient client, V2Request request) throws SolrServerException, IOException {
+  private Map resAsMap(CloudSolrClient client, V2Request request)
+      throws SolrServerException, IOException {
     NamedList<Object> rsp = client.request(request);
     return rsp.asMap(100);
   }

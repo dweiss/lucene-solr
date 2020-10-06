@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -50,16 +49,19 @@ class MockInfoBean implements SolrInfoBean, SolrMetricProducer {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
-      map.put("Integer", 123);
-      map.put("Double",567.534);
-      map.put("Long", 32352463l);
-      map.put("Short", (short) 32768);
-      map.put("Byte", (byte) 254);
-      map.put("Float", 3.456f);
-      map.put("String","testing");
-      map.put("Object", new Object());
-    });
-    solrMetricsContext.gauge(metricsMap, true, getClass().getSimpleName(), getCategory().toString(), scope);
+    MetricsMap metricsMap =
+        new MetricsMap(
+            (detailed, map) -> {
+              map.put("Integer", 123);
+              map.put("Double", 567.534);
+              map.put("Long", 32352463l);
+              map.put("Short", (short) 32768);
+              map.put("Byte", (byte) 254);
+              map.put("Float", 3.456f);
+              map.put("String", "testing");
+              map.put("Object", new Object());
+            });
+    solrMetricsContext.gauge(
+        metricsMap, true, getClass().getSimpleName(), getCategory().toString(), scope);
   }
 }

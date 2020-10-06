@@ -1,5 +1,3 @@
-// This file has been automatically generated, DO NOT EDIT
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,9 +16,7 @@
  */
 package org.apache.lucene.util.packed;
 
-/**
- * Efficient sequential read/write of packed integers.
- */
+/** Efficient sequential read/write of packed integers. */
 final class BulkOperationPacked4 extends BulkOperationPacked {
 
   public BulkOperationPacked4() {
@@ -28,7 +24,8 @@ final class BulkOperationPacked4 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block = blocks[blocksOffset++];
       for (int shift = 60; shift >= 0; shift -= 4) {
@@ -38,7 +35,8 @@ final class BulkOperationPacked4 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     for (int j = 0; j < iterations; ++j) {
       final byte block = blocks[blocksOffset++];
       values[valuesOffset++] = (block >>> 4) & 15;
@@ -47,7 +45,8 @@ final class BulkOperationPacked4 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block = blocks[blocksOffset++];
       for (int shift = 60; shift >= 0; shift -= 4) {
@@ -57,12 +56,12 @@ final class BulkOperationPacked4 extends BulkOperationPacked {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int j = 0; j < iterations; ++j) {
       final byte block = blocks[blocksOffset++];
       values[valuesOffset++] = (block >>> 4) & 15;
       values[valuesOffset++] = block & 15;
     }
   }
-
 }

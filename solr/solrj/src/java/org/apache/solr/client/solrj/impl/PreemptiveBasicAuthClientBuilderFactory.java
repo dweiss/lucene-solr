@@ -24,18 +24,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.solr.client.solrj.util.SolrBasicAuthentication;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.eclipse.jetty.client.HttpAuthenticationStore;
 import org.eclipse.jetty.client.ProxyAuthenticationProtocolHandler;
-import org.apache.solr.client.solrj.util.SolrBasicAuthentication;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 
 /**
@@ -47,15 +46,15 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   /**
    * A system property used to specify a properties file containing default parameters used for
    * creating a HTTP client. This is specifically useful for configuring the HTTP basic auth
-   * credentials (i.e. username/password). The name of the property must match the relevant
-   * Solr config property name.
+   * credentials (i.e. username/password). The name of the property must match the relevant Solr
+   * config property name.
    */
   public static final String SYS_PROP_HTTP_CLIENT_CONFIG = "solr.httpclient.config";
 
   /**
-   * A system property to configure the Basic auth credentials via a java system property.
-   * Since this will expose the password on the command-line, it is not very secure. But
-   * this mechanism is added for backwards compatibility.
+   * A system property to configure the Basic auth credentials via a java system property. Since
+   * this will expose the password on the command-line, it is not very secure. But this mechanism is
+   * added for backwards compatibility.
    */
   public static final String SYS_PROP_BASIC_AUTH_CREDENTIALS = "basicauth";
 
@@ -67,8 +66,9 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     String configFile = System.getProperty(SYS_PROP_HTTP_CLIENT_CONFIG);
 
     if (credentials != null && configFile != null) {
-      throw new RuntimeException("Basic authentication credentials passed via a configuration file"
-          + " as well as java system property. Please choose one mechanism!");
+      throw new RuntimeException(
+          "Basic authentication credentials passed via a configuration file"
+              + " as well as java system property. Please choose one mechanism!");
     }
 
     if (credentials != null) {
@@ -82,10 +82,11 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
       defaultParams = new MapSolrParams(new HashMap(defaultProps));
     }
 
-    if(configFile != null) {
+    if (configFile != null) {
       try {
         Properties defaultProps = new Properties();
-        defaultProps.load(new InputStreamReader(new FileInputStream(configFile), StandardCharsets.UTF_8));
+        defaultProps.load(
+            new InputStreamReader(new FileInputStream(configFile), StandardCharsets.UTF_8));
         defaultParams = new MapSolrParams(new HashMap(defaultProps));
       } catch (IOException e) {
         throw new IllegalArgumentException("Unable to read the Http client config file", e);
@@ -94,7 +95,8 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   }
 
   /**
-   * This method enables configuring system wide defaults (apart from using a config file based approach).
+   * This method enables configuring system wide defaults (apart from using a config file based
+   * approach).
    */
   public static void setDefaultSolrParams(SolrParams params) {
     defaultParams = params;
@@ -109,34 +111,43 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   public void setup(Http2SolrClient client) {
     final String basicAuthUser = defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     final String basicAuthPass = defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
-    if(basicAuthUser == null || basicAuthPass == null) {
-      throw new IllegalArgumentException("username & password must be specified with " + getClass().getName());
+    if (basicAuthUser == null || basicAuthPass == null) {
+      throw new IllegalArgumentException(
+          "username & password must be specified with " + getClass().getName());
     }
 
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
-    authenticationStore.addAuthentication(new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
+    authenticationStore.addAuthentication(
+        new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
     client.getHttpClient().setAuthenticationStore(authenticationStore);
     client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client.getHttpClient()));
-    client.getProtocolHandlers().put(new ProxyAuthenticationProtocolHandler(client.getHttpClient()));
+    client
+        .getProtocolHandlers()
+        .put(new ProxyAuthenticationProtocolHandler(client.getHttpClient()));
   }
 
   @Override
   public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
     final String basicAuthUser = defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     final String basicAuthPass = defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
-    if(basicAuthUser == null || basicAuthPass == null) {
-      throw new IllegalArgumentException("username & password must be specified with " + getClass().getName());
+    if (basicAuthUser == null || basicAuthPass == null) {
+      throw new IllegalArgumentException(
+          "username & password must be specified with " + getClass().getName());
     }
 
-    return initHttpClientBuilder(builder == null ? SolrHttpClientBuilder.create() : builder, basicAuthUser, basicAuthPass);
+    return initHttpClientBuilder(
+        builder == null ? SolrHttpClientBuilder.create() : builder, basicAuthUser, basicAuthPass);
   }
 
-  private SolrHttpClientBuilder initHttpClientBuilder(SolrHttpClientBuilder builder, String basicAuthUser, String basicAuthPass) {
-    builder.setDefaultCredentialsProvider(() -> {
-      CredentialsProvider credsProvider = new BasicCredentialsProvider();
-      credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(basicAuthUser, basicAuthPass));
-      return credsProvider;
-    });
+  private SolrHttpClientBuilder initHttpClientBuilder(
+      SolrHttpClientBuilder builder, String basicAuthUser, String basicAuthPass) {
+    builder.setDefaultCredentialsProvider(
+        () -> {
+          CredentialsProvider credsProvider = new BasicCredentialsProvider();
+          credsProvider.setCredentials(
+              AuthScope.ANY, new UsernamePasswordCredentials(basicAuthUser, basicAuthPass));
+          return credsProvider;
+        });
 
     HttpClientUtil.addRequestInterceptor(requestInterceptor);
     return builder;

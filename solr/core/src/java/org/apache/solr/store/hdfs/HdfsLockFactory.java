@@ -18,7 +18,6 @@ package org.apache.solr.store.hdfs;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileAlreadyExistsException;
@@ -34,27 +33,26 @@ import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @deprecated since 8.6
- */
+/** @deprecated since 8.6 */
 @Deprecated
 public class HdfsLockFactory extends LockFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   public static final HdfsLockFactory INSTANCE = new HdfsLockFactory();
-  
+
   private HdfsLockFactory() {}
-  
+
   @Override
   public Lock obtainLock(Directory dir, String lockName) throws IOException {
     if (!(dir instanceof HdfsDirectory)) {
-      throw new UnsupportedOperationException("HdfsLockFactory can only be used with HdfsDirectory subclasses, got: " + dir);
+      throw new UnsupportedOperationException(
+          "HdfsLockFactory can only be used with HdfsDirectory subclasses, got: " + dir);
     }
     final HdfsDirectory hdfsDir = (HdfsDirectory) dir;
     final Configuration conf = hdfsDir.getConfiguration();
     final Path lockPath = hdfsDir.getHdfsDirPath();
     final Path lockFile = new Path(lockPath, lockName);
-    
+
     FSDataOutputStream file = null;
     final FileSystem fs = FileSystem.get(lockPath.toUri(), conf);
     while (true) {
@@ -68,14 +66,13 @@ public class HdfsLockFactory extends LockFactory {
           // just to check for safe mode
           fs.mkdirs(lockPath);
         }
-        
+
         file = fs.create(lockFile, false);
         break;
       } catch (FileAlreadyExistsException e) {
         throw new LockObtainFailedException("Cannot obtain lock file: " + lockFile, e);
       } catch (RemoteException e) {
-        if (e.getClassName().equals(
-            "org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
+        if (e.getClassName().equals("org.apache.hadoop.hdfs.server.namenode.SafeModeException")) {
           log.warn("The NameNode is in SafeMode - Solr will wait 5 seconds and try again.");
           try {
             Thread.sleep(5000);
@@ -94,18 +91,18 @@ public class HdfsLockFactory extends LockFactory {
 
     return new HdfsLock(conf, lockFile);
   }
-  
+
   private static final class HdfsLock extends Lock {
 
     private final Configuration conf;
     private final Path lockFile;
     private volatile boolean closed;
-    
+
     HdfsLock(Configuration conf, Path lockFile) {
       this.conf = conf;
       this.lockFile = lockFile;
     }
-    
+
     @Override
     public void close() throws IOException {
       if (closed) {

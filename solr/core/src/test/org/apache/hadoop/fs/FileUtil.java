@@ -1,11 +1,10 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -51,7 +50,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
-
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -68,16 +66,14 @@ import org.apache.hadoop.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A collection of file-processing util methods
- */
+/** A collection of file-processing util methods */
 @InterfaceAudience.Public
 @InterfaceStability.Evolving
 public class FileUtil {
   public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
 
   // Apparently the Hadoop code expectes upper-case LOG, so...
-  private static final Logger LOG = LoggerFactory.getLogger(FileUtil.class); //nowarn
+  private static final Logger LOG = LoggerFactory.getLogger(FileUtil.class); // nowarn
 
   /* The error code is defined in winutils to indicate insufficient
    * privilege to create symbolic links. This value need to keep in
@@ -86,21 +82,17 @@ public class FileUtil {
    * */
   public static final int SYMLINK_NO_PRIVILEGE = 2;
 
-  /**
-   * Buffer size for copy the content of compressed file to new file.
-   */
+  /** Buffer size for copy the content of compressed file to new file. */
   private static final int BUFFER_SIZE = 8_192;
 
   /**
    * convert an array of FileStatus to an array of Path
    *
-   * @param stats
-   *          an array of FileStatus objects
+   * @param stats an array of FileStatus objects
    * @return an array of paths corresponding to the input
    */
   public static Path[] stat2Paths(FileStatus[] stats) {
-    if (stats == null)
-      return null;
+    if (stats == null) return null;
     Path[] ret = new Path[stats.length];
     for (int i = 0; i < stats.length; ++i) {
       ret[i] = stats[i].getPath();
@@ -109,23 +101,20 @@ public class FileUtil {
   }
 
   /**
-   * convert an array of FileStatus to an array of Path.
-   * If stats if null, return path
-   * @param stats
-   *          an array of FileStatus objects
-   * @param path
-   *          default path to return in stats is null
+   * convert an array of FileStatus to an array of Path. If stats if null, return path
+   *
+   * @param stats an array of FileStatus objects
+   * @param path default path to return in stats is null
    * @return an array of paths corresponding to the input
    */
   public static Path[] stat2Paths(FileStatus[] stats, Path path) {
-    if (stats == null)
-      return new Path[]{path};
-    else
-      return stat2Paths(stats);
+    if (stats == null) return new Path[] {path};
+    else return stat2Paths(stats);
   }
 
   /**
    * Register all files recursively to be deleted on exit.
+   *
    * @param file File/directory to be deleted
    */
   public static void fullyDeleteOnExit(final File file) {
@@ -141,30 +130,23 @@ public class FileUtil {
   }
 
   /**
-   * Delete a directory and all its contents.  If
-   * we return false, the directory may be partially-deleted.
-   * (1) If dir is symlink to a file, the symlink is deleted. The file pointed
-   *     to by the symlink is not deleted.
-   * (2) If dir is symlink to a directory, symlink is deleted. The directory
-   *     pointed to by symlink is not deleted.
-   * (3) If dir is a normal file, it is deleted.
-   * (4) If dir is a normal directory, then dir and all its contents recursively
-   *     are deleted.
+   * Delete a directory and all its contents. If we return false, the directory may be
+   * partially-deleted. (1) If dir is symlink to a file, the symlink is deleted. The file pointed to
+   * by the symlink is not deleted. (2) If dir is symlink to a directory, symlink is deleted. The
+   * directory pointed to by symlink is not deleted. (3) If dir is a normal file, it is deleted. (4)
+   * If dir is a normal directory, then dir and all its contents recursively are deleted.
    */
   public static boolean fullyDelete(final File dir) {
     return fullyDelete(dir, false);
   }
 
   /**
-   * Delete a directory and all its contents.  If
-   * we return false, the directory may be partially-deleted.
-   * (1) If dir is symlink to a file, the symlink is deleted. The file pointed
-   *     to by the symlink is not deleted.
-   * (2) If dir is symlink to a directory, symlink is deleted. The directory
-   *     pointed to by symlink is not deleted.
-   * (3) If dir is a normal file, it is deleted.
-   * (4) If dir is a normal directory, then dir and all its contents recursively
-   *     are deleted.
+   * Delete a directory and all its contents. If we return false, the directory may be
+   * partially-deleted. (1) If dir is symlink to a file, the symlink is deleted. The file pointed to
+   * by the symlink is not deleted. (2) If dir is symlink to a directory, symlink is deleted. The
+   * directory pointed to by symlink is not deleted. (3) If dir is a normal file, it is deleted. (4)
+   * If dir is a normal directory, then dir and all its contents recursively are deleted.
+   *
    * @param dir the file or directory to be deleted
    * @param tryGrantPermissions true if permissions should be modified to delete a file.
    * @return true on success false on failure.
@@ -188,12 +170,11 @@ public class FileUtil {
   }
 
   /**
-   * Returns the target of the given symlink. Returns the empty string if
-   * the given path does not refer to a symlink or there is an error
-   * accessing the symlink.
+   * Returns the target of the given symlink. Returns the empty string if the given path does not
+   * refer to a symlink or there is an error accessing the symlink.
+   *
    * @param f File representing the symbolic link.
-   * @return The target of the symbolic link, empty string on error or if not
-   *         a symlink.
+   * @return The target of the symbolic link, empty string on error or if not a symlink.
    */
   public static String readLink(File f) {
     /* NB: Use readSymbolicLink in java.nio.file.Path once available. Could
@@ -207,8 +188,7 @@ public class FileUtil {
     }
 
     try {
-      return Shell.execCommand(
-          Shell.getReadlinkCommand(f.toString())).trim();
+      return Shell.execCommand(Shell.getReadlinkCommand(f.toString())).trim();
     } catch (IOException x) {
       return "";
     }
@@ -240,9 +220,8 @@ public class FileUtil {
   }
 
   /**
-   * Delete the contents of a directory, not the directory itself.  If
-   * we return false, the directory may be partially-deleted.
-   * If dir is a symlink to a directory, all the contents of the actual
+   * Delete the contents of a directory, not the directory itself. If we return false, the directory
+   * may be partially-deleted. If dir is a symlink to a directory, all the contents of the actual
    * directory pointed to by dir will be deleted.
    */
   public static boolean fullyDeleteContents(final File dir) {
@@ -250,12 +229,12 @@ public class FileUtil {
   }
 
   /**
-   * Delete the contents of a directory, not the directory itself.  If
-   * we return false, the directory may be partially-deleted.
-   * If dir is a symlink to a directory, all the contents of the actual
+   * Delete the contents of a directory, not the directory itself. If we return false, the directory
+   * may be partially-deleted. If dir is a symlink to a directory, all the contents of the actual
    * directory pointed to by dir will be deleted.
-   * @param tryGrantPermissions if 'true', try grant +rwx permissions to this
-   * and all the underlying directories before trying to delete their contents.
+   *
+   * @param tryGrantPermissions if 'true', try grant +rwx permissions to this and all the underlying
+   *     directories before trying to delete their contents.
    */
   public static boolean fullyDeleteContents(final File dir, final boolean tryGrantPermissions) {
     if (tryGrantPermissions) {
@@ -268,7 +247,7 @@ public class FileUtil {
     if (contents != null) {
       for (int i = 0; i < contents.length; i++) {
         if (contents[i].isFile()) {
-          if (!deleteImpl(contents[i], true)) {// normal file or symlink to another file
+          if (!deleteImpl(contents[i], true)) { // normal file or symlink to another file
             deletionSucceeded = false;
             continue; // continue deletion of other files/dirs under dir
           }
@@ -277,8 +256,8 @@ public class FileUtil {
           // Try deleting the directory as this might be a symlink
           boolean b = false;
           b = deleteImpl(contents[i], false);
-          if (b){
-            //this was indeed a symlink or an empty directory
+          if (b) {
+            // this was indeed a symlink or an empty directory
             continue;
           }
           // if not an empty directory or symlink let
@@ -302,8 +281,7 @@ public class FileUtil {
    * @deprecated Use {@link FileSystem#delete(Path, boolean)}
    */
   @Deprecated
-  public static void fullyDelete(FileSystem fs, Path dir)
-      throws IOException {
+  public static void fullyDelete(FileSystem fs, Path dir) throws IOException {
     fs.delete(dir, true);
   }
 
@@ -311,10 +289,7 @@ public class FileUtil {
   // If the destination is a subdirectory of the source, then
   // generate exception
   //
-  private static void checkDependencies(FileSystem srcFS,
-                                        Path src,
-                                        FileSystem dstFS,
-                                        Path dst)
+  private static void checkDependencies(FileSystem srcFS, Path src, FileSystem dstFS, Path dst)
       throws IOException {
     if (srcFS == dstFS) {
       String srcq = srcFS.makeQualified(src).toString() + Path.SEPARATOR;
@@ -323,49 +298,53 @@ public class FileUtil {
         if (srcq.length() == dstq.length()) {
           throw new IOException("Cannot copy " + src + " to itself.");
         } else {
-          throw new IOException("Cannot copy " + src + " to its subdirectory " +
-              dst);
+          throw new IOException("Cannot copy " + src + " to its subdirectory " + dst);
         }
       }
     }
   }
 
   /** Copy files between FileSystems. */
-  public static boolean copy(FileSystem srcFS, Path src,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             Configuration conf) throws IOException {
+  public static boolean copy(
+      FileSystem srcFS,
+      Path src,
+      FileSystem dstFS,
+      Path dst,
+      boolean deleteSource,
+      Configuration conf)
+      throws IOException {
     return copy(srcFS, src, dstFS, dst, deleteSource, true, conf);
   }
 
-  public static boolean copy(FileSystem srcFS, Path[] srcs,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             boolean overwrite, Configuration conf)
+  public static boolean copy(
+      FileSystem srcFS,
+      Path[] srcs,
+      FileSystem dstFS,
+      Path dst,
+      boolean deleteSource,
+      boolean overwrite,
+      Configuration conf)
       throws IOException {
     boolean gotException = false;
     boolean returnVal = true;
     StringBuilder exceptions = new StringBuilder();
 
-    if (srcs.length == 1)
-      return copy(srcFS, srcs[0], dstFS, dst, deleteSource, overwrite, conf);
+    if (srcs.length == 1) return copy(srcFS, srcs[0], dstFS, dst, deleteSource, overwrite, conf);
 
     // Check if dest is directory
     try {
       FileStatus sdst = dstFS.getFileStatus(dst);
       if (!sdst.isDirectory())
-        throw new IOException("copying multiple files, but last argument `" +
-            dst + "' is not a directory");
+        throw new IOException(
+            "copying multiple files, but last argument `" + dst + "' is not a directory");
     } catch (FileNotFoundException e) {
       throw new IOException(
-          "`" + dst + "': specified destination directory " +
-              "does not exist", e);
+          "`" + dst + "': specified destination directory " + "does not exist", e);
     }
 
     for (Path src : srcs) {
       try {
-        if (!copy(srcFS, src, dstFS, dst, deleteSource, overwrite, conf))
-          returnVal = false;
+        if (!copy(srcFS, src, dstFS, dst, deleteSource, overwrite, conf)) returnVal = false;
       } catch (IOException e) {
         gotException = true;
         exceptions.append(e.getMessage());
@@ -379,21 +358,29 @@ public class FileUtil {
   }
 
   /** Copy files between FileSystems. */
-  public static boolean copy(FileSystem srcFS, Path src,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             boolean overwrite,
-                             Configuration conf) throws IOException {
+  public static boolean copy(
+      FileSystem srcFS,
+      Path src,
+      FileSystem dstFS,
+      Path dst,
+      boolean deleteSource,
+      boolean overwrite,
+      Configuration conf)
+      throws IOException {
     FileStatus fileStatus = srcFS.getFileStatus(src);
     return copy(srcFS, fileStatus, dstFS, dst, deleteSource, overwrite, conf);
   }
 
   /** Copy files between FileSystems. */
-  public static boolean copy(FileSystem srcFS, FileStatus srcStatus,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             boolean overwrite,
-                             Configuration conf) throws IOException {
+  public static boolean copy(
+      FileSystem srcFS,
+      FileStatus srcStatus,
+      FileSystem dstFS,
+      Path dst,
+      boolean deleteSource,
+      boolean overwrite,
+      Configuration conf)
+      throws IOException {
     Path src = srcStatus.getPath();
     dst = checkDest(src.getName(), dstFS, dst, overwrite);
     if (srcStatus.isDirectory()) {
@@ -403,12 +390,17 @@ public class FileUtil {
       }
       FileStatus contents[] = srcFS.listStatus(src);
       for (int i = 0; i < contents.length; i++) {
-        copy(srcFS, contents[i], dstFS,
+        copy(
+            srcFS,
+            contents[i],
+            dstFS,
             new Path(dst, contents[i].getPath().getName()),
-            deleteSource, overwrite, conf);
+            deleteSource,
+            overwrite,
+            conf);
       }
     } else {
-      InputStream in=null;
+      InputStream in = null;
       OutputStream out = null;
       try {
         in = srcFS.open(src);
@@ -425,14 +417,12 @@ public class FileUtil {
     } else {
       return true;
     }
-
   }
 
   /** Copy local files to a FileSystem. */
-  public static boolean copy(File src,
-                             FileSystem dstFS, Path dst,
-                             boolean deleteSource,
-                             Configuration conf) throws IOException {
+  public static boolean copy(
+      File src, FileSystem dstFS, Path dst, boolean deleteSource, Configuration conf)
+      throws IOException {
     dst = checkDest(src.getName(), dstFS, dst, false);
 
     if (src.isDirectory()) {
@@ -441,28 +431,25 @@ public class FileUtil {
       }
       File contents[] = listFiles(src);
       for (int i = 0; i < contents.length; i++) {
-        copy(contents[i], dstFS, new Path(dst, contents[i].getName()),
-            deleteSource, conf);
+        copy(contents[i], dstFS, new Path(dst, contents[i].getName()), deleteSource, conf);
       }
     } else if (src.isFile()) {
       InputStream in = null;
-      OutputStream out =null;
+      OutputStream out = null;
       try {
         in = new FileInputStream(src);
         out = dstFS.create(dst);
         IOUtils.copyBytes(in, out, conf);
       } catch (IOException e) {
-        IOUtils.closeStream( out );
-        IOUtils.closeStream( in );
+        IOUtils.closeStream(out);
+        IOUtils.closeStream(in);
         throw e;
       }
     } else if (!src.canRead()) {
-      throw new IOException(src.toString() +
-          ": Permission denied");
+      throw new IOException(src.toString() + ": Permission denied");
 
     } else {
-      throw new IOException(src.toString() +
-          ": No such file or directory");
+      throw new IOException(src.toString() + ": No such file or directory");
     }
     if (deleteSource) {
       return FileUtil.fullyDelete(src);
@@ -472,17 +459,17 @@ public class FileUtil {
   }
 
   /** Copy FileSystem files to local files. */
-  public static boolean copy(FileSystem srcFS, Path src,
-                             File dst, boolean deleteSource,
-                             Configuration conf) throws IOException {
+  public static boolean copy(
+      FileSystem srcFS, Path src, File dst, boolean deleteSource, Configuration conf)
+      throws IOException {
     FileStatus filestatus = srcFS.getFileStatus(src);
     return copy(srcFS, filestatus, dst, deleteSource, conf);
   }
 
   /** Copy FileSystem files to local files. */
-  private static boolean copy(FileSystem srcFS, FileStatus srcStatus,
-                              File dst, boolean deleteSource,
-                              Configuration conf) throws IOException {
+  private static boolean copy(
+      FileSystem srcFS, FileStatus srcStatus, File dst, boolean deleteSource, Configuration conf)
+      throws IOException {
     Path src = srcStatus.getPath();
     if (srcStatus.isDirectory()) {
       if (!dst.mkdirs()) {
@@ -490,9 +477,8 @@ public class FileUtil {
       }
       FileStatus contents[] = srcFS.listStatus(src);
       for (int i = 0; i < contents.length; i++) {
-        copy(srcFS, contents[i],
-            new File(dst, contents[i].getPath().getName()),
-            deleteSource, conf);
+        copy(
+            srcFS, contents[i], new File(dst, contents[i].getPath().getName()), deleteSource, conf);
       }
     } else {
       InputStream in = srcFS.open(src);
@@ -505,8 +491,8 @@ public class FileUtil {
     }
   }
 
-  private static Path checkDest(String srcName, FileSystem dstFS, Path dst,
-                                boolean overwrite) throws IOException {
+  private static Path checkDest(String srcName, FileSystem dstFS, Path dst, boolean overwrite)
+      throws IOException {
     FileStatus sdst;
     try {
       sdst = dstFS.getFileStatus(dst);
@@ -520,8 +506,7 @@ public class FileUtil {
         }
         return checkDest(null, dstFS, new Path(dst, srcName), overwrite);
       } else if (!overwrite) {
-        throw new PathExistsException(dst.toString(),
-            "Target " + dst + " already exists");
+        throw new PathExistsException(dst.toString(), "Target " + dst + " already exists");
       }
     }
     return dst;
@@ -529,6 +514,7 @@ public class FileUtil {
 
   /**
    * Convert a os-native filename to a path that works for the shell.
+   *
    * @param filename The filename to convert
    * @return The unix pathname
    * @throws IOException on windows, there can be problems with the subprocess
@@ -539,6 +525,7 @@ public class FileUtil {
 
   /**
    * Convert a os-native filename to a path that works for the shell.
+   *
    * @param file The filename to convert
    * @return The unix pathname
    * @throws IOException on windows, there can be problems with the subprocess
@@ -548,8 +535,9 @@ public class FileUtil {
   }
 
   /**
-   * Convert a os-native filename to a path that works for the shell
-   * and avoids script injection attacks.
+   * Convert a os-native filename to a path that works for the shell and avoids script injection
+   * attacks.
+   *
    * @param file The filename to convert
    * @return The unix pathname
    * @throws IOException on windows, there can be problems with the subprocess
@@ -565,14 +553,13 @@ public class FileUtil {
 
   /**
    * Convert a os-native filename to a path that works for the shell.
+   *
    * @param file The filename to convert
-   * @param makeCanonicalPath
-   *          Whether to make canonical path for the file passed
+   * @param makeCanonicalPath Whether to make canonical path for the file passed
    * @return The unix pathname
    * @throws IOException on windows, there can be problems with the subprocess
    */
-  public static String makeShellPath(File file, boolean makeCanonicalPath)
-      throws IOException {
+  public static String makeShellPath(File file, boolean makeCanonicalPath) throws IOException {
     if (makeCanonicalPath) {
       return makeShellPath(file.getCanonicalPath());
     } else {
@@ -581,25 +568,22 @@ public class FileUtil {
   }
 
   /**
-   * Takes an input dir and returns the du on that local directory. Very basic
-   * implementation.
+   * Takes an input dir and returns the du on that local directory. Very basic implementation.
    *
-   * @param dir
-   *          The input dir to get the disk space of this local dir
+   * @param dir The input dir to get the disk space of this local dir
    * @return The total disk space of the input local directory
    */
   public static long getDU(File dir) {
     long size = 0;
-    if (!dir.exists())
-      return 0;
+    if (!dir.exists()) return 0;
     if (!dir.isDirectory()) {
       return dir.length();
     } else {
       File[] allFiles = dir.listFiles();
-      if(allFiles != null) {
+      if (allFiles != null) {
         for (int i = 0; i < allFiles.length; i++) {
           boolean isSymLink = org.apache.commons.io.FileUtils.isSymlink(allFiles[i]);
-          if(!isSymLink) {
+          if (!isSymLink) {
             size += getDU(allFiles[i]);
           }
         }
@@ -609,31 +593,27 @@ public class FileUtil {
   }
 
   /**
-   * Given a stream input it will unzip the it in the unzip directory.
-   * passed as the second parameter
+   * Given a stream input it will unzip the it in the unzip directory. passed as the second
+   * parameter
+   *
    * @param inputStream The zip file as input
    * @param toDir The unzip directory where to unzip the zip file.
    * @throws IOException an exception occurred
    */
-  public static void unZip(InputStream inputStream, File toDir)
-      throws IOException {
+  public static void unZip(InputStream inputStream, File toDir) throws IOException {
     try (ZipInputStream zip = new ZipInputStream(inputStream)) {
       int numOfFailedLastModifiedSet = 0;
       String targetDirPath = toDir.getCanonicalPath() + File.separator;
-      for(ZipEntry entry = zip.getNextEntry();
-          entry != null;
-          entry = zip.getNextEntry()) {
+      for (ZipEntry entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) {
         if (!entry.isDirectory()) {
           File file = new File(toDir, entry.getName());
           if (!file.getCanonicalPath().startsWith(targetDirPath)) {
-            throw new IOException("expanding " + entry.getName()
-                + " would create file outside of " + toDir);
+            throw new IOException(
+                "expanding " + entry.getName() + " would create file outside of " + toDir);
           }
           File parent = file.getParentFile();
-          if (!parent.mkdirs() &&
-              !parent.isDirectory()) {
-            throw new IOException("Mkdirs failed to create " +
-                parent.getAbsolutePath());
+          if (!parent.mkdirs() && !parent.isDirectory()) {
+            throw new IOException("Mkdirs failed to create " + parent.getAbsolutePath());
           }
           try (OutputStream out = new FileOutputStream(file)) {
             IOUtils.copyBytes(zip, out, BUFFER_SIZE);
@@ -644,15 +624,14 @@ public class FileUtil {
         }
       }
       if (numOfFailedLastModifiedSet > 0) {
-        LOG.warn("Could not set last modfied time for {} file(s)",
-            numOfFailedLastModifiedSet);
+        LOG.warn("Could not set last modfied time for {} file(s)", numOfFailedLastModifiedSet);
       }
     }
   }
 
   /**
-   * Given a File input it will unzip it in the unzip directory.
-   * passed as the second parameter
+   * Given a File input it will unzip it in the unzip directory. passed as the second parameter
+   *
    * @param inFile The zip file as input
    * @param unzipDir The unzip directory where to unzip the zip file.
    * @throws IOException An I/O exception has occurred
@@ -671,13 +650,12 @@ public class FileUtil {
           try {
             File file = new File(unzipDir, entry.getName());
             if (!file.getCanonicalPath().startsWith(targetDirPath)) {
-              throw new IOException("expanding " + entry.getName()
-                  + " would create file outside of " + unzipDir);
+              throw new IOException(
+                  "expanding " + entry.getName() + " would create file outside of " + unzipDir);
             }
             if (!file.getParentFile().mkdirs()) {
               if (!file.getParentFile().isDirectory()) {
-                throw new IOException("Mkdirs failed to create " +
-                    file.getParentFile().toString());
+                throw new IOException("Mkdirs failed to create " + file.getParentFile().toString());
               }
             }
             OutputStream out = new FileOutputStream(file);
@@ -702,83 +680,81 @@ public class FileUtil {
 
   /**
    * Run a command and send the contents of an input stream to it.
+   *
    * @param inputStream Input stream to forward to the shell command
    * @param command shell command to run
    * @throws IOException read or write failed
    * @throws InterruptedException command interrupted
    * @throws ExecutionException task submit failed
    */
-  private static void runCommandOnStream(
-      InputStream inputStream, String command)
+  private static void runCommandOnStream(InputStream inputStream, String command)
       throws IOException, InterruptedException, ExecutionException {
     ExecutorService executor = null;
     ProcessBuilder builder = new ProcessBuilder();
-    builder.command(
-        Shell.WINDOWS ? "cmd" : "bash",
-        Shell.WINDOWS ? "/c" : "-c",
-        command);
+    builder.command(Shell.WINDOWS ? "cmd" : "bash", Shell.WINDOWS ? "/c" : "-c", command);
     Process process = builder.start();
     int exitCode;
     try {
       // Consume stdout and stderr, to avoid blocking the command
       executor = Executors.newFixedThreadPool(2);
       @SuppressWarnings({"rawtypes"})
-      Future output = executor.submit(() -> {
-        try {
-          // Read until the output stream receives an EOF and closed.
-          if (LOG.isDebugEnabled()) {
-            // Log directly to avoid out of memory errors
-            try (BufferedReader reader =
-                     new BufferedReader(
-                         new InputStreamReader(process.getInputStream(),
-                             Charset.forName("UTF-8")))) {
-              String line;
-              while((line = reader.readLine()) != null) {
-                LOG.debug(line);
-              }
-            }
-          } else {
-            org.apache.commons.io.IOUtils.copy(
-                process.getInputStream(),
-                new IOUtils.NullOutputStream());
-          }
-        } catch (IOException e) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug(e.getMessage());
-          }
-        }
-      });
+      Future output =
+          executor.submit(
+              () -> {
+                try {
+                  // Read until the output stream receives an EOF and closed.
+                  if (LOG.isDebugEnabled()) {
+                    // Log directly to avoid out of memory errors
+                    try (BufferedReader reader =
+                        new BufferedReader(
+                            new InputStreamReader(
+                                process.getInputStream(), Charset.forName("UTF-8")))) {
+                      String line;
+                      while ((line = reader.readLine()) != null) {
+                        LOG.debug(line);
+                      }
+                    }
+                  } else {
+                    org.apache.commons.io.IOUtils.copy(
+                        process.getInputStream(), new IOUtils.NullOutputStream());
+                  }
+                } catch (IOException e) {
+                  if (LOG.isDebugEnabled()) {
+                    LOG.debug(e.getMessage());
+                  }
+                }
+              });
       @SuppressWarnings({"rawtypes"})
-      Future error = executor.submit(() -> {
-        try {
-          // Read until the error stream receives an EOF and closed.
-          if (LOG.isDebugEnabled()) {
-            // Log directly to avoid out of memory errors
-            try (BufferedReader reader =
-                     new BufferedReader(
-                         new InputStreamReader(process.getErrorStream(),
-                             Charset.forName("UTF-8")))) {
-              String line;
-              while((line = reader.readLine()) != null) {
-                LOG.debug(line);
-              }
-            }
-          } else {
-            org.apache.commons.io.IOUtils.copy(
-                process.getErrorStream(),
-                new IOUtils.NullOutputStream());
-          }
-        } catch (IOException e) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug(e.getMessage());
-          }
-        }
-      });
+      Future error =
+          executor.submit(
+              () -> {
+                try {
+                  // Read until the error stream receives an EOF and closed.
+                  if (LOG.isDebugEnabled()) {
+                    // Log directly to avoid out of memory errors
+                    try (BufferedReader reader =
+                        new BufferedReader(
+                            new InputStreamReader(
+                                process.getErrorStream(), Charset.forName("UTF-8")))) {
+                      String line;
+                      while ((line = reader.readLine()) != null) {
+                        LOG.debug(line);
+                      }
+                    }
+                  } else {
+                    org.apache.commons.io.IOUtils.copy(
+                        process.getErrorStream(), new IOUtils.NullOutputStream());
+                  }
+                } catch (IOException e) {
+                  if (LOG.isDebugEnabled()) {
+                    LOG.debug(e.getMessage());
+                  }
+                }
+              });
 
       // Pass the input stream to the command to process
       try {
-        org.apache.commons.io.IOUtils.copy(
-            inputStream, process.getOutputStream());
+        org.apache.commons.io.IOUtils.copy(inputStream, process.getOutputStream());
       } finally {
         process.getOutputStream().close();
       }
@@ -798,28 +774,26 @@ public class FileUtil {
     if (exitCode != 0) {
       throw new IOException(
           String.format(
-              "Error executing command. %s " +
-                  "Process exited with exit code %d.",
+              "Error executing command. %s " + "Process exited with exit code %d.",
               command, exitCode));
     }
   }
 
   /**
-   * Given a Tar File as input it will untar the file in a the untar directory
-   * passed as the second parameter
+   * Given a Tar File as input it will untar the file in a the untar directory passed as the second
+   * parameter
    *
-   * This utility will untar ".tar" files and ".tar.gz","tgz" files.
+   * <p>This utility will untar ".tar" files and ".tar.gz","tgz" files.
    *
    * @param inputStream The tar file as input.
    * @param untarDir The untar directory where to untar the tar file.
-   * @param gzipped The input stream is gzipped
-   *                TODO Use magic number and PusbackInputStream to identify
+   * @param gzipped The input stream is gzipped TODO Use magic number and PusbackInputStream to
+   *     identify
    * @throws IOException an exception occurred
    * @throws InterruptedException command interrupted
    * @throws ExecutionException task submit failed
    */
-  public static void unTar(InputStream inputStream, File untarDir,
-                           boolean gzipped)
+  public static void unTar(InputStream inputStream, File untarDir, boolean gzipped)
       throws IOException, InterruptedException, ExecutionException {
     if (!untarDir.mkdirs()) {
       if (!untarDir.isDirectory()) {
@@ -827,7 +801,7 @@ public class FileUtil {
       }
     }
 
-    if(Shell.WINDOWS) {
+    if (Shell.WINDOWS) {
       // Tar is not native to Windows. Use simple Java based implementation for
       // tests and simple tar archives
       unTarUsingJava(inputStream, untarDir, gzipped);
@@ -839,10 +813,10 @@ public class FileUtil {
   }
 
   /**
-   * Given a Tar File as input it will untar the file in a the untar directory
-   * passed as the second parameter
+   * Given a Tar File as input it will untar the file in a the untar directory passed as the second
+   * parameter
    *
-   * This utility will untar ".tar" files and ".tar.gz","tgz" files.
+   * <p>This utility will untar ".tar" files and ".tar.gz","tgz" files.
    *
    * @param inFile The tar file as input.
    * @param untarDir The untar directory where to untar the tar file.
@@ -856,20 +830,18 @@ public class FileUtil {
     }
 
     boolean gzipped = inFile.toString().endsWith("gz");
-    if(Shell.WINDOWS) {
+    if (Shell.WINDOWS) {
       // Tar is not native to Windows. Use simple Java based implementation for
       // tests and simple tar archives
       unTarUsingJava(inFile, untarDir, gzipped);
-    }
-    else {
+    } else {
       // spawn tar utility to untar archive for full fledged unix behavior such
       // as resolving symlinks in tar archives
       unTarUsingTar(inFile, untarDir, gzipped);
     }
   }
 
-  private static void unTarUsingTar(InputStream inputStream, File untarDir,
-                                    boolean gzipped)
+  private static void unTarUsingTar(InputStream inputStream, File untarDir, boolean gzipped)
       throws IOException, InterruptedException, ExecutionException {
     StringBuilder untarCommand = new StringBuilder();
     if (gzipped) {
@@ -886,8 +858,8 @@ public class FileUtil {
     runCommandOnStream(inputStream, untarCommand.toString());
   }
 
-  private static void unTarUsingTar(File inFile, File untarDir,
-                                    boolean gzipped) throws IOException {
+  private static void unTarUsingTar(File inFile, File untarDir, boolean gzipped)
+      throws IOException {
     StringBuffer untarCommand = new StringBuffer();
     if (gzipped) {
       untarCommand.append(" gzip -dc '");
@@ -904,31 +876,29 @@ public class FileUtil {
     } else {
       untarCommand.append(FileUtil.makeSecureShellPath(inFile));
     }
-    String[] shellCmd = { "bash", "-c", untarCommand.toString() };
+    String[] shellCmd = {"bash", "-c", untarCommand.toString()};
     ShellCommandExecutor shexec = new ShellCommandExecutor(shellCmd);
     shexec.execute();
     int exitcode = shexec.getExitCode();
     if (exitcode != 0) {
-      throw new IOException("Error untarring file " + inFile +
-          ". Tar process exited with exit code " + exitcode);
+      throw new IOException(
+          "Error untarring file " + inFile + ". Tar process exited with exit code " + exitcode);
     }
   }
 
-  static void unTarUsingJava(File inFile, File untarDir,
-                             boolean gzipped) throws IOException {
+  static void unTarUsingJava(File inFile, File untarDir, boolean gzipped) throws IOException {
     InputStream inputStream = null;
     TarArchiveInputStream tis = null;
     try {
       if (gzipped) {
-        inputStream = new BufferedInputStream(new GZIPInputStream(
-            new FileInputStream(inFile)));
+        inputStream = new BufferedInputStream(new GZIPInputStream(new FileInputStream(inFile)));
       } else {
         inputStream = new BufferedInputStream(new FileInputStream(inFile));
       }
 
       tis = new TarArchiveInputStream(inputStream);
 
-      for (TarArchiveEntry entry = tis.getNextTarEntry(); entry != null;) {
+      for (TarArchiveEntry entry = tis.getNextTarEntry(); entry != null; ) {
         unpackEntries(tis, entry, untarDir);
         entry = tis.getNextTarEntry();
       }
@@ -937,21 +907,19 @@ public class FileUtil {
     }
   }
 
-  private static void unTarUsingJava(InputStream inputStream, File untarDir,
-                                     boolean gzipped) throws IOException {
+  private static void unTarUsingJava(InputStream inputStream, File untarDir, boolean gzipped)
+      throws IOException {
     TarArchiveInputStream tis = null;
     try {
       if (gzipped) {
-        inputStream = new BufferedInputStream(new GZIPInputStream(
-            inputStream));
+        inputStream = new BufferedInputStream(new GZIPInputStream(inputStream));
       } else {
-        inputStream =
-            new BufferedInputStream(inputStream);
+        inputStream = new BufferedInputStream(inputStream);
       }
 
       tis = new TarArchiveInputStream(inputStream);
 
-      for (TarArchiveEntry entry = tis.getNextTarEntry(); entry != null;) {
+      for (TarArchiveEntry entry = tis.getNextTarEntry(); entry != null; ) {
         unpackEntries(tis, entry, untarDir);
         entry = tis.getNextTarEntry();
       }
@@ -960,20 +928,19 @@ public class FileUtil {
     }
   }
 
-  private static void unpackEntries(TarArchiveInputStream tis,
-                                    TarArchiveEntry entry, File outputDir) throws IOException {
+  private static void unpackEntries(
+      TarArchiveInputStream tis, TarArchiveEntry entry, File outputDir) throws IOException {
     String targetDirPath = outputDir.getCanonicalPath() + File.separator;
     File outputFile = new File(outputDir, entry.getName());
     if (!outputFile.getCanonicalPath().startsWith(targetDirPath)) {
-      throw new IOException("expanding " + entry.getName()
-          + " would create entry outside of " + outputDir);
+      throw new IOException(
+          "expanding " + entry.getName() + " would create entry outside of " + outputDir);
     }
 
     if (entry.isDirectory()) {
       File subDir = new File(outputDir, entry.getName());
       if (!subDir.mkdirs() && !subDir.isDirectory()) {
-        throw new IOException("Mkdirs failed to create tar internal dir "
-            + outputDir);
+        throw new IOException("Mkdirs failed to create tar internal dir " + outputDir);
       }
 
       for (TarArchiveEntry e : entry.getDirectoryEntries()) {
@@ -985,16 +952,15 @@ public class FileUtil {
 
     if (entry.isSymbolicLink()) {
       // Create symbolic link relative to tar parent dir
-      Files.createSymbolicLink(FileSystems.getDefault()
-              .getPath(outputDir.getPath(), entry.getName()),
+      Files.createSymbolicLink(
+          FileSystems.getDefault().getPath(outputDir.getPath(), entry.getName()),
           FileSystems.getDefault().getPath(entry.getLinkName()));
       return;
     }
 
     if (!outputFile.getParentFile().exists()) {
       if (!outputFile.getParentFile().mkdirs()) {
-        throw new IOException("Mkdirs failed to create tar internal dir "
-            + outputDir);
+        throw new IOException("Mkdirs failed to create tar internal dir " + outputDir);
       }
     }
 
@@ -1006,8 +972,8 @@ public class FileUtil {
 
     int count;
     byte data[] = new byte[2048];
-    try (BufferedOutputStream outputStream = new BufferedOutputStream(
-        new FileOutputStream(outputFile));) {
+    try (BufferedOutputStream outputStream =
+        new BufferedOutputStream(new FileOutputStream(outputFile)); ) {
 
       while ((count = tis.read(data)) != -1) {
         outputStream.write(data, 0, count);
@@ -1018,8 +984,8 @@ public class FileUtil {
   }
 
   /**
-   * Class for creating hardlinks.
-   * Supports Unix, WindXP.
+   * Class for creating hardlinks. Supports Unix, WindXP.
+   *
    * @deprecated Use {@link org.apache.hadoop.fs.HardLink}
    */
   @Deprecated
@@ -1030,17 +996,15 @@ public class FileUtil {
   }
 
   /**
-   * Create a soft link between a src and destination
-   * only on a local disk. HDFS does not support this.
-   * On Windows, when symlink creation fails due to security
-   * setting, we will log a warning. The return code in this
-   * case is 2.
+   * Create a soft link between a src and destination only on a local disk. HDFS does not support
+   * this. On Windows, when symlink creation fails due to security setting, we will log a warning.
+   * The return code in this case is 2.
    *
    * @param target the target for symlink
    * @param linkname the symlink
    * @return 0 on success
    */
-  public static int symLink(String target, String linkname) throws IOException{
+  public static int symLink(String target, String linkname) throws IOException {
 
     if (target == null || linkname == null) {
       LOG.warn("Can not create a symLink with a target = {} and link = {}", target, linkname);
@@ -1049,20 +1013,14 @@ public class FileUtil {
 
     // Run the input paths through Java's File so that they are converted to the
     // native OS form
-    File targetFile = new File(
-        Path.getPathWithoutSchemeAndAuthority(new Path(target)).toString());
-    File linkFile = new File(
-        Path.getPathWithoutSchemeAndAuthority(new Path(linkname)).toString());
+    File targetFile = new File(Path.getPathWithoutSchemeAndAuthority(new Path(target)).toString());
+    File linkFile = new File(Path.getPathWithoutSchemeAndAuthority(new Path(linkname)).toString());
 
-    String[] cmd = Shell.getSymlinkCommand(
-        targetFile.toString(),
-        linkFile.toString());
+    String[] cmd = Shell.getSymlinkCommand(targetFile.toString(), linkFile.toString());
 
     ShellCommandExecutor shExec;
     try {
-      if (Shell.WINDOWS &&
-          linkFile.getParentFile() != null &&
-          !new Path(target).isAbsolute()) {
+      if (Shell.WINDOWS && linkFile.getParentFile() != null && !new Path(target).isAbsolute()) {
         // Relative links on Windows must be resolvable at the time of
         // creation. To ensure this we run the shell command in the directory
         // of the link.
@@ -1075,18 +1033,26 @@ public class FileUtil {
     } catch (Shell.ExitCodeException ec) {
       int returnVal = ec.getExitCode();
       if (Shell.WINDOWS && returnVal == SYMLINK_NO_PRIVILEGE) {
-        LOG.warn("Fail to create symbolic links on Windows. "
-            + "The default security settings in Windows disallow non-elevated "
-            + "administrators and all non-administrators from creating symbolic links. "
-            + "This behavior can be changed in the Local Security Policy management console");
+        LOG.warn(
+            "Fail to create symbolic links on Windows. "
+                + "The default security settings in Windows disallow non-elevated "
+                + "administrators and all non-administrators from creating symbolic links. "
+                + "This behavior can be changed in the Local Security Policy management console");
       } else if (returnVal != 0) {
-        LOG.warn("Command '{}' failed {} with: {}",StringUtils.join(" ", cmd)
-            , returnVal, ec.getMessage());
+        LOG.warn(
+            "Command '{}' failed {} with: {}",
+            StringUtils.join(" ", cmd),
+            returnVal,
+            ec.getMessage());
       }
       return returnVal;
     } catch (IOException e) {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Error while create symlink {} to {}. Exception: {}", linkname, target, StringUtils.stringifyException(e));
+        LOG.debug(
+            "Error while create symlink {} to {}. Exception: {}",
+            linkname,
+            target,
+            StringUtils.stringifyException(e));
       }
       throw e;
     }
@@ -1095,64 +1061,65 @@ public class FileUtil {
 
   /**
    * Change the permissions on a filename.
+   *
    * @param filename the name of the file to change
    * @param perm the permission string
    * @return the exit code from the command
    * @throws IOException exception on chmod
    */
-  public static int chmod(String filename, String perm
-  ) throws IOException {
+  public static int chmod(String filename, String perm) throws IOException {
     return chmod(filename, perm, false);
   }
 
   /**
-   * Change the permissions on a file / directory, recursively, if
-   * needed.
+   * Change the permissions on a file / directory, recursively, if needed.
+   *
    * @param filename name of the file whose permissions are to change
    * @param perm permission string
    * @param recursive true, if permissions should be changed recursively
    * @return the exit code from the command.
    * @throws IOException exception on chmod
    */
-  public static int chmod(String filename, String perm, boolean recursive)
-      throws IOException {
-    String [] cmd = Shell.getSetPermissionCommand(perm, recursive);
+  public static int chmod(String filename, String perm, boolean recursive) throws IOException {
+    String[] cmd = Shell.getSetPermissionCommand(perm, recursive);
     String[] args = new String[cmd.length + 1];
     System.arraycopy(cmd, 0, args, 0, cmd.length);
     args[cmd.length] = new File(filename).getPath();
     ShellCommandExecutor shExec = new ShellCommandExecutor(args);
     try {
       shExec.execute();
-    }catch(IOException e) {
-      if(LOG.isDebugEnabled()) {
-        LOG.debug("Error while changing permission : {} Exception: {}", filename, StringUtils.stringifyException(e));
+    } catch (IOException e) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Error while changing permission : {} Exception: {}",
+            filename,
+            StringUtils.stringifyException(e));
       }
     }
     return shExec.getExitCode();
   }
 
   /**
-   * Set the ownership on a file / directory. User name and group name
-   * cannot both be null.
+   * Set the ownership on a file / directory. User name and group name cannot both be null.
+   *
    * @param file the file to change
    * @param username the new user owner name
    * @param groupname the new group owner name
    * @throws IOException exception on setOwner
    */
-  public static void setOwner(File file, String username,
-                              String groupname) throws IOException {
+  public static void setOwner(File file, String username, String groupname) throws IOException {
     if (username == null && groupname == null) {
       throw new IOException("username == null && groupname == null");
     }
-    String arg = (username == null ? "" : username)
-        + (groupname == null ? "" : ":" + groupname);
-    String [] cmd = Shell.getSetOwnerCommand(arg);
+    String arg = (username == null ? "" : username) + (groupname == null ? "" : ":" + groupname);
+    String[] cmd = Shell.getSetOwnerCommand(arg);
     execCommand(file, cmd);
   }
 
   /**
-   * Platform independent implementation for {@link File#setReadable(boolean)}
-   * File#setReadable does not work as expected on Windows.
+   * Platform independent implementation for {@link File#setReadable(boolean)} File#setReadable does
+   * not work as expected on Windows.
+   *
    * @param f input file
    * @param readable set to readable or not
    * @return true on success, false otherwise
@@ -1172,8 +1139,9 @@ public class FileUtil {
   }
 
   /**
-   * Platform independent implementation for {@link File#setWritable(boolean)}
-   * File#setWritable does not work as expected on Windows.
+   * Platform independent implementation for {@link File#setWritable(boolean)} File#setWritable does
+   * not work as expected on Windows.
+   *
    * @param f input file
    * @param writable set to writable or not
    * @return true on success, false otherwise
@@ -1193,11 +1161,11 @@ public class FileUtil {
   }
 
   /**
-   * Platform independent implementation for {@link File#setExecutable(boolean)}
-   * File#setExecutable does not work as expected on Windows.
-   * Note: revoking execute permission on folders does not have the same
-   * behavior on Windows as on Unix platforms. Creating, deleting or renaming
-   * a file within that folder will still succeed on Windows.
+   * Platform independent implementation for {@link File#setExecutable(boolean)} File#setExecutable
+   * does not work as expected on Windows. Note: revoking execute permission on folders does not
+   * have the same behavior on Windows as on Unix platforms. Creating, deleting or renaming a file
+   * within that folder will still succeed on Windows.
+   *
    * @param f input file
    * @param executable set to executable or not
    * @return true on success, false otherwise
@@ -1218,15 +1186,16 @@ public class FileUtil {
 
   /**
    * Platform independent implementation for {@link File#canRead()}
+   *
    * @param f input file
-   * @return On Unix, same as {@link File#canRead()}
-   *         On Windows, true if process has read access on the path
+   * @return On Unix, same as {@link File#canRead()} On Windows, true if process has read access on
+   *     the path
    */
   public static boolean canRead(File f) {
     if (Shell.WINDOWS) {
       try {
-        return NativeIO.Windows.access(f.getCanonicalPath(),
-            NativeIO.Windows.AccessRight.ACCESS_READ);
+        return NativeIO.Windows.access(
+            f.getCanonicalPath(), NativeIO.Windows.AccessRight.ACCESS_READ);
       } catch (IOException e) {
         return false;
       }
@@ -1237,15 +1206,16 @@ public class FileUtil {
 
   /**
    * Platform independent implementation for {@link File#canWrite()}
+   *
    * @param f input file
-   * @return On Unix, same as {@link File#canWrite()}
-   *         On Windows, true if process has write access on the path
+   * @return On Unix, same as {@link File#canWrite()} On Windows, true if process has write access
+   *     on the path
    */
   public static boolean canWrite(File f) {
     if (Shell.WINDOWS) {
       try {
-        return NativeIO.Windows.access(f.getCanonicalPath(),
-            NativeIO.Windows.AccessRight.ACCESS_WRITE);
+        return NativeIO.Windows.access(
+            f.getCanonicalPath(), NativeIO.Windows.AccessRight.ACCESS_WRITE);
       } catch (IOException e) {
         return false;
       }
@@ -1256,15 +1226,16 @@ public class FileUtil {
 
   /**
    * Platform independent implementation for {@link File#canExecute()}
+   *
    * @param f input file
-   * @return On Unix, same as {@link File#canExecute()}
-   *         On Windows, true if process has execute access on the path
+   * @return On Unix, same as {@link File#canExecute()} On Windows, true if process has execute
+   *     access on the path
    */
   public static boolean canExecute(File f) {
     if (Shell.WINDOWS) {
       try {
-        return NativeIO.Windows.access(f.getCanonicalPath(),
-            NativeIO.Windows.AccessRight.ACCESS_EXECUTE);
+        return NativeIO.Windows.access(
+            f.getCanonicalPath(), NativeIO.Windows.AccessRight.ACCESS_EXECUTE);
       } catch (IOException e) {
         return false;
       }
@@ -1278,14 +1249,14 @@ public class FileUtil {
   }
 
   /**
-   * Set permissions to the required value. Uses the java primitives instead
-   * of forking if group == other.
+   * Set permissions to the required value. Uses the java primitives instead of forking if group ==
+   * other.
+   *
    * @param f the file to change
    * @param permission the new permissions
    * @throws IOException exception on setPermission
    */
-  public static void setPermission(File f, FsPermission permission
-  ) throws IOException {
+  public static void setPermission(File f, FsPermission permission) throws IOException {
     FsAction user = permission.getUserAction();
     FsAction group = permission.getGroupAction();
     FsAction other = permission.getOtherAction();
@@ -1324,24 +1295,23 @@ public class FileUtil {
     }
   }
 
-  private static void checkReturnValue(boolean rv, File p,
-                                       FsPermission permission
-  ) throws IOException {
+  private static void checkReturnValue(boolean rv, File p, FsPermission permission)
+      throws IOException {
     if (!rv) {
-      throw new IOException("Failed to set permissions of path: " + p +
-          " to " +
-          String.format("%04o", permission.toShort()));
+      throw new IOException(
+          "Failed to set permissions of path: "
+              + p
+              + " to "
+              + String.format("%04o", permission.toShort()));
     }
   }
 
-  private static void execSetPermission(File f,
-                                        FsPermission permission
-  )  throws IOException {
+  private static void execSetPermission(File f, FsPermission permission) throws IOException {
     if (NativeIO.isAvailable()) {
       NativeIO.POSIX.chmod(f.getCanonicalPath(), permission.toShort());
     } else {
-      execCommand(f, Shell.getSetPermissionCommand(
-          String.format("%04o", permission.toShort()), false));
+      execCommand(
+          f, Shell.getSetPermissionCommand(String.format("%04o", permission.toShort()), false));
     }
   }
 
@@ -1354,6 +1324,7 @@ public class FileUtil {
 
   /**
    * Create a tmp file for a base file.
+   *
    * @param basefile the base file of the tmp
    * @param prefix file name prefix of tmp
    * @param isDeleteOnExit if true, the tmp will be deleted when the VM exits
@@ -1362,12 +1333,9 @@ public class FileUtil {
    * @see java.io.File#createTempFile(String, String, File)
    * @see java.io.File#deleteOnExit()
    */
-  public static File createLocalTempFile(final File basefile,
-                                         final String prefix,
-                                         final boolean isDeleteOnExit)
-      throws IOException {
-    File tmp = File.createTempFile(prefix + basefile.getName(),
-        "", basefile.getParentFile());
+  public static File createLocalTempFile(
+      final File basefile, final String prefix, final boolean isDeleteOnExit) throws IOException {
+    File tmp = File.createTempFile(prefix + basefile.getName(), "", basefile.getParentFile());
     if (isDeleteOnExit) {
       tmp.deleteOnExit();
     }
@@ -1376,6 +1344,7 @@ public class FileUtil {
 
   /**
    * Move the src file to the name specified by target.
+   *
    * @param src the source file
    * @param target the target file
    * @exception IOException If this operation fails
@@ -1396,37 +1365,35 @@ public class FileUtil {
         }
       }
       if (!src.renameTo(target)) {
-        throw new IOException("Unable to rename " + src +
-            " to " + target);
+        throw new IOException("Unable to rename " + src + " to " + target);
       }
     }
   }
 
   /**
-   * A wrapper for {@link File#listFiles()}. This java.io API returns null
-   * when a dir is not a directory or for any I/O error. Instead of having
-   * null check everywhere File#listFiles() is used, we will add utility API
-   * to get around this problem. For the majority of cases where we prefer
-   * an IOException to be thrown.
+   * A wrapper for {@link File#listFiles()}. This java.io API returns null when a dir is not a
+   * directory or for any I/O error. Instead of having null check everywhere File#listFiles() is
+   * used, we will add utility API to get around this problem. For the majority of cases where we
+   * prefer an IOException to be thrown.
+   *
    * @param dir directory for which listing should be performed
    * @return list of files or empty list
    * @exception IOException for invalid directory or for a bad disk.
    */
   public static File[] listFiles(File dir) throws IOException {
     File[] files = dir.listFiles();
-    if(files == null) {
-      throw new IOException("Invalid directory or I/O error occurred for dir: "
-          + dir.toString());
+    if (files == null) {
+      throw new IOException("Invalid directory or I/O error occurred for dir: " + dir.toString());
     }
     return files;
   }
 
   /**
-   * A wrapper for {@link File#list()}. This java.io API returns null
-   * when a dir is not a directory or for any I/O error. Instead of having
-   * null check everywhere File#list() is used, we will add utility API
-   * to get around this problem. For the majority of cases where we prefer
-   * an IOException to be thrown.
+   * A wrapper for {@link File#list()}. This java.io API returns null when a dir is not a directory
+   * or for any I/O error. Instead of having null check everywhere File#list() is used, we will add
+   * utility API to get around this problem. For the majority of cases where we prefer an
+   * IOException to be thrown.
+   *
    * @param dir directory for which listing should be performed
    * @return list of file names or empty string list
    * @exception AccessDeniedException for unreadable directory
@@ -1434,63 +1401,57 @@ public class FileUtil {
    */
   public static String[] list(File dir) throws IOException {
     if (!canRead(dir)) {
-      throw new AccessDeniedException(dir.toString(), null,
-          FSExceptionMessages.PERMISSION_DENIED);
+      throw new AccessDeniedException(dir.toString(), null, FSExceptionMessages.PERMISSION_DENIED);
     }
     String[] fileNames = dir.list();
-    if(fileNames == null) {
-      throw new IOException("Invalid directory or I/O error occurred for dir: "
-          + dir.toString());
+    if (fileNames == null) {
+      throw new IOException("Invalid directory or I/O error occurred for dir: " + dir.toString());
     }
     return fileNames;
   }
 
-  public static String[] createJarWithClassPath(String inputClassPath, Path pwd,
-                                                Map<String, String> callerEnv) throws IOException {
+  public static String[] createJarWithClassPath(
+      String inputClassPath, Path pwd, Map<String, String> callerEnv) throws IOException {
     return createJarWithClassPath(inputClassPath, pwd, pwd, callerEnv);
   }
 
   /**
-   * Create a jar file at the given path, containing a manifest with a classpath
-   * that references all specified entries.
+   * Create a jar file at the given path, containing a manifest with a classpath that references all
+   * specified entries.
    *
-   * Some platforms may have an upper limit on command line length.  For example,
-   * the maximum command line length on Windows is 8191 characters, but the
-   * length of the classpath may exceed this.  To work around this limitation,
-   * use this method to create a small intermediate jar with a manifest that
-   * contains the full classpath.  It returns the absolute path to the new jar,
-   * which the caller may set as the classpath for a new process.
+   * <p>Some platforms may have an upper limit on command line length. For example, the maximum
+   * command line length on Windows is 8191 characters, but the length of the classpath may exceed
+   * this. To work around this limitation, use this method to create a small intermediate jar with a
+   * manifest that contains the full classpath. It returns the absolute path to the new jar, which
+   * the caller may set as the classpath for a new process.
    *
-   * Environment variable evaluation is not supported within a jar manifest, so
-   * this method expands environment variables before inserting classpath entries
-   * to the manifest.  The method parses environment variables according to
-   * platform-specific syntax (%VAR% on Windows, or $VAR otherwise).  On Windows,
-   * environment variables are case-insensitive.  For example, %VAR% and %var%
-   * evaluate to the same value.
+   * <p>Environment variable evaluation is not supported within a jar manifest, so this method
+   * expands environment variables before inserting classpath entries to the manifest. The method
+   * parses environment variables according to platform-specific syntax (%VAR% on Windows, or $VAR
+   * otherwise). On Windows, environment variables are case-insensitive. For example, %VAR% and
+   * %var% evaluate to the same value.
    *
-   * Specifying the classpath in a jar manifest does not support wildcards, so
-   * this method expands wildcards internally.  Any classpath entry that ends
-   * with * is translated to all files at that path with extension .jar or .JAR.
+   * <p>Specifying the classpath in a jar manifest does not support wildcards, so this method
+   * expands wildcards internally. Any classpath entry that ends with * is translated to all files
+   * at that path with extension .jar or .JAR.
    *
    * @param inputClassPath String input classpath to bundle into the jar manifest
    * @param pwd Path to working directory to save jar
    * @param targetDir path to where the jar execution will have its working dir
-   * @param callerEnv Map&lt;String, String&gt; caller's environment variables to use
-   *   for expansion
-   * @return String[] with absolute path to new jar in position 0 and
-   *   unexpanded wild card entry path in position 1
+   * @param callerEnv Map&lt;String, String&gt; caller's environment variables to use for expansion
+   * @return String[] with absolute path to new jar in position 0 and unexpanded wild card entry
+   *     path in position 1
    * @throws IOException if there is an I/O error while writing the jar file
    */
-  public static String[] createJarWithClassPath(String inputClassPath, Path pwd,
-                                                Path targetDir,
-                                                Map<String, String> callerEnv) throws IOException {
+  public static String[] createJarWithClassPath(
+      String inputClassPath, Path pwd, Path targetDir, Map<String, String> callerEnv)
+      throws IOException {
     // Replace environment variables, case-insensitive on Windows
-    Map<String, String> env = Shell.WINDOWS ? new CaseInsensitiveMap<>(callerEnv) :
-        callerEnv;
+    Map<String, String> env = Shell.WINDOWS ? new CaseInsensitiveMap<>(callerEnv) : callerEnv;
     String[] classPathEntries = inputClassPath.split(File.pathSeparator);
     for (int i = 0; i < classPathEntries.length; ++i) {
-      classPathEntries[i] = StringUtils.replaceTokens(classPathEntries[i],
-          StringUtils.ENV_VAR_PATTERN, env);
+      classPathEntries[i] =
+          StringUtils.replaceTokens(classPathEntries[i], StringUtils.ENV_VAR_PATTERN, env);
     }
     File workingDir = new File(pwd.toString());
     if (!workingDir.mkdirs()) {
@@ -1503,9 +1464,8 @@ public class FileUtil {
 
     StringBuilder unexpandedWildcardClasspath = new StringBuilder();
     // Append all entries
-    List<String> classPathEntryList = new ArrayList<String>(
-        classPathEntries.length);
-    for (String classPathEntry: classPathEntries) {
+    List<String> classPathEntryList = new ArrayList<String>(classPathEntries.length);
+    for (String classPathEntry : classPathEntries) {
       if (classPathEntry.length() == 0) {
         continue;
       }
@@ -1513,7 +1473,7 @@ public class FileUtil {
         // Append all jars that match the wildcard
         List<Path> jars = getJarsInDirectory(classPathEntry);
         if (!jars.isEmpty()) {
-          for (Path jar: jars) {
+          for (Path jar : jars) {
             classPathEntryList.add(jar.toUri().toURL().toExternalForm());
           }
         } else {
@@ -1523,14 +1483,12 @@ public class FileUtil {
       } else {
         // Append just this entry
         File fileCpEntry = null;
-        if(!new Path(classPathEntry).isAbsolute()) {
+        if (!new Path(classPathEntry).isAbsolute()) {
           fileCpEntry = new File(targetDir.toString(), classPathEntry);
-        }
-        else {
+        } else {
           fileCpEntry = new File(classPathEntry);
         }
-        String classPathEntryUrl = fileCpEntry.toURI().toURL()
-            .toExternalForm();
+        String classPathEntryUrl = fileCpEntry.toURI().toURL().toExternalForm();
 
         // File.toURI only appends trailing '/' if it can determine that it is a
         // directory that already exists.  (See JavaDocs.)  If this entry had a
@@ -1539,8 +1497,8 @@ public class FileUtil {
         // a directory instead of a file.  This can happen if the caller is
         // creating a classpath jar referencing a directory that hasn't been
         // created yet, but will definitely be created before running.
-        if (classPathEntry.endsWith(Path.SEPARATOR) &&
-            !classPathEntryUrl.endsWith(Path.SEPARATOR)) {
+        if (classPathEntry.endsWith(Path.SEPARATOR)
+            && !classPathEntryUrl.endsWith(Path.SEPARATOR)) {
           classPathEntryUrl = classPathEntryUrl + Path.SEPARATOR;
         }
         classPathEntryList.add(classPathEntryUrl);
@@ -1550,43 +1508,39 @@ public class FileUtil {
 
     // Create the manifest
     Manifest jarManifest = new Manifest();
-    jarManifest.getMainAttributes().putValue(
-        Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
-    jarManifest.getMainAttributes().putValue(
-        Attributes.Name.CLASS_PATH.toString(), jarClassPath);
+    jarManifest.getMainAttributes().putValue(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
+    jarManifest.getMainAttributes().putValue(Attributes.Name.CLASS_PATH.toString(), jarClassPath);
 
     // Write the manifest to output JAR file
     File classPathJar = File.createTempFile("classpath-", ".jar", workingDir);
     try (FileOutputStream fos = new FileOutputStream(classPathJar);
-         BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+        BufferedOutputStream bos = new BufferedOutputStream(fos)) {
       JarOutputStream jos = new JarOutputStream(bos, jarManifest);
       jos.close();
     }
-    String[] jarCp = {classPathJar.getCanonicalPath(),
-        unexpandedWildcardClasspath.toString()};
+    String[] jarCp = {classPathJar.getCanonicalPath(), unexpandedWildcardClasspath.toString()};
     return jarCp;
   }
 
   /**
-   * Returns all jars that are in the directory. It is useful in expanding a
-   * wildcard path to return all jars from the directory to use in a classpath.
-   * It operates only on local paths.
+   * Returns all jars that are in the directory. It is useful in expanding a wildcard path to return
+   * all jars from the directory to use in a classpath. It operates only on local paths.
    *
    * @param path the path to the directory. The path may include the wildcard.
-   * @return the list of jars as URLs, or an empty list if there are no jars, or
-   * the directory does not exist locally
+   * @return the list of jars as URLs, or an empty list if there are no jars, or the directory does
+   *     not exist locally
    */
   public static List<Path> getJarsInDirectory(String path) {
     return getJarsInDirectory(path, true);
   }
 
   /**
-   * Returns all jars that are in the directory. It is useful in expanding a
-   * wildcard path to return all jars from the directory to use in a classpath.
+   * Returns all jars that are in the directory. It is useful in expanding a wildcard path to return
+   * all jars from the directory to use in a classpath.
    *
    * @param path the path to the directory. The path may include the wildcard.
-   * @return the list of jars as URLs, or an empty list if there are no jars, or
-   * the directory does not exist
+   * @return the list of jars as URLs, or an empty list if there are no jars, or the directory does
+   *     not exist
    */
   public static List<Path> getJarsInDirectory(String path, boolean useLocal) {
     List<Path> paths = new ArrayList<>();
@@ -1596,26 +1550,28 @@ public class FileUtil {
         path += File.separator + "*";
       }
       Path globPath = new Path(path).suffix("{.jar,.JAR}");
-      FileContext context = useLocal ?
-          FileContext.getLocalFSFileContext() :
-          FileContext.getFileContext(globPath.toUri());
+      FileContext context =
+          useLocal
+              ? FileContext.getLocalFSFileContext()
+              : FileContext.getFileContext(globPath.toUri());
       FileStatus[] files = context.util().globStatus(globPath);
       if (files != null) {
-        for (FileStatus file: files) {
+        for (FileStatus file : files) {
           paths.add(file.getPath());
         }
       }
-    } catch (IOException ignore) {} // return the empty list
+    } catch (IOException ignore) {
+    } // return the empty list
     return paths;
   }
 
   public static boolean compareFs(FileSystem srcFs, FileSystem destFs) {
-    if (srcFs==null || destFs==null) {
+    if (srcFs == null || destFs == null) {
       return false;
     }
     URI srcUri = srcFs.getUri();
     URI dstUri = destFs.getUri();
-    if (srcUri.getScheme()==null) {
+    if (srcUri.getScheme() == null) {
       return false;
     }
     if (!srcUri.getScheme().equals(dstUri.getScheme())) {
@@ -1623,9 +1579,9 @@ public class FileUtil {
     }
     String srcHost = srcUri.getHost();
     String dstHost = dstUri.getHost();
-    if ((srcHost!=null) && (dstHost!=null)) {
+    if ((srcHost != null) && (dstHost != null)) {
       if (srcHost.equals(dstHost)) {
-        return srcUri.getPort()==dstUri.getPort();
+        return srcUri.getPort() == dstUri.getPort();
       }
       try {
         srcHost = InetAddress.getByName(srcHost).getCanonicalHostName();
@@ -1639,12 +1595,12 @@ public class FileUtil {
       if (!srcHost.equals(dstHost)) {
         return false;
       }
-    } else if (srcHost==null && dstHost!=null) {
+    } else if (srcHost == null && dstHost != null) {
       return false;
-    } else if (srcHost!=null) {
+    } else if (srcHost != null) {
       return false;
     }
     // check for ports
-    return srcUri.getPort()==dstUri.getPort();
+    return srcUri.getPort() == dstUri.getPort();
   }
 }

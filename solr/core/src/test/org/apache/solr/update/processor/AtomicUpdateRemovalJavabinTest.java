@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -37,9 +36,10 @@ import org.junit.Test;
 /**
  * Tests Solr's atomic-update functionality using requests sent through SolrJ using wt=javabin
  *
- * {@link AtomicUpdatesTest} covers some of the same functionality, but does so by making xml-based requests.  Recent
- * changes to Solr have made it possible for the same data sent with different formats to result in different NamedLists
- * after unmarshalling, so the test duplication is now necessary.  See SOLR-13331 for an example.
+ * <p>{@link AtomicUpdatesTest} covers some of the same functionality, but does so by making
+ * xml-based requests. Recent changes to Solr have made it possible for the same data sent with
+ * different formats to result in different NamedLists after unmarshalling, so the test duplication
+ * is now necessary. See SOLR-13331 for an example.
  */
 public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
@@ -50,24 +50,38 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-dynamic"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-dynamic")).configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(COLLECTION, 1, 1);
 
-    final SolrInputDocument doc1 = sdoc(
-        "id", "1",
-        "title_s", "title_1", "title_s", "title_2",
-        "tv_mv_text", "text_1", "tv_mv_text", "text_2",
-        "count_is", 1, "count_is", 2,
-        "count_md", 1.0, "count_md", 2.0,
-        "timestamps_mdt", DATE_1, "timestamps_mdt", DATE_2);
-    final UpdateRequest req = new UpdateRequest()
-        .add(doc1);
+    final SolrInputDocument doc1 =
+        sdoc(
+            "id",
+            "1",
+            "title_s",
+            "title_1",
+            "title_s",
+            "title_2",
+            "tv_mv_text",
+            "text_1",
+            "tv_mv_text",
+            "text_2",
+            "count_is",
+            1,
+            "count_is",
+            2,
+            "count_md",
+            1.0,
+            "count_md",
+            2.0,
+            "timestamps_mdt",
+            DATE_1,
+            "timestamps_mdt",
+            DATE_2);
+    final UpdateRequest req = new UpdateRequest().add(doc1);
     req.commit(cluster.getSolrClient(), COLLECTION);
   }
 
@@ -106,7 +120,8 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
     ensureFieldHasValues("1", "timestamps_mdt", DATE_2);
   }
 
-  private void atomicRemoveValueFromField(String docId, String fieldName, Object value) throws Exception {
+  private void atomicRemoveValueFromField(String docId, String fieldName, Object value)
+      throws Exception {
     final SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", docId);
     Map<String, Object> atomicUpdateRemoval = new HashMap<>(1);
@@ -117,16 +132,20 @@ public class AtomicUpdateRemovalJavabinTest extends SolrCloudTestCase {
     cluster.getSolrClient().commit(COLLECTION);
   }
 
-  private void ensureFieldHasValues(String identifyingDocId, String fieldName, Object... expectedValues) throws Exception {
+  private void ensureFieldHasValues(
+      String identifyingDocId, String fieldName, Object... expectedValues) throws Exception {
     final SolrClient client = cluster.getSolrClient();
 
-    final QueryResponse response = client.query(COLLECTION, new SolrQuery("id:" + identifyingDocId));
+    final QueryResponse response =
+        client.query(COLLECTION, new SolrQuery("id:" + identifyingDocId));
     final SolrDocumentList docs = response.getResults();
     assertEquals(1, docs.getNumFound());
     final Collection<Object> valuesAfterUpdate = docs.get(0).getFieldValues(fieldName);
     assertEquals(expectedValues.length, valuesAfterUpdate.size());
-    for (Object expectedValue: expectedValues) {
-      assertTrue("Expected value [" + expectedValue + "] was not found in field", valuesAfterUpdate.contains(expectedValue));
+    for (Object expectedValue : expectedValues) {
+      assertTrue(
+          "Expected value [" + expectedValue + "] was not found in field",
+          valuesAfterUpdate.contains(expectedValue));
     }
   }
 }

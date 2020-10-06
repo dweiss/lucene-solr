@@ -16,7 +16,4 @@
  */
 package org.apache.solr.search.stats;
 
-public abstract class CachedSearcherStats {
-
-  
-}
+public abstract class CachedSearcherStats {}

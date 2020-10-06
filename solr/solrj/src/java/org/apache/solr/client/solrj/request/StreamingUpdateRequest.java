@@ -23,11 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.commons.io.IOUtils;
 
-/** A simple update request which streams content to the server
- */
+/** A simple update request which streams content to the server */
 public class StreamingUpdateRequest extends AbstractUpdateRequest {
 
   private final RequestWriter.ContentWriter contentWriter;
@@ -38,39 +36,41 @@ public class StreamingUpdateRequest extends AbstractUpdateRequest {
   }
 
   public StreamingUpdateRequest(String path, String content, String contentType) {
-    this(path, new RequestWriter.ContentWriter() {
-      @Override
-      public void write(OutputStream os) throws IOException {
-        os.write(content.getBytes(StandardCharsets.UTF_8));
-      }
+    this(
+        path,
+        new RequestWriter.ContentWriter() {
+          @Override
+          public void write(OutputStream os) throws IOException {
+            os.write(content.getBytes(StandardCharsets.UTF_8));
+          }
 
-      @Override
-      public String getContentType() {
-        return contentType;
-      }
-
-    });
+          @Override
+          public String getContentType() {
+            return contentType;
+          }
+        });
   }
 
   public StreamingUpdateRequest(String path, File f, String contentType) {
-    this(path, new RequestWriter.ContentWriter() {
-      @Override
-      public void write(OutputStream os) throws IOException {
-        try (InputStream is = new FileInputStream(f)) {
-          IOUtils.copy(is, os);
-        }
-      }
+    this(
+        path,
+        new RequestWriter.ContentWriter() {
+          @Override
+          public void write(OutputStream os) throws IOException {
+            try (InputStream is = new FileInputStream(f)) {
+              IOUtils.copy(is, os);
+            }
+          }
 
-      @Override
-      public String getContentType() {
-        return contentType;
-      }
-    });
+          @Override
+          public String getContentType() {
+            return contentType;
+          }
+        });
   }
 
   @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return contentWriter;
   }
-
 }

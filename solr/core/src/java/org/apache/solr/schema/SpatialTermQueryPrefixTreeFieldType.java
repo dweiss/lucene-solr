@@ -20,14 +20,15 @@ import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
 
 /**
  * @see TermQueryPrefixTreeStrategy
- * @deprecated use {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy} or {@link RptWithGeometrySpatialField}
+ * @deprecated use {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy} or {@link
+ *     RptWithGeometrySpatialField}
  */
 @Deprecated
-public class SpatialTermQueryPrefixTreeFieldType extends AbstractSpatialPrefixTreeFieldType<TermQueryPrefixTreeStrategy> {
+public class SpatialTermQueryPrefixTreeFieldType
+    extends AbstractSpatialPrefixTreeFieldType<TermQueryPrefixTreeStrategy> {
 
   @Override
   protected TermQueryPrefixTreeStrategy newPrefixTreeStrategy(String fieldName) {
-    return new TermQueryPrefixTreeStrategy(grid,fieldName);
+    return new TermQueryPrefixTreeStrategy(grid, fieldName);
   }
 }
-

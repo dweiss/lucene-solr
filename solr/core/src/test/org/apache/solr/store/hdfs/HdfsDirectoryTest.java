@@ -16,12 +16,12 @@
  */
 package org.apache.solr.store.hdfs;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -41,15 +41,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
-})
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+    })
 public class HdfsDirectoryTest extends SolrTestCaseJ4 {
-  
+
   private static final int MAX_NUMBER_OF_WRITES = 10000;
   private static final int MIN_FILE_SIZE = 100;
   private static final int MAX_FILE_SIZE = 100000;
@@ -66,7 +66,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     try {
@@ -75,32 +75,34 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
       dfsCluster = null;
     }
   }
-  
+
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    
+
     directoryConf = HdfsTestUtil.getClientConfiguration(dfsCluster);
     directoryConf.set("dfs.permissions.enabled", "false");
-    
-    directoryPath = new Path(dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs");
+
+    directoryPath =
+        new Path(
+            dfsCluster.getURI().toString() + createTempDir().toFile().getAbsolutePath() + "/hdfs");
     directory = new HdfsDirectory(directoryPath, directoryConf);
-    
+
     random = random();
   }
-  
+
   @After
   public void tearDown() throws Exception {
     super.tearDown();
   }
-  
+
   @Test
   public void testWritingAndReadingAFile() throws IOException {
     String[] listAll = directory.listAll();
     for (String file : listAll) {
       directory.deleteFile(file);
     }
-    
+
     IndexOutput output = directory.createOutput("testing.test", new IOContext());
     output.writeInt(12345);
     output.close();
@@ -129,13 +131,13 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     directory.deleteFile("testing.test");
     assertFalse(slowFileExists(directory, "testing.test"));
   }
-  
+
   public void testRename() throws IOException {
     String[] listAll = directory.listAll();
     for (String file : listAll) {
       directory.deleteFile(file);
     }
-    
+
     IndexOutput output = directory.createOutput("testing.test", new IOContext());
     output.writeInt(12345);
     output.close();
@@ -149,7 +151,7 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     directory.deleteFile("testing.test.renamed");
     assertFalse(slowFileExists(directory, "testing.test.renamed"));
   }
-  
+
   @Test
   public void testEOF() throws IOException {
     Directory fsDir = new ByteBuffersDirectory();
@@ -158,8 +160,8 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     long fsLength = fsDir.fileLength(name);
     long hdfsLength = directory.fileLength(name);
     assertEquals(fsLength, hdfsLength);
-    testEof(name,fsDir,fsLength);
-    testEof(name,directory,hdfsLength);
+    testEof(name, fsDir, fsLength);
+    testEof(name, directory, hdfsLength);
   }
 
   private void testEof(String name, Directory directory, long length) throws IOException {
@@ -173,13 +175,13 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     int i = 0;
     try {
       Set<String> names = new HashSet<>();
-      for (; i< 10; i++) {
+      for (; i < 10; i++) {
         Directory fsDir = new ByteBuffersDirectory();
         String name = getName();
-        System.out.println("Working on pass [" + i  +"] contains [" + names.contains(name) + "]");
+        System.out.println("Working on pass [" + i + "] contains [" + names.contains(name) + "]");
         names.add(name);
-        createFile(name,fsDir,directory);
-        assertInputsEquals(name,fsDir,directory);
+        createFile(name, fsDir, directory);
+        assertInputsEquals(name, fsDir, directory);
         fsDir.close();
       }
     } catch (Exception e) {
@@ -188,18 +190,19 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void assertInputsEquals(String name, Directory fsDir, HdfsDirectory hdfs) throws IOException {
+  private void assertInputsEquals(String name, Directory fsDir, HdfsDirectory hdfs)
+      throws IOException {
     int reads = random.nextInt(MAX_NUMBER_OF_READS);
-    IndexInput fsInput = fsDir.openInput(name,new IOContext());
-    IndexInput hdfsInput = hdfs.openInput(name,new IOContext());
+    IndexInput fsInput = fsDir.openInput(name, new IOContext());
+    IndexInput hdfsInput = hdfs.openInput(name, new IOContext());
     assertEquals(fsInput.length(), hdfsInput.length());
     int fileLength = (int) fsInput.length();
     for (int i = 0; i < reads; i++) {
-      int nextInt = Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE,fileLength);
+      int nextInt = Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE, fileLength);
       byte[] fsBuf = new byte[random.nextInt(nextInt > 0 ? nextInt : 1) + MIN_BUFFER_SIZE];
       byte[] hdfsBuf = new byte[fsBuf.length];
       int offset = random.nextInt(fsBuf.length);
-      
+
       nextInt = fsBuf.length - offset;
       int length = random.nextInt(nextInt > 0 ? nextInt : 1);
       nextInt = fileLength - length;
@@ -224,7 +227,10 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     IndexOutput fsOutput = fsDir.createOutput(name, new IOContext());
     IndexOutput hdfsOutput = hdfs.createOutput(name, new IOContext());
     for (int i = 0; i < writes; i++) {
-      byte[] buf = new byte[random.nextInt(Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE,fileLength)) + MIN_BUFFER_SIZE];
+      byte[] buf =
+          new byte
+              [random.nextInt(Math.min(MAX_BUFFER_SIZE - MIN_BUFFER_SIZE, fileLength))
+                  + MIN_BUFFER_SIZE];
       random.nextBytes(buf);
       int offset = random.nextInt(buf.length);
       int length = random.nextInt(buf.length - offset);
@@ -243,8 +249,8 @@ public class HdfsDirectoryTest extends SolrTestCaseJ4 {
     try (IndexOutput out = directory.createOutput("foo", IOContext.DEFAULT)) {
       out.writeByte((byte) 42);
     }
-    expectThrows(FileAlreadyExistsException.class,
-        () -> directory.createOutput("foo", IOContext.DEFAULT));
+    expectThrows(
+        FileAlreadyExistsException.class, () -> directory.createOutput("foo", IOContext.DEFAULT));
   }
 
   public void testCreateTempFiles() throws IOException {

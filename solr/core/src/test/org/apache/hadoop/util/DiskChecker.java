@@ -1,11 +1,10 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -18,14 +17,13 @@
 
 package org.apache.hadoop.util;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -37,9 +35,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Class that provides utility functions for checking disk problem
- */
+/** Class that provides utility functions for checking disk problem */
 @InterfaceAudience.Private
 @InterfaceStability.Unstable
 public class DiskChecker {
@@ -69,8 +65,8 @@ public class DiskChecker {
       new AtomicReference<>(new DefaultFileIoProvider());
 
   /**
-   * Create the directory if it doesn't exist and check that dir is readable,
-   * writable and executable
+   * Create the directory if it doesn't exist and check that dir is readable, writable and
+   * executable
    *
    * @param dir dir to check
    * @throws DiskErrorException exception checking dir
@@ -80,31 +76,27 @@ public class DiskChecker {
   }
 
   /**
-   * Create the directory if it doesn't exist and check that dir is
-   * readable, writable and executable. Perform some disk IO to
-   * ensure that the disk is usable for writes.
+   * Create the directory if it doesn't exist and check that dir is readable, writable and
+   * executable. Perform some disk IO to ensure that the disk is usable for writes.
    *
    * @param dir dir to check
    * @throws DiskErrorException exception checking dir
    */
-  public static void checkDirWithDiskIo(File dir)
-      throws DiskErrorException {
+  public static void checkDirWithDiskIo(File dir) throws DiskErrorException {
     checkDirInternal(dir);
     doDiskIo(dir);
   }
 
-  private static void checkDirInternal(File dir)
-      throws DiskErrorException {
+  private static void checkDirInternal(File dir) throws DiskErrorException {
     if (!mkdirsWithExistsCheck(dir)) {
-      throw new DiskErrorException("Cannot create directory: "
-          + dir.toString());
+      throw new DiskErrorException("Cannot create directory: " + dir.toString());
     }
     checkAccessByFileMethods(dir);
   }
 
   /**
-   * Create the local directory if necessary, check permissions and also ensure
-   * it can be read from and written into.
+   * Create the local directory if necessary, check permissions and also ensure it can be read from
+   * and written into.
    *
    * @param localFS local filesystem
    * @param dir directory
@@ -112,17 +104,14 @@ public class DiskChecker {
    * @throws DiskErrorException exception checking dir
    * @throws IOException exception checking dir
    */
-  public static void checkDir(LocalFileSystem localFS, Path dir,
-                              FsPermission expected)
+  public static void checkDir(LocalFileSystem localFS, Path dir, FsPermission expected)
       throws DiskErrorException, IOException {
     checkDirInternal(localFS, dir, expected);
   }
 
-
   /**
-   * Create the local directory if necessary, also ensure permissions
-   * allow it to be read from and written into. Perform some diskIO
-   * to ensure that the disk is usable for writes.
+   * Create the local directory if necessary, also ensure permissions allow it to be read from and
+   * written into. Perform some diskIO to ensure that the disk is usable for writes.
    *
    * @param localFS local filesystem
    * @param dir directory
@@ -130,56 +119,48 @@ public class DiskChecker {
    * @throws DiskErrorException exception checking dir
    * @throws IOException exception checking dir
    */
-  public static void checkDirWithDiskIo(LocalFileSystem localFS, Path dir,
-                                        FsPermission expected)
+  public static void checkDirWithDiskIo(LocalFileSystem localFS, Path dir, FsPermission expected)
       throws DiskErrorException, IOException {
     checkDirInternal(localFS, dir, expected);
     doDiskIo(localFS.pathToFile(dir));
   }
 
-  private static void checkDirInternal(LocalFileSystem localFS, Path dir,
-                                       FsPermission expected)
+  private static void checkDirInternal(LocalFileSystem localFS, Path dir, FsPermission expected)
       throws DiskErrorException, IOException {
     mkdirsWithExistsAndPermissionCheck(localFS, dir, expected);
     checkAccessByFileMethods(localFS.pathToFile(dir));
   }
 
   /**
-   * Checks that the current running process can read, write, and execute the
-   * given directory by using methods of the File object.
+   * Checks that the current running process can read, write, and execute the given directory by
+   * using methods of the File object.
    *
    * @param dir File to check
-   * @throws DiskErrorException if dir is not readable, not writable, or not
-   *   executable
+   * @throws DiskErrorException if dir is not readable, not writable, or not executable
    */
-  private static void checkAccessByFileMethods(File dir)
-      throws DiskErrorException {
+  private static void checkAccessByFileMethods(File dir) throws DiskErrorException {
     if (!dir.isDirectory()) {
-      throw new DiskErrorException("Not a directory: "
-          + dir.toString());
+      throw new DiskErrorException("Not a directory: " + dir.toString());
     }
 
     if (!FileUtil.canRead(dir)) {
-      throw new DiskErrorException("Directory is not readable: "
-          + dir.toString());
+      throw new DiskErrorException("Directory is not readable: " + dir.toString());
     }
 
     if (!FileUtil.canWrite(dir)) {
-      throw new DiskErrorException("Directory is not writable: "
-          + dir.toString());
+      throw new DiskErrorException("Directory is not writable: " + dir.toString());
     }
   }
 
   /**
-   * The semantics of mkdirsWithExistsCheck method is different from the mkdirs
-   * method provided in the Sun's java.io.File class in the following way:
-   * While creating the non-existent parent directories, this method checks for
-   * the existence of those directories if the mkdir fails at any point (since
-   * that directory might have just been created by some other process).
-   * If both mkdir() and the exists() check fails for any seemingly
-   * non-existent directory, then we signal an error; Sun's mkdir would signal
-   * an error (return false) if a directory it is attempting to create already
-   * exists or the mkdir fails.
+   * The semantics of mkdirsWithExistsCheck method is different from the mkdirs method provided in
+   * the Sun's java.io.File class in the following way: While creating the non-existent parent
+   * directories, this method checks for the existence of those directories if the mkdir fails at
+   * any point (since that directory might have just been created by some other process). If both
+   * mkdir() and the exists() check fails for any seemingly non-existent directory, then we signal
+   * an error; Sun's mkdir would signal an error (return false) if a directory it is attempting to
+   * create already exists or the mkdir fails.
+   *
    * @param dir dir to create and check
    * @return true on success, false on failure
    */
@@ -194,24 +175,20 @@ public class DiskChecker {
       return false;
     }
     String parent = canonDir.getParent();
-    return (parent != null) &&
-        (mkdirsWithExistsCheck(new File(parent)) &&
-            (canonDir.mkdir() || canonDir.exists()));
+    return (parent != null)
+        && (mkdirsWithExistsCheck(new File(parent)) && (canonDir.mkdir() || canonDir.exists()));
   }
 
   /**
    * Create the directory or check permissions if it already exists.
    *
-   * The semantics of mkdirsWithExistsAndPermissionCheck method is different
-   * from the mkdirs method provided in the Sun's java.io.File class in the
-   * following way:
-   * While creating the non-existent parent directories, this method checks for
-   * the existence of those directories if the mkdir fails at any point (since
-   * that directory might have just been created by some other process).
-   * If both mkdir() and the exists() check fails for any seemingly
-   * non-existent directory, then we signal an error; Sun's mkdir would signal
-   * an error (return false) if a directory it is attempting to create already
-   * exists or the mkdir fails.
+   * <p>The semantics of mkdirsWithExistsAndPermissionCheck method is different from the mkdirs
+   * method provided in the Sun's java.io.File class in the following way: While creating the
+   * non-existent parent directories, this method checks for the existence of those directories if
+   * the mkdir fails at any point (since that directory might have just been created by some other
+   * process). If both mkdir() and the exists() check fails for any seemingly non-existent
+   * directory, then we signal an error; Sun's mkdir would signal an error (return false) if a
+   * directory it is attempting to create already exists or the mkdir fails.
    *
    * @param localFS local filesystem
    * @param dir directory to be created or checked
@@ -219,42 +196,36 @@ public class DiskChecker {
    * @throws IOException exception making dir and checking
    */
   static void mkdirsWithExistsAndPermissionCheck(
-      LocalFileSystem localFS, Path dir, FsPermission expected)
-      throws IOException {
+      LocalFileSystem localFS, Path dir, FsPermission expected) throws IOException {
     File directory = localFS.pathToFile(dir);
     boolean created = false;
 
-    if (!directory.exists())
-      created = mkdirsWithExistsCheck(directory);
+    if (!directory.exists()) created = mkdirsWithExistsCheck(directory);
 
     if (created || !localFS.getFileStatus(dir).getPermission().equals(expected))
       localFS.setPermission(dir, expected);
   }
 
   // State related to running disk IO checks.
-  private static final String DISK_IO_FILE_PREFIX =
-      "DiskChecker.OK_TO_DELETE_.";
+  private static final String DISK_IO_FILE_PREFIX = "DiskChecker.OK_TO_DELETE_.";
 
-  @VisibleForTesting
-  static final int DISK_IO_MAX_ITERATIONS = 3;
+  @VisibleForTesting static final int DISK_IO_MAX_ITERATIONS = 3;
 
   /**
-   * Performs some disk IO by writing to a new file in the given directory
-   * and sync'ing file contents to disk.
+   * Performs some disk IO by writing to a new file in the given directory and sync'ing file
+   * contents to disk.
    *
-   * This increases the likelihood of catching catastrophic disk/controller
-   * failures sooner.
+   * <p>This increases the likelihood of catching catastrophic disk/controller failures sooner.
    *
    * @param dir directory to be checked.
-   * @throws DiskErrorException if we hit an error while trying to perform
-   *         disk IO against the file.
+   * @throws DiskErrorException if we hit an error while trying to perform disk IO against the file.
    */
   private static void doDiskIo(File dir) throws DiskErrorException {
     try {
       IOException ioe = null;
 
       for (int i = 0; i < DISK_IO_MAX_ITERATIONS; ++i) {
-        final File file = getFileNameForDiskIoCheck(dir, i+1);
+        final File file = getFileNameForDiskIoCheck(dir, i + 1);
         try {
           diskIoCheckWithoutNativeIo(file);
           return;
@@ -264,21 +235,19 @@ public class DiskChecker {
           ioe = e;
         }
       }
-      throw ioe;  // Just rethrow the last exception to signal failure.
-    } catch(IOException e) {
+      throw ioe; // Just rethrow the last exception to signal failure.
+    } catch (IOException e) {
       throw new DiskErrorException("Error checking directory " + dir, e);
     }
   }
 
   /**
-   * Try to perform some disk IO by writing to the given file
-   * without using Native IO.
+   * Try to perform some disk IO by writing to the given file without using Native IO.
    *
    * @param file file to check
    * @throws IOException if there was a non-retriable error.
    */
-  private static void diskIoCheckWithoutNativeIo(File file)
-      throws IOException {
+  private static void diskIoCheckWithoutNativeIo(File file) throws IOException {
     FileOutputStream fos = null;
 
     try {
@@ -307,8 +276,7 @@ public class DiskChecker {
   static File getFileNameForDiskIoCheck(File dir, int iterationCount) {
     if (iterationCount < DISK_IO_MAX_ITERATIONS) {
       // Use file names of the format prefix.001 by default.
-      return new File(dir,
-          DISK_IO_FILE_PREFIX + String.format("%03d", iterationCount));
+      return new File(dir, DISK_IO_FILE_PREFIX + String.format("%03d", iterationCount));
     } else {
       // If the first few checks then fail, try using a randomly generated
       // file name.
@@ -316,30 +284,22 @@ public class DiskChecker {
     }
   }
 
-  /**
-   * An interface that abstracts operations on {@link FileOutputStream}
-   * objects for testability.
-   */
+  /** An interface that abstracts operations on {@link FileOutputStream} objects for testability. */
   interface FileIoProvider {
     FileOutputStream get(File f) throws FileNotFoundException;
+
     void write(FileOutputStream fos, byte[] data) throws IOException;
   }
 
-  /**
-   * The default implementation of {@link FileIoProvider}.
-   */
+  /** The default implementation of {@link FileIoProvider}. */
   private static class DefaultFileIoProvider implements FileIoProvider {
-    /**
-     * See {@link FileOutputStream#FileOutputStream(File)}.
-     */
+    /** See {@link FileOutputStream#FileOutputStream(File)}. */
     @Override
     public FileOutputStream get(File f) throws FileNotFoundException {
       return new FileOutputStream(f);
     }
 
-    /**
-     * See {@link FileOutputStream#write(byte[])}.
-     */
+    /** See {@link FileOutputStream#write(byte[])}. */
     @Override
     public void write(FileOutputStream fos, byte[] data) throws IOException {
       fos.write(data);
@@ -347,21 +307,20 @@ public class DiskChecker {
   }
 
   /**
-   * Replace the {@link FileIoProvider} for tests.
-   * This method MUST NOT be used outside of unit tests.
+   * Replace the {@link FileIoProvider} for tests. This method MUST NOT be used outside of unit
+   * tests.
    *
    * @param newFosProvider FileIoProvider
    * @return the old FileIoProvider.
    */
   @VisibleForTesting
-  static FileIoProvider replaceFileOutputStreamProvider(
-      FileIoProvider newFosProvider) {
+  static FileIoProvider replaceFileOutputStreamProvider(FileIoProvider newFosProvider) {
     return fileIoProvider.getAndSet(newFosProvider);
   }
 
   /**
-   * Retrieve the current {@link FileIoProvider}.
-   * This method MUST NOT be used outside of unit tests.
+   * Retrieve the current {@link FileIoProvider}. This method MUST NOT be used outside of unit
+   * tests.
    *
    * @return the current FileIoProvider.
    */

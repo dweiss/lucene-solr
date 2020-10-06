@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 class DoubleValueSortDoc extends SingleValueSortDoc {
@@ -59,8 +58,8 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
     this.docBase = sortDoc.docBase;
-    value1.setCurrentValue(((DoubleValueSortDoc)sortDoc).value1);
-    value2.setCurrentValue(((DoubleValueSortDoc)sortDoc).value2);
+    value1.setCurrentValue(((DoubleValueSortDoc) sortDoc).value1);
+    value2.setCurrentValue(((DoubleValueSortDoc) sortDoc).value2);
   }
 
   public DoubleValueSortDoc(SortValue value1, SortValue value2) {
@@ -73,26 +72,26 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
   }
 
   public boolean lessThan(Object o) {
-    DoubleValueSortDoc sd = (DoubleValueSortDoc)o;
+    DoubleValueSortDoc sd = (DoubleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == -1) {
+    if (comp == -1) {
       return true;
     } else if (comp == 1) {
       return false;
     } else {
       comp = value2.compareTo(sd.value2);
-      if(comp == -1) {
+      if (comp == -1) {
         return true;
       } else if (comp == 1) {
         return false;
       } else {
-        return docId+docBase > sd.docId+sd.docBase;
+        return docId + docBase > sd.docId + sd.docBase;
       }
     }
   }
 
   public int compareTo(Object o) {
-    DoubleValueSortDoc sd = (DoubleValueSortDoc)o;
+    DoubleValueSortDoc sd = (DoubleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
     if (comp == 0) {
       return value2.compareTo(sd.value2);

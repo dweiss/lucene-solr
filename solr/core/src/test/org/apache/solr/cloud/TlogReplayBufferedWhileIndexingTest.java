@@ -20,10 +20,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.util.LuceneTestCase.Nightly;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
@@ -38,14 +37,14 @@ import org.junit.Test;
 public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTestBase {
 
   private List<StoppableIndexingThread> threads;
-  
+
   public TlogReplayBufferedWhileIndexingTest() throws Exception {
     super();
     sliceCount = 1;
     fixShardCount(2);
-    schemaString = "schema15.xml";      // we need a string id
+    schemaString = "schema15.xml"; // we need a string id
   }
-  
+
   @BeforeClass
   public static void beforeRestartWhileUpdatingTest() throws Exception {
     System.setProperty("leaderVoteWait", "300000");
@@ -55,7 +54,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
     TestInjection.updateRandomPause = "true:10";
     if (System.getProperty("solr.hdfs.home") != null) useFactory("solr.StandardDirectoryFactory");
   }
-  
+
   @AfterClass
   public static void afterRestartWhileUpdatingTest() {
     System.clearProperty("leaderVoteWait");
@@ -67,57 +66,63 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
   public void test() throws Exception {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
-    
+
     waitForRecoveriesToFinish(false);
-    
+
     int numThreads = 3;
-    
+
     threads = new ArrayList<>(numThreads);
-    
+
     ArrayList<JettySolrRunner> allJetty = new ArrayList<>();
     allJetty.addAll(jettys);
     allJetty.remove(shardToLeaderJetty.get("shard1").jetty);
     assert allJetty.size() == 1 : allJetty.size();
     allJetty.get(0).stop();
-    
+
     StoppableIndexingThread indexThread;
     for (int i = 0; i < numThreads; i++) {
       boolean pauseBetweenUpdates = random().nextBoolean();
       int batchSize = random().nextInt(4) + 1;
-      indexThread = new StoppableIndexingThread(controlClient, cloudClient, Integer.toString(i), true, 900, batchSize, pauseBetweenUpdates);
+      indexThread =
+          new StoppableIndexingThread(
+              controlClient,
+              cloudClient,
+              Integer.toString(i),
+              true,
+              900,
+              batchSize,
+              pauseBetweenUpdates);
       threads.add(indexThread);
       indexThread.start();
     }
 
     Thread.sleep(2000);
-    
+
     allJetty.get(0).start();
-    
+
     Thread.sleep(45000);
-  
-    waitForThingsToLevelOut(); // we can insert random update delays, so this can take a while, especially when beasting this test
-    
+
+    waitForThingsToLevelOut(); // we can insert random update delays, so this can take a while,
+    // especially when beasting this test
+
     Thread.sleep(2000);
-    
+
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, cloudClient.getZkStateReader(), false, true);
-    
+
     for (StoppableIndexingThread thread : threads) {
       thread.safeStop();
     }
-    
+
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     checkShardConsistency(false, false);
-
   }
 
   @Override
-  protected void indexDoc(SolrInputDocument doc) throws IOException,
-      SolrServerException {
+  protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
     cloudClient.add(doc);
   }
 
-  
   @Override
   public void distribTearDown() throws Exception {
     // make sure threads have been stopped...
@@ -125,7 +130,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
       for (StoppableIndexingThread thread : threads) {
         thread.safeStop();
       }
-      
+
       for (StoppableIndexingThread thread : threads) {
         thread.join();
       }
@@ -133,7 +138,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
 
     super.distribTearDown();
   }
-  
+
   // skip the randoms - they can deadlock...
   @Override
   protected void indexr(Object... fields) throws Exception {

@@ -17,14 +17,13 @@
 
 package org.apache.solr.core.backup.repository;
 
+import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
-import java.lang.invoke.MethodHandles;
-
-import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -44,9 +43,7 @@ import org.apache.solr.store.hdfs.HdfsDirectory.HdfsIndexInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @deprecated since 8.6
- */
+/** @deprecated since 8.6 */
 @Deprecated
 public class HdfsBackupRepository implements BackupRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -58,8 +55,10 @@ public class HdfsBackupRepository implements BackupRepository {
   private Configuration hdfsConfig = null;
   private FileSystem fileSystem = null;
   private Path baseHdfsPath = null;
+
   @SuppressWarnings("rawtypes")
   private NamedList config = null;
+
   protected int copyBufferSize = HdfsDirectory.DEFAULT_BUFFER_SIZE;
 
   @SuppressWarnings("rawtypes")
@@ -71,16 +70,22 @@ public class HdfsBackupRepository implements BackupRepository {
 
     // Configure the size of the buffer used for copying index files to/from HDFS, if specified.
     if (args.get(HDFS_COPY_BUFFER_SIZE_PARAM) != null) {
-      this.copyBufferSize = (Integer)args.get(HDFS_COPY_BUFFER_SIZE_PARAM);
+      this.copyBufferSize = (Integer) args.get(HDFS_COPY_BUFFER_SIZE_PARAM);
       if (this.copyBufferSize <= 0) {
-        throw new IllegalArgumentException("Value of " + HDFS_COPY_BUFFER_SIZE_PARAM + " must be > 0");
+        throw new IllegalArgumentException(
+            "Value of " + HDFS_COPY_BUFFER_SIZE_PARAM + " must be > 0");
       }
     }
 
-    String hdfsSolrHome = (String) Objects.requireNonNull(args.get(HdfsDirectoryFactory.HDFS_HOME),
-        "Please specify " + HdfsDirectoryFactory.HDFS_HOME + " property.");
+    String hdfsSolrHome =
+        (String)
+            Objects.requireNonNull(
+                args.get(HdfsDirectoryFactory.HDFS_HOME),
+                "Please specify " + HdfsDirectoryFactory.HDFS_HOME + " property.");
     Path path = new Path(hdfsSolrHome);
-    while (path != null) { // Compute the path of root file-system (without requiring an additional system property).
+    while (path
+        != null) { // Compute the path of root file-system (without requiring an additional system
+      // property).
       baseHdfsPath = path;
       path = path.getParent();
     }
@@ -93,7 +98,7 @@ public class HdfsBackupRepository implements BackupRepository {
 
     // Configure the umask mode if specified.
     if (args.get(HDFS_UMASK_MODE_PARAM) != null) {
-      String umaskVal = (String)args.get(HDFS_UMASK_MODE_PARAM);
+      String umaskVal = (String) args.get(HDFS_UMASK_MODE_PARAM);
       this.hdfsConfig.set(FsPermission.UMASK_LABEL, umaskVal);
     }
 
@@ -195,16 +200,17 @@ public class HdfsBackupRepository implements BackupRepository {
 
   @Override
   public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
-    try (HdfsDirectory dir = new HdfsDirectory(new Path(dest), NoLockFactory.INSTANCE,
-        hdfsConfig, copyBufferSize)) {
+    try (HdfsDirectory dir =
+        new HdfsDirectory(new Path(dest), NoLockFactory.INSTANCE, hdfsConfig, copyBufferSize)) {
       dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
 
   @Override
   public void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
-    try (HdfsDirectory dir = new HdfsDirectory(new Path(sourceRepo), NoLockFactory.INSTANCE,
-        hdfsConfig, copyBufferSize)) {
+    try (HdfsDirectory dir =
+        new HdfsDirectory(
+            new Path(sourceRepo), NoLockFactory.INSTANCE, hdfsConfig, copyBufferSize)) {
       dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }

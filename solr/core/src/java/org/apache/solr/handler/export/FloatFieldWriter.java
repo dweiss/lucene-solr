@@ -18,7 +18,6 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -31,14 +30,15 @@ class FloatFieldWriter extends FieldWriter {
     this.field = field;
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex)
+      throws IOException {
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
       if (sortValue.isPresent()) {
         float val = (float) sortValue.getCurrentValue();
         ew.put(this.field, val);
         return true;
-      } else { //empty-value
+      } else { // empty-value
         return false;
       }
     } else {

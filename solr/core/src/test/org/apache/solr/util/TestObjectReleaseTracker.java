@@ -21,10 +21,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.junit.Test;
 
-
-@Limit(bytes=150000) // raise limit as this writes to sys err
+@Limit(bytes = 150000) // raise limit as this writes to sys err
 public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
-  
+
   @Test
   public void testObjectReleaseTracker() {
     ObjectReleaseTracker.track(new Object());
@@ -35,23 +34,23 @@ public class TestObjectReleaseTracker extends SolrTestCaseJ4 {
     ObjectReleaseTracker.track(obj);
     ObjectReleaseTracker.release(obj);
     assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    
+
     Object obj1 = new Object();
     ObjectReleaseTracker.track(obj1);
     Object obj2 = new Object();
     ObjectReleaseTracker.track(obj2);
     Object obj3 = new Object();
     ObjectReleaseTracker.track(obj3);
-    
+
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     ObjectReleaseTracker.release(obj3);
     assertNull(SolrTestCaseJ4.clearObjectTrackerAndCheckEmpty(1));
-    
+
     ObjectReleaseTracker.track(obj1);
     ObjectReleaseTracker.track(obj2);
     ObjectReleaseTracker.track(obj3);
-    
+
     ObjectReleaseTracker.release(obj1);
     ObjectReleaseTracker.release(obj2);
     // ObjectReleaseTracker.release(obj3);

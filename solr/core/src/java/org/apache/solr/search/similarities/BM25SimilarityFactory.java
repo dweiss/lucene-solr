@@ -22,23 +22,24 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
 
 /**
- * Factory for BM25Similarity. This is the default similarity since 8.x.
- * If you need the exact same formula as in 6.x and 7.x you should instead look at
- * {@link LegacyBM25SimilarityFactory}
- * <p>
- * Parameters:
+ * Factory for BM25Similarity. This is the default similarity since 8.x. If you need the exact same
+ * formula as in 6.x and 7.x you should instead look at {@link LegacyBM25SimilarityFactory}
+ *
+ * <p>Parameters:
+ *
  * <ul>
- *   <li>k1 (float): Controls non-linear term frequency normalization (saturation).
- *                   The default is <code>1.2</code>
- *   <li>b (float): Controls to what degree document length normalizes tf values.
- *                  The default is <code>0.75</code>
+ *   <li>k1 (float): Controls non-linear term frequency normalization (saturation). The default is
+ *       <code>1.2</code>
+ *   <li>b (float): Controls to what degree document length normalizes tf values. The default is
+ *       <code>0.75</code>
  * </ul>
- * <p>
- * Optional settings:
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link BM25Similarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {@link BM25Similarity#setDiscountOverlaps(boolean)}
  * </ul>
+ *
  * @lucene.experimental
  * @since 8.0.0
  */

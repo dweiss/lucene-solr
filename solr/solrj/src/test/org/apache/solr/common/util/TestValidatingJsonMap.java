@@ -17,36 +17,41 @@
 
 package org.apache.solr.common.util;
 
-import java.util.Arrays;
-import java.util.List;
-
-import com.google.common.collect.ImmutableSet;
-import org.apache.solr.SolrTestCaseJ4;
-
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
+import com.google.common.collect.ImmutableSet;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.solr.SolrTestCaseJ4;
+
 public class TestValidatingJsonMap extends SolrTestCaseJ4 {
 
   public void testBasic() throws Exception {
-    ValidatingJsonMap m = ValidatingJsonMap.wrap(
-        makeMap("a", Boolean.TRUE,
-                "b", Boolean.FALSE,
-                "i", 10,
-                "l" , Arrays.asList("X", "Y"),
-            "c", makeMap("d", "D")));
+    ValidatingJsonMap m =
+        ValidatingJsonMap.wrap(
+            makeMap(
+                "a",
+                Boolean.TRUE,
+                "b",
+                Boolean.FALSE,
+                "i",
+                10,
+                "l",
+                Arrays.asList("X", "Y"),
+                "c",
+                makeMap("d", "D")));
     assertEquals(Boolean.TRUE, m.getBool("a", Boolean.FALSE));
     assertEquals(Boolean.FALSE, m.getBool("b", Boolean.TRUE));
-    assertEquals(Integer.valueOf(10), m.getInt("i",0));
+    assertEquals(Integer.valueOf(10), m.getInt("i", 0));
 
     expectThrows(RuntimeException.class, () -> m.getList("l", ENUM_OF, ImmutableSet.of("X", "Z")));
 
     @SuppressWarnings({"rawtypes"})
     List l = m.getList("l", ENUM_OF, ImmutableSet.of("X", "Y", "Z"));
-    assertEquals(2,l.size());
+    assertEquals(2, l.size());
     m.getList("l", NOT_NULL);
     assertNotNull(m.getMap("c"));
-
   }
 }

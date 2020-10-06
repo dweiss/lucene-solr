@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.routing;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -35,7 +34,8 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Replica> replicas = getBasicReplicaList();
 
-    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
+    String rulesParam =
+        ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
 
     params.add("routingPreference", "0");
     params.add(ShardParams.SHARDS_PREFERENCE, rulesParam);
@@ -83,10 +83,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node4",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ), "c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "TLOG"),
+            "c1",
+            "s1"));
 
     // Add a PULL replica so that there's a tie for "last place"
     replicas.add(
@@ -96,15 +95,18 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node5",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ), "c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "PULL"),
+            "c1",
+            "s1"));
 
     // replicaType and replicaBase combined rule param
-    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
-        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
-        ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
+    String rulesParam =
+        ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE
+            + ":NRT,"
+            + ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE
+            + ":TLOG,"
+            + ShardParams.SHARDS_PREFERENCE_REPLICA_BASE
+            + ":stable:dividend:routingPreference";
 
     params.add("routingPreference", "0");
     params.add(ShardParams.SHARDS_PREFERENCE, rulesParam);
@@ -136,10 +138,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.BASE_URL_PROP, "http://host1:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node1",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "NRT"
-            ),"c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "NRT"),
+            "c1",
+            "s1"));
     replicas.add(
         new Replica(
             "node2",
@@ -147,10 +148,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.BASE_URL_PROP, "http://host2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node2",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ),"c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "TLOG"),
+            "c1",
+            "s1"));
     replicas.add(
         new Replica(
             "node3",
@@ -158,10 +158,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.BASE_URL_PROP, "http://host2_2:8983/solr",
                 ZkStateReader.NODE_NAME_PROP, "node3",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ),"c1","s1"
-        )
-    );
+                ZkStateReader.REPLICA_TYPE, "PULL"),
+            "c1",
+            "s1"));
     return replicas;
   }
 }

@@ -22,10 +22,9 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Map;
-
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -43,19 +42,15 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
-
-/**
- * @since 5.1.0
- */
+/** @since 5.1.0 */
 public abstract class TupleStream implements Closeable, Serializable, MapWriter {
 
   private static final long serialVersionUID = 1;
 
   private UUID streamNodeId = UUID.randomUUID();
 
-  public TupleStream() {
+  public TupleStream() {}
 
-  }
   public abstract void setStreamContext(StreamContext context);
 
   public abstract List<TupleStream> children();
@@ -77,72 +72,75 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
     open();
-    ew.put("docs", (IteratorWriter) iw -> {
-      try {
-        for ( ; ; ) {
-          Tuple tuple = read();
-          if (tuple != null) {
-            iw.add(tuple);
-            if (tuple.EOF) {
-              close();
-              break;
-            }
-          } else {
-            break;
-          }
-        }
-      } catch (Throwable e) {
-        close();
-        Throwable ex = e;
-        while(ex != null) {
-          String m = ex.getMessage();
-          if(m != null && m.contains("Broken pipe")) {
-            throw new IgnoreException();
-          }
-          ex = ex.getCause();
-        }
+    ew.put(
+        "docs",
+        (IteratorWriter)
+            iw -> {
+              try {
+                for (; ; ) {
+                  Tuple tuple = read();
+                  if (tuple != null) {
+                    iw.add(tuple);
+                    if (tuple.EOF) {
+                      close();
+                      break;
+                    }
+                  } else {
+                    break;
+                  }
+                }
+              } catch (Throwable e) {
+                close();
+                Throwable ex = e;
+                while (ex != null) {
+                  String m = ex.getMessage();
+                  if (m != null && m.contains("Broken pipe")) {
+                    throw new IgnoreException();
+                  }
+                  ex = ex.getCause();
+                }
 
-        if(e instanceof IOException) {
-          throw e;
-        } else {
-          throw new IOException(e);
-        }
-      }
-    });
+                if (e instanceof IOException) {
+                  throw e;
+                } else {
+                  throw new IOException(e);
+                }
+              }
+            });
   }
 
-  public UUID getStreamNodeId(){
+  public UUID getStreamNodeId() {
     return streamNodeId;
   }
 
-  public static List<String> getShards(String zkHost,
-                                       String collection,
-                                       StreamContext streamContext)
-      throws IOException {
+  public static List<String> getShards(
+      String zkHost, String collection, StreamContext streamContext) throws IOException {
     return getShards(zkHost, collection, streamContext, new ModifiableSolrParams());
   }
 
   @SuppressWarnings({"unchecked"})
-  public static List<String> getShards(String zkHost,
-                                       String collection,
-                                       StreamContext streamContext,
-                                       SolrParams requestParams)
+  public static List<String> getShards(
+      String zkHost, String collection, StreamContext streamContext, SolrParams requestParams)
       throws IOException {
     Map<String, List<String>> shardsMap = null;
     List<String> shards = new ArrayList<>();
 
-    if(streamContext != null) {
-      shardsMap = (Map<String, List<String>>)streamContext.get("shards");
+    if (streamContext != null) {
+      shardsMap = (Map<String, List<String>>) streamContext.get("shards");
     }
 
-    if(shardsMap != null) {
-      //Manual Sharding
+    if (shardsMap != null) {
+      // Manual Sharding
       shards = shardsMap.get(collection);
     } else {
-      //SolrCloud Sharding
-      SolrClientCache solrClientCache = (streamContext != null ? streamContext.getSolrClientCache() : null);
-      final SolrClientCache localSolrClientCache; // tracks any locally allocated cache that needs to be closed locally
-      if (solrClientCache == null) { // streamContext was null OR streamContext.getSolrClientCache() returned null
+      // SolrCloud Sharding
+      SolrClientCache solrClientCache =
+          (streamContext != null ? streamContext.getSolrClientCache() : null);
+      final SolrClientCache
+          localSolrClientCache; // tracks any locally allocated cache that needs to be closed
+      // locally
+      if (solrClientCache
+          == null) { // streamContext was null OR streamContext.getSolrClientCache() returned null
         solrClientCache = localSolrClientCache = new SolrClientCache();
       } else {
         localSolrClientCache = null;
@@ -153,12 +151,12 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
 
-
       RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
       final ModifiableSolrParams solrParams;
       if (streamContext != null) {
         solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
-        requestReplicaListTransformerGenerator = streamContext.getRequestReplicaListTransformerGenerator();
+        requestReplicaListTransformerGenerator =
+            streamContext.getRequestReplicaListTransformerGenerator();
       } else {
         solrParams = new ModifiableSolrParams();
         requestReplicaListTransformerGenerator = null;
@@ -168,12 +166,14 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       }
       solrParams.add(requestParams);
 
-      ReplicaListTransformer replicaListTransformer = requestReplicaListTransformerGenerator.getReplicaListTransformer(solrParams);
+      ReplicaListTransformer replicaListTransformer =
+          requestReplicaListTransformerGenerator.getReplicaListTransformer(solrParams);
 
-      for(Slice slice : slices) {
+      for (Slice slice : slices) {
         List<Replica> sortedReplicas = new ArrayList<>();
-        for(Replica replica : slice.getReplicas()) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+        for (Replica replica : slice.getReplicas()) {
+          if (replica.getState() == Replica.State.ACTIVE
+              && liveNodes.contains(replica.getNodeName())) {
             sortedReplicas.add(replica);
           }
         }

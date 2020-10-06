@@ -18,38 +18,33 @@ package org.apache.solr.response.transform;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-/**
- * New instance for each request
- *
- *
- */
-public abstract class TransformerFactory implements NamedListInitializedPlugin
-{
+/** New instance for each request */
+public abstract class TransformerFactory implements NamedListInitializedPlugin {
   protected String defaultUserArgs = null;
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-    defaultUserArgs = (String)args.get( "args" );
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
+    defaultUserArgs = (String) args.get("args");
   }
 
   public abstract DocTransformer create(String field, SolrParams params, SolrQueryRequest req);
 
-  public static final Map<String,TransformerFactory> defaultFactories = new HashMap<>(9, 1.0f);
+  public static final Map<String, TransformerFactory> defaultFactories = new HashMap<>(9, 1.0f);
+
   static {
-    defaultFactories.put( "explain", new ExplainAugmenterFactory() );
-    defaultFactories.put( "value", new ValueAugmenterFactory() );
-    defaultFactories.put( "docid", new DocIdAugmenterFactory() );
-    defaultFactories.put( "shard", new ShardAugmenterFactory() );
-    defaultFactories.put( "child", new ChildDocTransformerFactory() );
-    defaultFactories.put( "subquery", new SubQueryAugmenterFactory() );
-    defaultFactories.put( "json", new RawValueTransformerFactory("json") );
-    defaultFactories.put( "xml", new RawValueTransformerFactory("xml") );
-    defaultFactories.put( "geo", new GeoTransformerFactory() );
+    defaultFactories.put("explain", new ExplainAugmenterFactory());
+    defaultFactories.put("value", new ValueAugmenterFactory());
+    defaultFactories.put("docid", new DocIdAugmenterFactory());
+    defaultFactories.put("shard", new ShardAugmenterFactory());
+    defaultFactories.put("child", new ChildDocTransformerFactory());
+    defaultFactories.put("subquery", new SubQueryAugmenterFactory());
+    defaultFactories.put("json", new RawValueTransformerFactory("json"));
+    defaultFactories.put("xml", new RawValueTransformerFactory("xml"));
+    defaultFactories.put("geo", new GeoTransformerFactory());
   }
 }

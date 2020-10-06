@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
+
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
-/**
- * Encapsulates responses from the Suggester Component
- */
+/** Encapsulates responses from the Suggester Component */
 public class SuggesterResponse {
 
   private static final String SUGGESTIONS_NODE_NAME = "suggestions";
@@ -67,8 +65,9 @@ public class SuggesterResponse {
   }
 
   /**
-   * This getter is lazily initialized and returns a simplified map dictionary : List of suggested terms
-   * This is useful for simple use cases when you simply need the suggested terms and no weight or payload
+   * This getter is lazily initialized and returns a simplified map dictionary : List of suggested
+   * terms This is useful for simple use cases when you simply need the suggested terms and no
+   * weight or payload
    *
    * @return a Map dictionary name : List of suggested terms
    */

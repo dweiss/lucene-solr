@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.PluginInfo;
@@ -47,23 +46,27 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
       factory = config.getResourceLoader().newInstance(info.className, IndexSchemaFactory.class);
       factory.init(info.initArgs);
     } else {
-      factory = config.getResourceLoader().newInstance(ManagedIndexSchemaFactory.class.getName(), IndexSchemaFactory.class);
+      factory =
+          config
+              .getResourceLoader()
+              .newInstance(ManagedIndexSchemaFactory.class.getName(), IndexSchemaFactory.class);
     }
     return factory;
   }
 
   /**
-   * Returns the resource (file) name that will be used for the schema itself.  The answer may be a guess.
-   * Do not pass the result of this to {@link #create(String, SolrConfig)}.
-   * The input is the name coming from the {@link org.apache.solr.core.CoreDescriptor}
-   * which acts as a default or asked-for name.
+   * Returns the resource (file) name that will be used for the schema itself. The answer may be a
+   * guess. Do not pass the result of this to {@link #create(String, SolrConfig)}. The input is the
+   * name coming from the {@link org.apache.solr.core.CoreDescriptor} which acts as a default or
+   * asked-for name.
    */
   public String getSchemaResourceName(String cdResourceName) {
     return cdResourceName;
   }
 
   /**
-   * Returns an index schema created from a local resource.  The input is usually from the core descriptor.
+   * Returns an index schema created from a local resource. The input is usually from the core
+   * descriptor.
    */
   public IndexSchema create(String resourceName, SolrConfig config) {
     SolrResourceLoader loader = config.getResourceLoader();
@@ -82,8 +85,13 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     }
     InputSource inputSource = new InputSource(schemaInputStream);
     inputSource.setSystemId(SystemIdResolver.createSystemIdFromResourceName(resourceName));
-    IndexSchema schema = new IndexSchema(resourceName, inputSource, config.luceneMatchVersion, loader, config.getSubstituteProperties());
+    IndexSchema schema =
+        new IndexSchema(
+            resourceName,
+            inputSource,
+            config.luceneMatchVersion,
+            loader,
+            config.getSubstituteProperties());
     return schema;
   }
-
 }

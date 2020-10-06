@@ -1,15 +1,10 @@
 /*
- * This software was produced for the U. S. Government
- * under Contract No. W15P7T-11-C-F600, and is
- * subject to the Rights in Noncommercial Computer Software
- * and Noncommercial Computer Software Documentation
- * Clause 252.227-7014 (JUN 1995)
- *
- * Copyright 2013 The MITRE Corporation. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -31,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
-
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.lucene.document.Document;
@@ -59,18 +53,19 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Rule
-  public TestWatcher watchman = new TestWatcher() {
-    @Override
-    protected void starting(Description description) {
-      if (log.isInfoEnabled()) {
-        log.info("{} being run...", description.getDisplayName());
-      }
-    }
-  };
+  public TestWatcher watchman =
+      new TestWatcher() {
+        @Override
+        protected void starting(Description description) {
+          if (log.isInfoEnabled()) {
+            log.info("{} being run...", description.getDisplayName());
+          }
+        }
+      };
 
   protected final ModifiableSolrParams baseParams = new ModifiableSolrParams();
 
-  //populated in buildNames; tested in assertTags
+  // populated in buildNames; tested in assertTags
   protected static List<String> NAMES;
 
   @Override
@@ -92,18 +87,17 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   protected static void buildNames(String... names) throws Exception {
     deleteByQueryAndGetVersion("*:*", null);
     NAMES = Arrays.asList(names);
-    //Collections.sort(NAMES);
+    // Collections.sort(NAMES);
     int i = 0;
     for (String n : NAMES) {
-      assertU(adoc("id", ""+(i++), "name", n));
+      assertU(adoc("id", "" + (i++), "name", n));
     }
     assertU(commit());
   }
 
   protected String lookupByName(String name) {
     for (String n : NAMES) {
-      if (n.equalsIgnoreCase(name))
-        return n;
+      if (n.equalsIgnoreCase(name)) return n;
     }
     return null;
   }
@@ -111,25 +105,23 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   protected TestTag tt(String doc, String substring) {
     int startOffset = -1, endOffset;
     int substringIndex = 0;
-    for(int i = 0; i <= substringIndex; i++) {
-      startOffset = doc.indexOf(substring,++startOffset);
+    for (int i = 0; i <= substringIndex; i++) {
+      startOffset = doc.indexOf(substring, ++startOffset);
       assert startOffset >= 0 : "The test itself is broken";
     }
-    endOffset = startOffset+substring.length();//1 greater (exclusive)
+    endOffset = startOffset + substring.length(); // 1 greater (exclusive)
     return new TestTag(startOffset, endOffset, substring, lookupByName(substring));
   }
 
-  /** Asserts the tags.  Will call req.close(). */
+  /** Asserts the tags. Will call req.close(). */
   protected void assertTags(SolrQueryRequest req, TestTag... eTags) throws Exception {
     try {
       SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
       TestTag[] aTags = pullTagsFromResponse(req, rsp);
 
       String message;
-      if (aTags.length > 10)
-        message = null;
-      else
-        message = Arrays.asList(aTags).toString();
+      if (aTags.length > 10) message = null;
+      else message = Arrays.asList(aTags).toString();
       Arrays.sort(eTags);
       assertSortedArrayEquals(message, eTags, aTags);
 
@@ -139,7 +131,8 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings("unchecked")
-  protected TestTag[] pullTagsFromResponse(SolrQueryRequest req, SolrQueryResponse rsp ) throws IOException {
+  protected TestTag[] pullTagsFromResponse(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException {
     @SuppressWarnings({"rawtypes"})
     NamedList rspValues = rsp.getValues();
     Map<String, String> matchingNames = new HashMap<>();
@@ -151,22 +144,23 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
       Document doc = searcher.doc(docId);
       String id = doc.getField("id").stringValue();
       String name = lookupByName(doc.get("name"));
-      assertEquals("looking for "+name, NAMES.indexOf(name)+"", id);
+      assertEquals("looking for " + name, NAMES.indexOf(name) + "", id);
       matchingNames.put(id, name);
     }
 
-    //build TestTag[] aTags from response ('a' is actual)
+    // build TestTag[] aTags from response ('a' is actual)
     @SuppressWarnings({"rawtypes"})
     List<NamedList> mTagsList = (List<NamedList>) rspValues.get("tags");
     List<TestTag> aTags = new ArrayList<>();
-    for (@SuppressWarnings({"rawtypes"})NamedList map : mTagsList) {
+    for (@SuppressWarnings({"rawtypes"}) NamedList map : mTagsList) {
       List<String> foundIds = (List<String>) map.get("ids");
-      for (String id  : foundIds) {
-        aTags.add(new TestTag(
-            ((Number)map.get("startOffset")).intValue(),
-            ((Number)map.get("endOffset")).intValue(),
-            null,
-            matchingNames.get(id)));
+      for (String id : foundIds) {
+        aTags.add(
+            new TestTag(
+                ((Number) map.get("startOffset")).intValue(),
+                ((Number) map.get("endOffset")).intValue(),
+                null,
+                matchingNames.get(id)));
       }
     }
     return aTags.toArray(new TestTag[0]);
@@ -182,12 +176,13 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     log.debug("Test doc: {}", doc);
     SolrParams params = SolrParams.wrapDefaults(moreParams, baseParams);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), params) {};
-    Iterable<ContentStream> stream = Collections.singleton((ContentStream)new ContentStreamBase.StringStream(doc));
+    Iterable<ContentStream> stream =
+        Collections.singleton((ContentStream) new ContentStreamBase.StringStream(doc));
     req.setContentStreams(stream);
     return req;
   }
 
-  /** Asserts the sorted arrays are equals, with a helpful error message when not.*/
+  /** Asserts the sorted arrays are equals, with a helpful error message when not. */
   public void assertSortedArrayEquals(String message, Object[] expecteds, Object[] actuals) {
     AssertionError error = null;
     try {
@@ -195,15 +190,28 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     } catch (AssertionError e) {
       error = e;
     }
-    if (error == null)
-      return;
+    if (error == null) return;
     TreeSet<Object> expectedRemaining = new TreeSet<>(Arrays.asList(expecteds));
     expectedRemaining.removeAll(Arrays.asList(actuals));
     if (!expectedRemaining.isEmpty())
-      fail(message+": didn't find expected "+expectedRemaining.first()+" (of "+expectedRemaining.size()+"); "+ error);
+      fail(
+          message
+              + ": didn't find expected "
+              + expectedRemaining.first()
+              + " (of "
+              + expectedRemaining.size()
+              + "); "
+              + error);
     TreeSet<Object> actualsRemaining = new TreeSet<>(Arrays.asList(actuals));
     actualsRemaining.removeAll(Arrays.asList(expecteds));
-    fail(message+": didn't expect "+actualsRemaining.first()+" (of "+actualsRemaining.size()+"); "+ error);
+    fail(
+        message
+            + ": didn't expect "
+            + actualsRemaining.first()
+            + " (of "
+            + actualsRemaining.size()
+            + "); "
+            + error);
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -221,11 +229,19 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
     @Override
     public String toString() {
-      return "TestTag{" +
-          "[" + startOffset + "-" + endOffset + "]" +
-          " doc=" + NAMES.indexOf(docName) + ":'" + docName + "'" +
-          (docName.equals(substring) || substring == null ? "" : " substr="+substring)+
-          '}';
+      return "TestTag{"
+          + "["
+          + startOffset
+          + "-"
+          + endOffset
+          + "]"
+          + " doc="
+          + NAMES.indexOf(docName)
+          + ":'"
+          + docName
+          + "'"
+          + (docName.equals(substring) || substring == null ? "" : " substr=" + substring)
+          + '}';
     }
 
     @Override
@@ -240,7 +256,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
 
     @Override
     public int hashCode() {
-      return startOffset;//cheesy but acceptable
+      return startOffset; // cheesy but acceptable
     }
 
     @Override
@@ -249,7 +265,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
       return new CompareToBuilder()
           .append(this.startOffset, that.startOffset)
           .append(this.endOffset, that.endOffset)
-          .append(this.docName,that.docName)
+          .append(this.docName, that.docName)
           .toComparison();
     }
   }

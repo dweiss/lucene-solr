@@ -19,17 +19,17 @@ package org.apache.solr.security;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientBuilderFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.core.CoreContainer;
 
 /**
- * This class extends {@linkplain HadoopAuthPlugin} by enabling configuration of
- * authentication mechanism for Solr internal communication.
- **/
-public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin implements HttpClientBuilderPlugin {
+ * This class extends {@linkplain HadoopAuthPlugin} by enabling configuration of authentication
+ * mechanism for Solr internal communication.
+ */
+public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin
+    implements HttpClientBuilderPlugin {
 
   /**
    * A property specifying the {@linkplain HttpClientBuilderFactory} used for the Solr internal
@@ -44,12 +44,18 @@ public class ConfigurableInternodeAuthHadoopPlugin extends HadoopAuthPlugin impl
   }
 
   @Override
-  public void init(Map<String,Object> pluginConfig) {
+  public void init(Map<String, Object> pluginConfig) {
     super.init(pluginConfig);
 
-    String httpClientBuilderFactory = (String)Objects.requireNonNull(pluginConfig.get(HTTPCLIENT_BUILDER_FACTORY),
-        "Please specify clientBuilderFactory to be used for Solr internal communication.");
-    factory = this.coreContainer.getResourceLoader().newInstance(httpClientBuilderFactory, HttpClientBuilderFactory.class);
+    String httpClientBuilderFactory =
+        (String)
+            Objects.requireNonNull(
+                pluginConfig.get(HTTPCLIENT_BUILDER_FACTORY),
+                "Please specify clientBuilderFactory to be used for Solr internal communication.");
+    factory =
+        this.coreContainer
+            .getResourceLoader()
+            .newInstance(httpClientBuilderFactory, HttpClientBuilderFactory.class);
   }
 
   @Override

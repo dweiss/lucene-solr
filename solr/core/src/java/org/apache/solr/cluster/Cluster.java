@@ -22,13 +22,11 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * <p>A representation of the SolrCloud cluster state, providing information on which nodes and collections are part of
- * the cluster and a way to get to more detailed info.
+ * A representation of the SolrCloud cluster state, providing information on which nodes and
+ * collections are part of the cluster and a way to get to more detailed info.
  */
 public interface Cluster {
-  /**
-   * @return current set of live nodes.
-   */
+  /** @return current set of live nodes. */
   Set<Node> getLiveNodes();
 
   /**
@@ -38,13 +36,12 @@ public interface Cluster {
    */
   SolrCollection getCollection(String collectionName) throws IOException;
 
-  /**
-   * @return an iterator over all {@link SolrCollection}s in the cluster.
-   */
+  /** @return an iterator over all {@link SolrCollection}s in the cluster. */
   Iterator<SolrCollection> iterator();
 
   /**
-   * Allow foreach iteration on all collections of the cluster, such as: {@code for (SolrCollection c : cluster.collections()) {...}}.
+   * Allow foreach iteration on all collections of the cluster, such as: {@code for (SolrCollection
+   * c : cluster.collections()) {...}}.
    */
   Iterable<SolrCollection> collections();
 }

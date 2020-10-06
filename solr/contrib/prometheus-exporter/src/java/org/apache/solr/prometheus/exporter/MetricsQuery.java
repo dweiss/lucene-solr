@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -54,22 +53,12 @@ public class MetricsQuery {
 
   public MetricsQuery withCore(String core) {
     return new MetricsQuery(
-        getPath(),
-        getParameters(),
-        core,
-        getCollection().orElse(null),
-        getJsonQueries()
-    );
+        getPath(), getParameters(), core, getCollection().orElse(null), getJsonQueries());
   }
 
   public MetricsQuery withCollection(String collection) {
     return new MetricsQuery(
-        getPath(),
-        getParameters(),
-        getCore().orElse(null),
-        collection,
-        getJsonQueries()
-    );
+        getPath(), getParameters(), getCore().orElse(null), collection, getJsonQueries());
   }
 
   public String getPath() {
@@ -105,7 +94,8 @@ public class MetricsQuery {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       if (queryParameters != null) {
-        for (Map.Entry<String, String> entrySet : (Set<Map.Entry<String, String>>) queryParameters.asShallowMap().entrySet()) {
+        for (Map.Entry<String, String> entrySet :
+            (Set<Map.Entry<String, String>>) queryParameters.asShallowMap().entrySet()) {
           params.add(entrySet.getKey(), entrySet.getValue());
         }
       }
@@ -121,12 +111,7 @@ public class MetricsQuery {
         }
       }
 
-      metricsQueries.add(new MetricsQuery(
-          path,
-          params,
-          core,
-          collection,
-          compiledQueries));
+      metricsQueries.add(new MetricsQuery(path, params, core, collection, compiledQueries));
     }
 
     return metricsQueries;

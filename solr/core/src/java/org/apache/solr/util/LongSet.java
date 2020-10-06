@@ -17,10 +17,11 @@
 
 package org.apache.solr.util;
 
-
 import java.util.NoSuchElementException;
 
-/** Collects long values in a hash set (closed hashing on power-of-two sized long[])
+/**
+ * Collects long values in a hash set (closed hashing on power-of-two sized long[])
+ *
  * @lucene.internal
  */
 public class LongSet {
@@ -31,7 +32,7 @@ public class LongSet {
   private int cardinality;
   private int mask;
   private int threshold;
-  private int zeroCount;  // 1 if a 0 was collected
+  private int zeroCount; // 1 if a 0 was collected
 
   public LongSet(int sz) {
     sz = Math.max(org.apache.lucene.util.BitUtil.nextHighestPowerOfTwo(sz), 2);
@@ -40,8 +41,9 @@ public class LongSet {
     threshold = (int) (sz * LOAD_FACTOR);
   }
 
-  /** Returns the long[] array that has entries filled in with values or "0" for empty.
-   * To see if "0" itself is in the set, call containsZero()
+  /**
+   * Returns the long[] array that has entries filled in with values or "0" for empty. To see if "0"
+   * itself is in the set, call containsZero()
    */
   public long[] getBackingArray() {
     return vals;
@@ -65,7 +67,8 @@ public class LongSet {
     // and bit 52 for double precision.
     // Many values will only have significant bits just to the right of that.
 
-    // For now, lets just settle to get first 8 significant mantissa bits of double or float in the lowest bits of our hash
+    // For now, lets just settle to get first 8 significant mantissa bits of double or float in the
+    // lowest bits of our hash
     // The upper bits of our hash will be irrelevant.
     int h = (int) (val + (val >>> 44) + (val >>> 15));
     for (int slot = h & mask; ; slot = (slot + 1) & mask) {
@@ -101,7 +104,6 @@ public class LongSet {
     return cardinality + zeroCount;
   }
 
-
   /** Returns an iterator over the values in the set. */
   public LongIterator iterator() {
     return new LongIterator() {
@@ -131,7 +133,6 @@ public class LongSet {
           }
         }
       }
-
     };
   }
 }

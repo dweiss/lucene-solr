@@ -17,18 +17,17 @@
 
 package org.apache.solr.security;
 
+import static org.apache.solr.common.util.Utils.getDeepCopy;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
+import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.apache.solr.common.util.CommandOperation;
-
-import static org.apache.solr.common.util.Utils.getDeepCopy;
-import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
-import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;
 
 enum AutorizationEditOperation {
   SET_USER_ROLE("set-user-role") {
@@ -57,7 +56,7 @@ enum AutorizationEditOperation {
     @SuppressWarnings({"unchecked"})
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
       Integer index = op.getInt("index", null);
-      Integer beforeIdx = op.getInt("before",null);
+      Integer beforeIdx = op.getInt("before", null);
       Map<String, Object> dataMap = op.getDataMap();
       if (op.hasError()) return null;
       dataMap = getDeepCopy(dataMap, 3);
@@ -76,7 +75,7 @@ enum AutorizationEditOperation {
         op.addError(e.getMessage());
         return null;
       }
-      if(op.hasError()) return null;
+      if (op.hasError()) return null;
       @SuppressWarnings({"rawtypes"})
       List<Map> permissions = getListValue(latestConf, "permissions");
       setIndex(permissions);
@@ -93,7 +92,7 @@ enum AutorizationEditOperation {
           permissionsCopy.add(dataMap);
           permissionsCopy.add(perm);
         } else if (thisIdx.equals(index)) {
-          //overwriting an existing one
+          // overwriting an existing one
           indexSatisfied = true;
           permissionsCopy.add(dataMap);
         } else {
@@ -115,7 +114,6 @@ enum AutorizationEditOperation {
       setIndex(permissionsCopy);
       return latestConf;
     }
-
   },
   UPDATE_PERMISSION("update-permission") {
     @Override
@@ -142,14 +140,15 @@ enum AutorizationEditOperation {
     @SuppressWarnings({"unchecked"})
     public Map<String, Object> edit(Map<String, Object> latestConf, CommandOperation op) {
       Integer id = op.getInt("");
-      if(op.hasError()) return null;
+      if (op.hasError()) return null;
       @SuppressWarnings({"rawtypes"})
       List<Map> p = getListValue(latestConf, "permissions");
       setIndex(p);
       @SuppressWarnings({"rawtypes"})
-      List<Map> c = p.stream().filter(map -> !id.equals(map.get("index"))).collect(Collectors.toList());
-      if(c.size() == p.size()){
-        op.addError("No such index :"+ id);
+      List<Map> c =
+          p.stream().filter(map -> !id.equals(map.get("index"))).collect(Collectors.toList());
+      if (c.size() == p.size()) {
+        op.addError("No such index :" + id);
         return null;
       }
       latestConf.put("permissions", c);

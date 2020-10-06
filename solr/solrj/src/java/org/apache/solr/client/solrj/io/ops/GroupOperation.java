@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.io.ops;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.UUID;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -38,16 +39,16 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-import static org.apache.solr.common.params.CommonParams.SORT;
-
 public class GroupOperation implements ReduceOperation {
 
   private static final long serialVersionUID = 1L;
   private UUID operationNodeId = UUID.randomUUID();
-  
+
   private PriorityQueue<Tuple> priorityQueue;
+
   @SuppressWarnings({"rawtypes"})
   private Comparator comp;
+
   private StreamComparator streamComparator;
   private int size;
 
@@ -56,17 +57,30 @@ public class GroupOperation implements ReduceOperation {
     StreamExpressionNamedParameter nParam = factory.getNamedOperand(expression, "n");
     StreamExpressionNamedParameter sortExpression = factory.getNamedOperand(expression, SORT);
 
-    StreamComparator streamComparator = factory.constructComparator(((StreamExpressionValue) sortExpression.getParameter()).getValue(), FieldComparator.class);
-    String nStr = ((StreamExpressionValue)nParam.getParameter()).getValue();
+    StreamComparator streamComparator =
+        factory.constructComparator(
+            ((StreamExpressionValue) sortExpression.getParameter()).getValue(),
+            FieldComparator.class);
+    String nStr = ((StreamExpressionValue) nParam.getParameter()).getValue();
     int nInt = 0;
 
-    try{
+    try {
       nInt = Integer.parseInt(nStr);
-      if(nInt <= 0){
-        throw new IOException(String.format(Locale.ROOT,"invalid expression %s - topN '%s' must be greater than 0.",expression, nStr));
+      if (nInt <= 0) {
+        throw new IOException(
+            String.format(
+                Locale.ROOT,
+                "invalid expression %s - topN '%s' must be greater than 0.",
+                expression,
+                nStr));
       }
-    } catch(NumberFormatException e) {
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - topN '%s' is not a valid integer.",expression, nStr));
+    } catch (NumberFormatException e) {
+      throw new IOException(
+          String.format(
+              Locale.ROOT,
+              "invalid expression %s - topN '%s' is not a valid integer.",
+              expression,
+              nStr));
     }
 
     init(streamComparator, nInt);
@@ -90,29 +104,28 @@ public class GroupOperation implements ReduceOperation {
     expression.addParameter(new StreamExpressionNamedParameter("n", Integer.toString(size)));
 
     // sort
-    expression.addParameter(new StreamExpressionNamedParameter(SORT, streamComparator.toExpression(factory)));
+    expression.addParameter(
+        new StreamExpressionNamedParameter(SORT, streamComparator.toExpression(factory)));
     return expression;
   }
 
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
     return new Explanation(operationNodeId.toString())
-      .withExpressionType(ExpressionType.OPERATION)
-      .withFunctionName(factory.getFunctionName(getClass()))
-      .withImplementingClass(getClass().getName())
-      .withExpression(toExpression(factory).toString())
-      .withHelpers(new Explanation[]{
-          streamComparator.toExplanation(factory)
-      });
+        .withExpressionType(ExpressionType.OPERATION)
+        .withFunctionName(factory.getFunctionName(getClass()))
+        .withImplementingClass(getClass().getName())
+        .withExpression(toExpression(factory).toString())
+        .withHelpers(new Explanation[] {streamComparator.toExplanation(factory)});
   }
 
   @SuppressWarnings({"unchecked"})
   public Tuple reduce() {
     @SuppressWarnings({"rawtypes"})
     LinkedList ll = new LinkedList();
-    while(priorityQueue.size() > 0) {
+    while (priorityQueue.size() > 0) {
       ll.addFirst(priorityQueue.poll().getFields());
-      //This will clear priority queue and so it will be ready for the next group.
+      // This will clear priority queue and so it will be ready for the next group.
     }
 
     @SuppressWarnings({"rawtypes"})
@@ -125,9 +138,9 @@ public class GroupOperation implements ReduceOperation {
   }
 
   public void operate(Tuple tuple) {
-    if(priorityQueue.size() >= size) {
+    if (priorityQueue.size() >= size) {
       Tuple peek = priorityQueue.peek();
-      if(streamComparator.compare(tuple, peek) < 0) {
+      if (streamComparator.compare(tuple, peek) < 0) {
         priorityQueue.poll();
         priorityQueue.add(tuple);
       }
@@ -145,7 +158,7 @@ public class GroupOperation implements ReduceOperation {
 
     public int compare(Tuple t1, Tuple t2) {
       // Couldn't this be comp.compare(t2,t1) ?
-      return comp.compare(t1, t2)*(-1);
+      return comp.compare(t1, t2) * (-1);
     }
   }
 }

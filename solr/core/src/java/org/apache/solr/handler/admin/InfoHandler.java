@@ -16,11 +16,15 @@
  */
 package org.apache.solr.handler.admin;
 
+import static java.util.Collections.singletonList;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.util.Utils.getSpec;
+
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
+import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -29,13 +33,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.api.Api;
 
-import static java.util.Collections.singletonList;
-import static org.apache.solr.common.util.Utils.getSpec;
-import static org.apache.solr.common.params.CommonParams.PATH;
-
-public class InfoHandler extends RequestHandlerBase  {
+public class InfoHandler extends RequestHandlerBase {
 
   protected final CoreContainer coreContainer;
 
@@ -51,21 +50,18 @@ public class InfoHandler extends RequestHandlerBase  {
     handlers.put("logging", new LoggingHandler(coreContainer));
     handlers.put("system", new SystemInfoHandler(coreContainer));
     if (coreContainer.getHealthCheckHandler() == null) {
-      throw new IllegalStateException("HealthCheckHandler needs to be initialized before creating InfoHandler");
+      throw new IllegalStateException(
+          "HealthCheckHandler needs to be initialized before creating InfoHandler");
     }
     handlers.put("health", coreContainer.getHealthCheckHandler());
-
   }
-
 
   @Override
-  final public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
-
-  }
+  public final void init(@SuppressWarnings({"rawtypes"}) NamedList args) {}
 
   /**
-   * The instance of CoreContainer this handler handles. This should be the CoreContainer instance that created this
-   * handler.
+   * The instance of CoreContainer this handler handles. This should be the CoreContainer instance
+   * that created this handler.
    *
    * @return a CoreContainer instance
    */
@@ -78,8 +74,8 @@ public class InfoHandler extends RequestHandlerBase  {
     // Make sure the cores is enabled
     CoreContainer cores = getCoreContainer();
     if (cores == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Core container instance missing");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Core container instance missing");
     }
 
     String path = (String) req.getContext().get(PATH);
@@ -90,13 +86,14 @@ public class InfoHandler extends RequestHandlerBase  {
     int i = path.lastIndexOf('/');
     String name = path.substring(i + 1, path.length());
     RequestHandlerBase handler = handlers.get(name.toLowerCase(Locale.ROOT));
-    if(handler == null) {
-      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No handler by name "+name + " available names are "+ handlers.keySet());
+    if (handler == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "No handler by name " + name + " available names are " + handlers.keySet());
     }
     handler.handleRequest(req, rsp);
     rsp.setHttpCaching(false);
   }
-
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
@@ -112,7 +109,6 @@ public class InfoHandler extends RequestHandlerBase  {
 
   protected PropertiesRequestHandler getPropertiesHandler() {
     return (PropertiesRequestHandler) handlers.get("properties");
-
   }
 
   protected ThreadDumpHandler getThreadDumpHandler() {

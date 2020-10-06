@@ -19,9 +19,7 @@ package org.apache.solr.common.cloud.rule;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- *
- */
+/** */
 public abstract class Snitch {
   @SuppressWarnings({"rawtypes"})
   public static final Set<Class> WELL_KNOWN_SNITCHES = Collections.singleton(ImplicitSnitch.class);
@@ -29,5 +27,4 @@ public abstract class Snitch {
   public abstract void getTags(String solrNode, Set<String> requestedTags, SnitchContext ctx);
 
   public abstract boolean isKnownTag(String tag);
-
 }

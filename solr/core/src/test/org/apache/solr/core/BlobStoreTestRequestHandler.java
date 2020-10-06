@@ -17,13 +17,13 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
-
 import org.apache.solr.handler.DumpRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-public class BlobStoreTestRequestHandler extends DumpRequestHandler implements Runnable, SolrCoreAware {
+public class BlobStoreTestRequestHandler extends DumpRequestHandler
+    implements Runnable, SolrCoreAware {
 
   private SolrCore core;
 
@@ -56,7 +56,5 @@ public class BlobStoreTestRequestHandler extends DumpRequestHandler implements R
     this.core = core;
     core.addConfListener(this);
     run();
-
   }
-
 }

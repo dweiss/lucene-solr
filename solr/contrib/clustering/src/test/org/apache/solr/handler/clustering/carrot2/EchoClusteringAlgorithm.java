@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering.carrot2;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import org.carrot2.core.Cluster;
 import org.carrot2.core.Document;
 import org.carrot2.core.IClusteringAlgorithm;
@@ -31,12 +31,12 @@ import org.carrot2.util.attribute.Input;
 import org.carrot2.util.attribute.Output;
 
 /**
- * A mock Carrot2 clustering algorithm that outputs input documents as clusters.
- * Useful only in tests.
+ * A mock Carrot2 clustering algorithm that outputs input documents as clusters. Useful only in
+ * tests.
  */
 @Bindable(prefix = "EchoClusteringAlgorithm")
-public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
-        IClusteringAlgorithm {
+public class EchoClusteringAlgorithm extends ProcessingComponentBase
+    implements IClusteringAlgorithm {
   @Input
   @Processing
   @Attribute(key = AttributeNames.DOCUMENTS)
@@ -52,11 +52,10 @@ public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
   @Attribute(key = "custom-fields")
   public String customFields = "";
 
-  
   @Override
   public void process() throws ProcessingException {
     clusters = new ArrayList<>();
-    
+
     for (Document document : documents) {
       final Cluster cluster = new Cluster();
       cluster.addPhrases(document.getTitle(), document.getSummary());

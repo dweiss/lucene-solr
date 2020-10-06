@@ -16,19 +16,14 @@
  */
 package org.apache.solr.core;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.common.util.NamedList;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-
-/**
- *
- *
- **/
+/** */
 public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   public SolrQueryRequest req;
   public SolrQueryResponse rsp;
@@ -36,7 +31,7 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   AtomicInteger initCounter = new AtomicInteger(0);
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
     initCounter.incrementAndGet();
     super.init(args);
   }
@@ -44,7 +39,8 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(() -> initCounter.intValue(), true, "initCount", getCategory().toString(), scope);
+    solrMetricsContext.gauge(
+        () -> initCounter.intValue(), true, "initCount", getCategory().toString(), scope);
   }
 
   @Override

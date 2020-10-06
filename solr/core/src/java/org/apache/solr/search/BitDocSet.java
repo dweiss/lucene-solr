@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
@@ -32,36 +31,36 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * A {@link FixedBitSet} based implementation of a {@link DocSet}.  Good for medium/large sets.
+ * A {@link FixedBitSet} based implementation of a {@link DocSet}. Good for medium/large sets.
  *
  * @since solr 0.9
  */
 public class BitDocSet extends DocSet {
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BitDocSet.class)
-      + RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class)
-      + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;  // for the array object inside the FixedBitSet. long[] array won't change alignment, so no need to calculate it.
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(BitDocSet.class)
+          + RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class)
+          + RamUsageEstimator
+              .NUM_BYTES_ARRAY_HEADER; // for the array object inside the FixedBitSet. long[] array
+  // won't change alignment, so no need to calculate it.
 
   // TODO consider SparseFixedBitSet alternative
 
   private final FixedBitSet bits;
-  int size;    // number of docs in the set (cached for perf)
+  int size; // number of docs in the set (cached for perf)
 
   public BitDocSet() {
     bits = new FixedBitSet(64);
   }
 
-  /**
-   * Construct a BitDocSet. The capacity of the {@link FixedBitSet} should be at
-   * least maxDoc()
-   */
+  /** Construct a BitDocSet. The capacity of the {@link FixedBitSet} should be at least maxDoc() */
   public BitDocSet(FixedBitSet bits) {
     this.bits = bits;
-    size=-1;
+    size = -1;
   }
 
   /**
-   * Construct a BitDocSet, and provides the number of set bits. The capacity of
-   * the {@link FixedBitSet} should be at least maxDoc()
+   * Construct a BitDocSet, and provides the number of set bits. The capacity of the {@link
+   * FixedBitSet} should be at least maxDoc()
    */
   public BitDocSet(FixedBitSet bits, int size) {
     this.bits = bits;
@@ -73,6 +72,7 @@ public class BitDocSet extends DocSet {
     return new DocIterator() {
       private final BitSetIterator iter = new BitSetIterator(bits, 0L); // cost is not useful here
       private int pos = iter.nextDoc();
+
       @Override
       public boolean hasNext() {
         return pos != DocIdSetIterator.NO_MORE_DOCS;
@@ -90,8 +90,8 @@ public class BitDocSet extends DocSet {
 
       @Override
       public int nextDoc() {
-        int old=pos;
-        pos=iter.nextDoc();
+        int old = pos;
+        pos = iter.nextDoc();
         return old;
       }
 
@@ -102,9 +102,7 @@ public class BitDocSet extends DocSet {
     };
   }
 
-  /**
-   * @return the <b>internal</b> {@link FixedBitSet} that should <b>not</b> be modified.
-   */
+  /** @return the <b>internal</b> {@link FixedBitSet} that should <b>not</b> be modified. */
   @Override
   public FixedBitSet getBits() {
     return bits;
@@ -122,13 +120,13 @@ public class BitDocSet extends DocSet {
 
   @Override
   public int size() {
-    if (size!=-1) return size;
+    if (size != -1) return size;
     return size = bits.cardinality();
   }
 
   /**
-   * Returns true of the doc exists in the set. Should only be called when doc &lt;
-   * {@link FixedBitSet#length()}.
+   * Returns true of the doc exists in the set. Should only be called when doc &lt; {@link
+   * FixedBitSet#length()}.
    */
   @Override
   public boolean exists(int doc) {
@@ -162,7 +160,7 @@ public class BitDocSet extends DocSet {
   @Override
   public boolean intersects(DocSet other) {
     if (other instanceof BitDocSet) {
-      return bits.intersects(((BitDocSet)other).bits);
+      return bits.intersects(((BitDocSet) other).bits);
     } else {
       // they had better not call us back!
       return other.intersects(this);
@@ -186,7 +184,7 @@ public class BitDocSet extends DocSet {
     if (other instanceof BitDocSet) {
       // if we don't know our current size, this is faster than
       // size - intersection_size
-      return (int) FixedBitSet.andNotCount(this.bits, ((BitDocSet)other).bits);
+      return (int) FixedBitSet.andNotCount(this.bits, ((BitDocSet) other).bits);
     } else {
       return super.andNotSize(other);
     }
@@ -213,7 +211,7 @@ public class BitDocSet extends DocSet {
     }
     return new BitDocSet(newbits);
   }
-  
+
   @Override
   public DocSet union(DocSet other) {
     FixedBitSet newbits = bits.clone();
@@ -231,7 +229,7 @@ public class BitDocSet extends DocSet {
     }
     return new BitDocSet(newbits);
   }
-  
+
   @Override
   public BitDocSet clone() {
     return new BitDocSet(bits.clone(), size);
@@ -249,85 +247,88 @@ public class BitDocSet extends DocSet {
       public DocIdSet getDocIdSet(final LeafReaderContext context, final Bits acceptDocs) {
         LeafReader reader = context.reader();
         // all Solr DocSets that are used as filters only include live docs
-        final Bits acceptDocs2 = acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
+        final Bits acceptDocs2 =
+            acceptDocs == null ? null : (reader.getLiveDocs() == acceptDocs ? null : acceptDocs);
 
         if (context.isTopLevel) {
           return BitsFilteredDocIdSet.wrap(new BitDocIdSet(bs), acceptDocs);
         }
 
         final int base = context.docBase;
-        final int max = base + reader.maxDoc();   // one past the max doc in this segment.
+        final int max = base + reader.maxDoc(); // one past the max doc in this segment.
 
-        return BitsFilteredDocIdSet.wrap(new DocIdSet() {
-          @Override
-          public DocIdSetIterator iterator() {
-            return new DocIdSetIterator() {
-              int pos = base - 1;
-              int adjustedDoc = -1;
-
+        return BitsFilteredDocIdSet.wrap(
+            new DocIdSet() {
               @Override
-              public int docID() {
-                return adjustedDoc;
+              public DocIdSetIterator iterator() {
+                return new DocIdSetIterator() {
+                  int pos = base - 1;
+                  int adjustedDoc = -1;
+
+                  @Override
+                  public int docID() {
+                    return adjustedDoc;
+                  }
+
+                  @Override
+                  public int nextDoc() {
+                    int next = pos + 1;
+                    if (next >= max) {
+                      return adjustedDoc = NO_MORE_DOCS;
+                    } else {
+                      pos = bs.nextSetBit(next);
+                      return adjustedDoc = pos < max ? pos - base : NO_MORE_DOCS;
+                    }
+                  }
+
+                  @Override
+                  public int advance(int target) {
+                    if (target == NO_MORE_DOCS) return adjustedDoc = NO_MORE_DOCS;
+                    int adjusted = target + base;
+                    if (adjusted >= max) {
+                      return adjustedDoc = NO_MORE_DOCS;
+                    } else {
+                      pos = bs.nextSetBit(adjusted);
+                      return adjustedDoc = pos < max ? pos - base : NO_MORE_DOCS;
+                    }
+                  }
+
+                  @Override
+                  public long cost() {
+                    // we don't want to actually compute cardinality, but
+                    // if it's already been computed, we use it (pro-rated for the segment)
+                    int maxDoc = max - base;
+                    if (size != -1) {
+                      return (long)
+                          (size * ((FixedBitSet.bits2words(maxDoc) << 6) / (float) bs.length()));
+                    } else {
+                      return maxDoc;
+                    }
+                  }
+                };
               }
 
               @Override
-              public int nextDoc() {
-                int next = pos+1;
-                if (next >= max) {
-                  return adjustedDoc = NO_MORE_DOCS;
-                } else {
-                  pos = bs.nextSetBit(next);
-                  return adjustedDoc = pos < max ? pos - base : NO_MORE_DOCS;
-                }
+              public long ramBytesUsed() {
+                return bs.ramBytesUsed();
               }
 
               @Override
-              public int advance(int target) {
-                if (target == NO_MORE_DOCS) return adjustedDoc = NO_MORE_DOCS;
-                int adjusted = target + base;
-                if (adjusted >= max) {
-                  return adjustedDoc = NO_MORE_DOCS;
-                } else {
-                  pos = bs.nextSetBit(adjusted);
-                  return adjustedDoc = pos < max ? pos - base : NO_MORE_DOCS;
-                }
+              public Bits bits() {
+                return new Bits() {
+                  @Override
+                  public boolean get(int index) {
+                    return bs.get(index + base);
+                  }
+
+                  @Override
+                  public int length() {
+                    return max - base;
+                  }
+                };
               }
-
-              @Override
-              public long cost() {
-                // we don't want to actually compute cardinality, but
-                // if it's already been computed, we use it (pro-rated for the segment)
-                int maxDoc = max-base;
-                if (size != -1) {
-                  return (long)(size * ((FixedBitSet.bits2words(maxDoc)<<6) / (float)bs.length()));
-                } else {
-                  return maxDoc;
-                }
-              }
-            };
-          }
-
-          @Override
-          public long ramBytesUsed() {
-            return bs.ramBytesUsed();
-          }
-
-          @Override
-          public Bits bits() {
-            return new Bits() {
-              @Override
-              public boolean get(int index) {
-                return bs.get(index + base);
-              }
-
-              @Override
-              public int length() {
-                return max-base;
-              }
-            };
-          }
-
-        }, acceptDocs2);
+            },
+            acceptDocs2);
       }
 
       @Override
@@ -337,10 +338,9 @@ public class BitDocSet extends DocSet {
 
       @Override
       public boolean equals(Object other) {
-        return sameClassAs(other) &&
-               Objects.equals(bs, getClass().cast(other).bs);
+        return sameClassAs(other) && Objects.equals(bs, getClass().cast(other).bs);
       }
-      
+
       @Override
       public int hashCode() {
         return classHash() * 31 + bs.hashCode();
@@ -350,7 +350,7 @@ public class BitDocSet extends DocSet {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED + ((long)bits.getBits().length << 3);
+    return BASE_RAM_BYTES_USED + ((long) bits.getBits().length << 3);
   }
 
   @Override
@@ -360,9 +360,11 @@ public class BitDocSet extends DocSet {
 
   @Override
   public String toString() {
-    return "BitDocSet{" +
-        "size=" + size() +
-        ",ramUsed=" + RamUsageEstimator.humanReadableUnits(ramBytesUsed()) +
-        '}';
+    return "BitDocSet{"
+        + "size="
+        + size()
+        + ",ramUsed="
+        + RamUsageEstimator.humanReadableUnits(ramBytesUsed())
+        + '}';
   }
 }

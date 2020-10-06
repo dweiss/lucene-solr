@@ -26,9 +26,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
-/**
- * Tests for {@link ClusterStateMockUtil}
- */
+/** Tests for {@link ClusterStateMockUtil} */
 public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test
@@ -58,7 +56,8 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildClusterState_ReplicaTypes() {
-    try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csntp", "baseUrl1_")) {
+    try (ZkStateReader zkStateReader =
+        ClusterStateMockUtil.buildClusterState("csntp", "baseUrl1_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
       assertEquals(1, clusterState.getCollectionStates().size());
@@ -78,7 +77,8 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildClusterState_ReplicaStateAndType() {
-    try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csrStRpDnF", "baseUrl1_")) {
+    try (ZkStateReader zkStateReader =
+        ClusterStateMockUtil.buildClusterState("csrStRpDnF", "baseUrl1_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
       assertEquals(1, clusterState.getCollectionStates().size());
@@ -90,10 +90,38 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       Slice slice1 = collection1.getSlice("slice1");
       assertNotNull(slice1);
       assertEquals(4, slice1.getReplicas().size());
-      assertEquals(1, slice1.getReplicas(replica -> replica.getType() == Replica.Type.NRT && replica.getState() == Replica.State.ACTIVE).size());
-      assertEquals(1, slice1.getReplicas(replica -> replica.getType() == Replica.Type.NRT && replica.getState() == Replica.State.RECOVERY_FAILED).size());
-      assertEquals(1, slice1.getReplicas(replica -> replica.getType() == Replica.Type.TLOG && replica.getState() == Replica.State.RECOVERING).size());
-      assertEquals(1, slice1.getReplicas(replica -> replica.getType() == Replica.Type.PULL && replica.getState() == Replica.State.DOWN).size());
+      assertEquals(
+          1,
+          slice1
+              .getReplicas(
+                  replica ->
+                      replica.getType() == Replica.Type.NRT
+                          && replica.getState() == Replica.State.ACTIVE)
+              .size());
+      assertEquals(
+          1,
+          slice1
+              .getReplicas(
+                  replica ->
+                      replica.getType() == Replica.Type.NRT
+                          && replica.getState() == Replica.State.RECOVERY_FAILED)
+              .size());
+      assertEquals(
+          1,
+          slice1
+              .getReplicas(
+                  replica ->
+                      replica.getType() == Replica.Type.TLOG
+                          && replica.getState() == Replica.State.RECOVERING)
+              .size());
+      assertEquals(
+          1,
+          slice1
+              .getReplicas(
+                  replica ->
+                      replica.getType() == Replica.Type.PULL
+                          && replica.getState() == Replica.State.DOWN)
+              .size());
     }
   }
 }

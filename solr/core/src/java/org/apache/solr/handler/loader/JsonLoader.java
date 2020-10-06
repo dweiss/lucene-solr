@@ -16,6 +16,13 @@
  */
 package org.apache.solr.handler.loader;
 
+import static java.util.stream.Collectors.toList;
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -30,7 +37,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -57,17 +63,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.stream.Collectors.toList;
-import static org.apache.solr.common.params.CommonParams.ID;
-import static org.apache.solr.common.params.CommonParams.JSON;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
-
-
-/**
- * @since solr 4.0
- */
+/** @since solr 4.0 */
 public class JsonLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
@@ -79,11 +75,14 @@ public class JsonLoader extends ContentStreamLoader {
   }
 
   @Override
-  public void load(SolrQueryRequest req, SolrQueryResponse rsp,
-                   ContentStream stream, UpdateRequestProcessor processor) throws Exception {
+  public void load(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      ContentStream stream,
+      UpdateRequestProcessor processor)
+      throws Exception {
     new SingleThreadedJsonLoader(req, rsp, processor).load(req, rsp, stream, processor);
   }
-
 
   static class SingleThreadedJsonLoader extends ContentStreamLoader {
 
@@ -94,7 +93,8 @@ public class JsonLoader extends ContentStreamLoader {
     protected final int commitWithin;
     protected final boolean overwrite;
 
-    SingleThreadedJsonLoader(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
+    SingleThreadedJsonLoader(
+        SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor processor) {
       this.processor = processor;
       this.req = req;
       this.rsp = rsp;
@@ -104,10 +104,12 @@ public class JsonLoader extends ContentStreamLoader {
     }
 
     @Override
-    public void load(SolrQueryRequest req,
-                     SolrQueryResponse rsp,
-                     ContentStream stream,
-                     UpdateRequestProcessor processor) throws Exception {
+    public void load(
+        SolrQueryRequest req,
+        SolrQueryResponse rsp,
+        ContentStream stream,
+        UpdateRequestProcessor processor)
+        throws Exception {
 
       Reader reader = null;
       try {
@@ -120,9 +122,9 @@ public class JsonLoader extends ContentStreamLoader {
 
         this.processUpdate(reader);
       } catch (ParseException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot parse provided JSON: " + e.getMessage());
-      }
-      finally {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Cannot parse provided JSON: " + e.getMessage());
+      } finally {
         IOUtils.closeQuietly(reader);
       }
     }
@@ -130,7 +132,8 @@ public class JsonLoader extends ContentStreamLoader {
     @SuppressWarnings("fallthrough")
     void processUpdate(Reader reader) throws IOException {
       String path = (String) req.getContext().get(PATH);
-      if (UpdateRequestHandler.DOC_PATH.equals(path) || "false".equals(req.getParams().get("json.command"))) {
+      if (UpdateRequestHandler.DOC_PATH.equals(path)
+          || "false".equals(req.getParams().get("json.command"))) {
         String split = req.getParams().get("split");
         String[] f = req.getParams().getParams("f");
         handleSplitMode(split, f, reader);
@@ -172,7 +175,9 @@ public class JsonLoader extends ContentStreamLoader {
               } else if (v.equals(UpdateRequestHandler.ROLLBACK)) {
                 processor.processRollback(parseRollback());
               } else {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command '" + v + "' at [" + parser.getPosition() + "]");
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "Unknown command '" + v + "' at [" + parser.getPosition() + "]");
               }
               break;
             }
@@ -184,8 +189,10 @@ public class JsonLoader extends ContentStreamLoader {
           case JSONParser.BOOLEAN:
           case JSONParser.NULL:
             if (log.isInfoEnabled()) {
-              log.info("Can't have a value here. Unexpected {} at [{}]"
-                  , JSONParser.getEventString(ev), parser.getPosition());
+              log.info(
+                  "Can't have a value here. Unexpected {} at [{}]",
+                  JSONParser.getEventString(ev),
+                  parser.getPosition());
             }
 
           case JSONParser.OBJECT_START:
@@ -202,49 +209,53 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    private void handleSplitMode(String split, String[] fields, final Reader reader) throws IOException {
+    private void handleSplitMode(String split, String[] fields, final Reader reader)
+        throws IOException {
       if (split == null) split = "/";
-      if (fields == null || fields.length == 0) fields = new String[]{"$FQN:/**"};
+      if (fields == null || fields.length == 0) fields = new String[] {"$FQN:/**"};
       final boolean echo = "true".equals(req.getParams().get("echo"));
       final String srcField = req.getParams().get("srcField");
       final boolean mapUniqueKeyOnly = req.getParams().getBool("mapUniqueKeyOnly", false);
       if (srcField != null) {
         if (!"/".equals(split))
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Raw data can be stored only if split=/");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Raw data can be stored only if split=/");
         parser = new RecordingJSONParser(reader);
       } else {
         parser = new JSONParser(reader);
-
       }
 
       JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, Arrays.asList(fields));
-      jsonRecordReader.streamRecords(parser, new JsonRecordReader.Handler() {
-        ArrayList<Map<String, Object>> docs = null;
+      jsonRecordReader.streamRecords(
+          parser,
+          new JsonRecordReader.Handler() {
+            ArrayList<Map<String, Object>> docs = null;
 
-        @Override
-        public void handle(Map<String, Object> record, String path) {
-          Map<String, Object> copy = getDocMap(record, parser, srcField, mapUniqueKeyOnly);
+            @Override
+            public void handle(Map<String, Object> record, String path) {
+              Map<String, Object> copy = getDocMap(record, parser, srcField, mapUniqueKeyOnly);
 
-          if (echo) {
-            if (docs == null) {
-              docs = new ArrayList<>();
-              rsp.add("docs", docs);
+              if (echo) {
+                if (docs == null) {
+                  docs = new ArrayList<>();
+                  rsp.add("docs", docs);
+                }
+                changeChildDoc(copy);
+                docs.add(copy);
+              } else {
+                AddUpdateCommand cmd = new AddUpdateCommand(req);
+                cmd.commitWithin = commitWithin;
+                cmd.overwrite = overwrite;
+                cmd.solrDoc = buildDoc(copy);
+                try {
+                  processor.processAdd(cmd);
+                } catch (IOException e) {
+                  throw new SolrException(
+                      SolrException.ErrorCode.BAD_REQUEST, "Error inserting document: ", e);
+                }
+              }
             }
-            changeChildDoc(copy);
-            docs.add(copy);
-          } else {
-            AddUpdateCommand cmd = new AddUpdateCommand(req);
-            cmd.commitWithin = commitWithin;
-            cmd.overwrite = overwrite;
-            cmd.solrDoc = buildDoc(copy);
-            try {
-              processor.processAdd(cmd);
-            } catch (IOException e) {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error inserting document: ", e);
-            }
-          }
-        }
-      });
+          });
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -257,7 +268,7 @@ public class JsonLoader extends ContentStreamLoader {
             for (Object o : value) {
               if (o instanceof Map) {
                 // retain the value as a list, even if the list contains a single value.
-                if(!result.containsKey(e.getKey())) {
+                if (!result.containsKey(e.getKey())) {
                   result.setField(e.getKey(), new ArrayList<>(1));
                 }
                 result.addField(e.getKey(), buildDoc((Map) o));
@@ -274,10 +285,11 @@ public class JsonLoader extends ContentStreamLoader {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private Map<String, Object> getDocMap(Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
+    private Map<String, Object> getDocMap(
+        Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
       Map result = record;
       if (srcField != null && parser instanceof RecordingJSONParser) {
-        //if srcFIeld specified extract it out first
+        // if srcFIeld specified extract it out first
         result = new LinkedHashMap(record);
         RecordingJSONParser rjp = (RecordingJSONParser) parser;
         result.put(srcField, rjp.getBuf());
@@ -286,12 +298,16 @@ public class JsonLoader extends ContentStreamLoader {
       if (mapUniqueKeyOnly) {
         SchemaField sf = req.getSchema().getUniqueKeyField();
         if (sf == null)
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No uniqueKey specified in schema");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "No uniqueKey specified in schema");
         String df = req.getParams().get(CommonParams.DF);
-        if (df == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No 'df' specified in request");
+        if (df == null)
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "No 'df' specified in request");
         Map copy = new LinkedHashMap();
         String uniqueField = (String) record.get(sf.getName());
-        if (uniqueField == null) uniqueField = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
+        if (uniqueField == null)
+          uniqueField = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
         copy.put(sf.getName(), uniqueField);
         if (srcField != null && result.containsKey(srcField)) {
           copy.put(srcField, result.remove(srcField));
@@ -300,10 +316,8 @@ public class JsonLoader extends ContentStreamLoader {
         result = copy;
       }
 
-
       return result;
     }
-
 
     //
     // "delete":"id"
@@ -339,12 +353,15 @@ public class JsonLoader extends ContentStreamLoader {
         case JSONParser.NULL:
           return null;
         default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Expected primitive JSON value but got: " + JSONParser.getEventString(ev)
-                  + " at [" + parser.getPosition() + "]");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Expected primitive JSON value but got: "
+                  + JSONParser.getEventString(ev)
+                  + " at ["
+                  + parser.getPosition()
+                  + "]");
       }
     }
-
 
     void handleSingleDelete(int ev) throws IOException {
       if (ev == JSONParser.OBJECT_START) {
@@ -389,28 +406,31 @@ public class JsonLoader extends ContentStreamLoader {
             } else if (_ROUTE_.equals(key)) {
               cmd.setRoute(parser.getString());
             } else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
             }
           } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "invalid string: " + key
-                    + " at [" + parser.getPosition() + "]");
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "invalid string: " + key + " at [" + parser.getPosition() + "]");
           }
         } else if (ev == JSONParser.OBJECT_END) {
           if (cmd.getId() == null && cmd.getQuery() == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing id or query for delete at [" + parser.getPosition() + "]");
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Missing id or query for delete at [" + parser.getPosition() + "]");
           }
 
           processor.processDelete(cmd);
           return;
         } else {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Got: " + JSONParser.getEventString(ev)
-                  + " at [" + parser.getPosition() + "]");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Got: " + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "]");
         }
       }
     }
-
 
     RollbackUpdateCommand parseRollback() throws IOException {
       assertNextEvent(JSONParser.OBJECT_START);
@@ -424,26 +444,29 @@ public class JsonLoader extends ContentStreamLoader {
       final Map<String, Object> map = (Map) ObjectBuilder.getVal(parser);
 
       // SolrParams currently expects string values...
-      SolrParams p = new SolrParams() {
-        @Override
-        public String get(String param) {
-          Object o = map.get(param);
-          return o == null ? null : o.toString();
-        }
+      SolrParams p =
+          new SolrParams() {
+            @Override
+            public String get(String param) {
+              Object o = map.get(param);
+              return o == null ? null : o.toString();
+            }
 
-        @Override
-        public String[] getParams(String param) {
-          return new String[]{get(param)};
-        }
+            @Override
+            public String[] getParams(String param) {
+              return new String[] {get(param)};
+            }
 
-        @Override
-        public Iterator<String> getParameterNamesIterator() {
-          return map.keySet().iterator();
-        }
-      };
+            @Override
+            public Iterator<String> getParameterNamesIterator() {
+              return map.keySet().iterator();
+            }
+          };
 
       RequestHandlerUtils.validateCommitParams(p);
-      p = SolrParams.wrapDefaults(p, req.getParams());   // default to the normal request params for commit options
+      p =
+          SolrParams.wrapDefaults(
+              p, req.getParams()); // default to the normal request params for commit options
       RequestHandlerUtils.updateCommit(cmd, p);
     }
 
@@ -459,8 +482,12 @@ public class JsonLoader extends ContentStreamLoader {
             String key = parser.getString();
             if ("doc".equals(key)) {
               if (cmd.solrDoc != null) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Multiple documents in same"
-                    + " add command at [" + parser.getPosition() + "]");
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "Multiple documents in same"
+                        + " add command at ["
+                        + parser.getPosition()
+                        + "]");
               }
               ev = assertNextEvent(JSONParser.OBJECT_START);
               cmd.solrDoc = parseDoc(ev);
@@ -470,33 +497,39 @@ public class JsonLoader extends ContentStreamLoader {
               cmd.commitWithin = (int) parser.getLong();
             } else if ("boost".equals(key)) {
               String boost = parser.getNumberChars().toString();
-              String message = "Ignoring document boost: " + boost + " as index-time boosts are not supported anymore";
+              String message =
+                  "Ignoring document boost: "
+                      + boost
+                      + " as index-time boosts are not supported anymore";
               if (WARNED_ABOUT_INDEX_TIME_BOOSTS.compareAndSet(false, true)) {
                 log.warn(message);
               } else {
                 log.debug(message);
               }
             } else {
-              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Unknown key '" + key + "' at [" + parser.getPosition() + "]");
             }
           } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "Should be a key "
-                    + " at [" + parser.getPosition() + "]");
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Should be a key " + " at [" + parser.getPosition() + "]");
           }
         } else if (ev == JSONParser.OBJECT_END) {
           if (cmd.solrDoc == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing solr document at [" + parser.getPosition() + "]");
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Missing solr document at [" + parser.getPosition() + "]");
           }
           return cmd;
         } else {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Got: " + JSONParser.getEventString(ev)
-                  + " at [" + parser.getPosition() + "]");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Got: " + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "]");
         }
       }
     }
-
 
     void handleAdds() throws IOException {
       while (true) {
@@ -513,7 +546,6 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-
     int assertNextEvent(int expected) throws IOException {
       int got = parser.nextEvent();
       assertEvent(got, expected);
@@ -522,13 +554,17 @@ public class JsonLoader extends ContentStreamLoader {
 
     void assertEvent(int ev, int expected) {
       if (ev != expected) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Expected: " + JSONParser.getEventString(expected)
-                + " but got " + JSONParser.getEventString(ev)
-                + " at [" + parser.getPosition() + "]");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Expected: "
+                + JSONParser.getEventString(expected)
+                + " but got "
+                + JSONParser.getEventString(ev)
+                + " at ["
+                + parser.getPosition()
+                + "]");
       }
     }
-
 
     private SolrInputDocument parseDoc(int ev) throws IOException {
       assert ev == JSONParser.OBJECT_START;
@@ -557,7 +593,6 @@ public class JsonLoader extends ContentStreamLoader {
           // (ie: repeating fieldname keys)
           sdoc.addField(fieldName, val);
         }
-
       }
     }
 
@@ -581,8 +616,15 @@ public class JsonLoader extends ContentStreamLoader {
         case JSONParser.OBJECT_START:
           return parseObjectFieldValue(ev, fieldName);
         default:
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing JSON field value. "
-              + "Unexpected " + JSONParser.getEventString(ev) + " at [" + parser.getPosition() + "], field=" + fieldName);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Error parsing JSON field value. "
+                  + "Unexpected "
+                  + JSONParser.getEventString(ev)
+                  + " at ["
+                  + parser.getPosition()
+                  + "], field="
+                  + fieldName);
       }
     }
 
@@ -601,9 +643,7 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    /**
-     * Parses this object as either a map for atomic update, or a child document.
-     */
+    /** Parses this object as either a map for atomic update, or a child document. */
     private Object parseObjectFieldValue(int ev, String fieldName) throws IOException {
       assert ev == JSONParser.OBJECT_START;
 
@@ -612,7 +652,8 @@ public class JsonLoader extends ContentStreamLoader {
       if (isChildDoc(extendedSolrDocument)) {
         return extendedSolrDocument;
       } else {
-        //return extendedSolrDocument.toMap(new HashMap<>(extendedSolrDocument.size()));  not quite right
+        // return extendedSolrDocument.toMap(new HashMap<>(extendedSolrDocument.size()));  not quite
+        // right
         Map<String, Object> map = new HashMap<>(extendedSolrDocument.size());
         for (SolrInputField inputField : extendedSolrDocument) {
           map.put(inputField.getName(), inputField.getValue());
@@ -626,11 +667,11 @@ public class JsonLoader extends ContentStreamLoader {
     }
 
     private boolean mapEntryIsChildDoc(Object val) {
-      if(val instanceof List) {
+      if (val instanceof List) {
         @SuppressWarnings({"rawtypes"})
         List listVal = (List) val;
         if (listVal.size() == 0) return false;
-        return  listVal.get(0) instanceof Map;
+        return listVal.get(0) instanceof Map;
       }
       return val instanceof Map;
     }
@@ -639,14 +680,10 @@ public class JsonLoader extends ContentStreamLoader {
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static Object changeChildDoc(Object o) {
     if (o instanceof List) {
-      return ((List) o)
-          .stream()
-          .map(JsonLoader::changeChildDoc)
-          .collect(toList());
+      return ((List) o).stream().map(JsonLoader::changeChildDoc).collect(toList());
     }
     Map m = (Map) o;
     if (m.containsKey(null)) m.put(CHILD_DOC_KEY, changeChildDoc(m.remove(null)));
     return m;
   }
-
 }

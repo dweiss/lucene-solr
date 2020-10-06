@@ -18,13 +18,10 @@
 package org.apache.solr.client.solrj.request.beans;
 
 import java.util.Objects;
-
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-/**
- * POJO for a plugin metadata used in container plugins
- */
+/** POJO for a plugin metadata used in container plugins */
 public class PluginMeta implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String name;
@@ -32,12 +29,10 @@ public class PluginMeta implements ReflectMapWriter {
   @JsonProperty(value = "class", required = true)
   public String klass;
 
-  @JsonProperty
-  public String version;
+  @JsonProperty public String version;
 
   @JsonProperty("path-prefix")
   public String pathPrefix;
-
 
   public PluginMeta copy() {
     PluginMeta result = new PluginMeta();
@@ -51,12 +46,13 @@ public class PluginMeta implements ReflectMapWriter {
   public boolean equals(Object obj) {
     if (obj instanceof PluginMeta) {
       PluginMeta that = (PluginMeta) obj;
-      return Objects.equals(this.name, that.name) &&
-          Objects.equals(this.klass, that.klass) &&
-          Objects.equals(this.version, that.version);
+      return Objects.equals(this.name, that.name)
+          && Objects.equals(this.klass, that.klass)
+          && Objects.equals(this.version, that.version);
     }
     return false;
   }
+
   @Override
   public int hashCode() {
     return Objects.hash(name, version, klass);

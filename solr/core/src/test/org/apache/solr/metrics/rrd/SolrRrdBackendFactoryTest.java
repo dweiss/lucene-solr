@@ -21,7 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -42,9 +41,7 @@ import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.Sample;
 
-/**
- *
- */
+/** */
 @LogLevel("org.apache.solr.metrics.rrd=DEBUG")
 public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
 
@@ -60,7 +57,8 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     } else {
       timeSource = TimeSource.get("simTime:50");
     }
-    factory = new SolrRrdBackendFactory(solrClient, CollectionAdminParams.SYSTEM_COLL, 1, timeSource);
+    factory =
+        new SolrRrdBackendFactory(solrClient, CollectionAdminParams.SYSTEM_COLL, 1, timeSource);
   }
 
   @After
@@ -83,8 +81,10 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
+  // commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") //
+  // 28-June-2018
+  // commented out on: 17-Feb-2019
+  // @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testBasic() throws Exception {
     long startTime = 1000000000;
     RrdDb db = new RrdDb(createDef(startTime), factory);
@@ -103,7 +103,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     assertEquals(solrClient.docs.toString(), 1, solrClient.docs.size());
     String id = SolrRrdBackendFactory.ID_PREFIX + SolrRrdBackendFactory.ID_SEP + "foo";
     SolrInputDocument doc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
-    long timestamp = (Long)doc.getFieldValue("timestamp_l");
+    long timestamp = (Long) doc.getFieldValue("timestamp_l");
 
     timeSource.sleep(4000);
 
@@ -125,7 +125,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
 
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertFalse(newDoc.toString(), newDoc.equals(doc));
-    long newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
+    long newTimestamp = (Long) newDoc.getFieldValue("timestamp_l");
     assertNotSame(newTimestamp, timestamp);
     // don't race with the sampling boundary
     FetchRequest fr = db.createFetchRequest(ConsolFun.AVERAGE, startTime + 20, lastTime - 20, 60);
@@ -168,7 +168,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     doc = newDoc;
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertFalse(newDoc.toString(), newDoc.equals(doc));
-    newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
+    newTimestamp = (Long) newDoc.getFieldValue("timestamp_l");
     assertNotSame(newTimestamp, timestamp);
     fr = db.createFetchRequest(ConsolFun.AVERAGE, startTime + 20, lastTime + 20, 60);
     fd = fr.fetchData();
@@ -202,7 +202,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     timestamp = newTimestamp;
     newDoc = solrClient.docs.get(CollectionAdminParams.SYSTEM_COLL).get(id);
     assertTrue(newDoc.toString(), newDoc.equals(doc));
-    newTimestamp = (Long)newDoc.getFieldValue("timestamp_l");
+    newTimestamp = (Long) newDoc.getFieldValue("timestamp_l");
     assertEquals(newTimestamp, timestamp);
     readOnly.close();
   }
@@ -231,7 +231,6 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     throw new Exception("time out waiting for updates");
   }
 
-
   private long waitForUpdatesToStop(long lastNumUpdates) throws Exception {
     TimeOut timeOut = new TimeOut(30, TimeUnit.SECONDS, timeSource);
     int stopped = 0;
@@ -251,6 +250,4 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
     }
     throw new Exception("time out waiting for updates");
   }
-
-
 }

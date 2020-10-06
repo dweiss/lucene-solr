@@ -23,12 +23,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 
 public interface JsonTextWriter extends TextWriter {
-  char[] hexdigits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+  char[] hexdigits = {
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+  };
   String JSON_NL_MAP = "map";
   String JSON_NL_FLAT = "flat";
   String JSON_NL_ARROFARR = "arrarr";
@@ -71,13 +72,12 @@ public interface JsonTextWriter extends TextWriter {
     // if writing chars to the stream is slow.
     if (needsEscaping) {
 
-
-     /* http://www.ietf.org/internet-drafts/draft-crockford-jsonorg-json-04.txt
-      All Unicode characters may be placed within
-      the quotation marks except for the characters which must be
-      escaped: quotation mark, reverse solidus, and the control
-      characters (U+0000 through U+001F).
-     */
+      /* http://www.ietf.org/internet-drafts/draft-crockford-jsonorg-json-04.txt
+       All Unicode characters may be placed within
+       the quotation marks except for the characters which must be
+       escaped: quotation mark, reverse solidus, and the control
+       characters (U+0000 through U+001F).
+      */
       _writeChar('"');
 
       for (int i = 0; i < val.length(); i++) {
@@ -116,14 +116,15 @@ public interface JsonTextWriter extends TextWriter {
           case '\u2029':
             unicodeEscape(getWriter(), ch);
             break;
-          // case '/':
-          default: {
-            if (ch <= 0x1F) {
-              unicodeEscape(getWriter(), ch);
-            } else {
-              _writeChar(ch);
+            // case '/':
+          default:
+            {
+              if (ch <= 0x1F) {
+                unicodeEscape(getWriter(), ch);
+              } else {
+                _writeChar(ch);
+              }
             }
-          }
         }
       }
 
@@ -138,45 +139,46 @@ public interface JsonTextWriter extends TextWriter {
   default void writeIterator(IteratorWriter val) throws IOException {
     writeArrayOpener(-1);
     incLevel();
-    val.writeIter(new IteratorWriter.ItemWriter() {
-      boolean first = true;
+    val.writeIter(
+        new IteratorWriter.ItemWriter() {
+          boolean first = true;
 
-      @Override
-      public IteratorWriter.ItemWriter add(Object o) throws IOException {
-        if (!first) {
-          JsonTextWriter.this.indent();
-          JsonTextWriter.this.writeArraySeparator();
-        }
-        JsonTextWriter.this.writeVal(null, o);
-        first = false;
-        return this;
-      }
-    });
+          @Override
+          public IteratorWriter.ItemWriter add(Object o) throws IOException {
+            if (!first) {
+              JsonTextWriter.this.indent();
+              JsonTextWriter.this.writeArraySeparator();
+            }
+            JsonTextWriter.this.writeVal(null, o);
+            first = false;
+            return this;
+          }
+        });
     decLevel();
     writeArrayCloser();
   }
 
-  default void writeMap(MapWriter val)
-      throws IOException {
+  default void writeMap(MapWriter val) throws IOException {
     writeMapOpener(-1);
     incLevel();
 
-    val.writeMap(new MapWriter.EntryWriter() {
-      boolean isFirst = true;
+    val.writeMap(
+        new MapWriter.EntryWriter() {
+          boolean isFirst = true;
 
-      @Override
-      public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
-        if (isFirst) {
-          isFirst = false;
-        } else {
-          JsonTextWriter.this.writeMapSeparator();
-        }
-        JsonTextWriter.this.indent();
-        JsonTextWriter.this.writeKey(k.toString(), true);
-        writeVal(k.toString(), v);
-        return this;
-      }
-    });
+          @Override
+          public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
+            if (isFirst) {
+              isFirst = false;
+            } else {
+              JsonTextWriter.this.writeMapSeparator();
+            }
+            JsonTextWriter.this.indent();
+            JsonTextWriter.this.writeKey(k.toString(), true);
+            writeVal(k.toString(), v);
+            return this;
+          }
+        });
     decLevel();
     writeMapCloser();
   }
@@ -186,7 +188,7 @@ public interface JsonTextWriter extends TextWriter {
     _writeChar(':');
   }
 
-  default void writeJsonIter(@SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
+  default void writeJsonIter(@SuppressWarnings({"rawtypes"}) Iterator val) throws IOException {
     incLevel();
     boolean first = true;
     while (val.hasNext()) {
@@ -206,7 +208,6 @@ public interface JsonTextWriter extends TextWriter {
   default void writeNull(String name) throws IOException {
     _writeStr("null");
   }
-
 
   default void writeInt(String name, String val) throws IOException {
     _writeStr(val);
@@ -232,9 +233,9 @@ public interface JsonTextWriter extends TextWriter {
     writeStr(name, val, false);
   }
 
-
   @SuppressWarnings({"unchecked", "rawtypes"})
-  default void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  default void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal)
+      throws IOException {
     if (!excludeOuter) {
       writeMapOpener(val.size());
       incLevel();
@@ -265,14 +266,14 @@ public interface JsonTextWriter extends TextWriter {
     }
   }
 
-
-  default void writeArray(String name, @SuppressWarnings({"rawtypes"})List l) throws IOException {
+  default void writeArray(String name, @SuppressWarnings({"rawtypes"}) List l) throws IOException {
     writeArrayOpener(l.size());
     writeJsonIter(l.iterator());
     writeArrayCloser();
   }
 
-  default void writeArray(String name, @SuppressWarnings({"rawtypes"})Iterator val) throws IOException {
+  default void writeArray(String name, @SuppressWarnings({"rawtypes"}) Iterator val)
+      throws IOException {
     writeArrayOpener(-1); // no trivial way to determine array size
     writeJsonIter(val);
     writeArrayCloser();
@@ -287,7 +288,8 @@ public interface JsonTextWriter extends TextWriter {
     out.append(hexdigits[(ch) & 0xf]);
   }
 
-  default void writeNamedList(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  default void writeNamedList(String name, @SuppressWarnings({"rawtypes"}) NamedList val)
+      throws IOException {
     String namedListStyle = getNamedListStyle();
     if (val instanceof SimpleOrderedMap) {
       writeNamedListAsMapWithDups(name, val);
@@ -300,17 +302,17 @@ public interface JsonTextWriter extends TextWriter {
     } else if (namedListStyle == JSON_NL_ARROFMAP) {
       writeNamedListAsArrMap(name, val);
     } else if (namedListStyle == JSON_NL_ARROFNTV) {
-      throw new UnsupportedOperationException(namedListStyle
-          + " namedListStyle must only be used with ArrayOfNameTypeValueJSONWriter");
+      throw new UnsupportedOperationException(
+          namedListStyle + " namedListStyle must only be used with ArrayOfNameTypeValueJSONWriter");
     }
   }
 
   /**
-   * Represents a NamedList directly as a JSON Object (essentially a Map)
-   * Map null to "" and name mangle any repeated keys to avoid repeats in the
-   * output.
+   * Represents a NamedList directly as a JSON Object (essentially a Map) Map null to "" and name
+   * mangle any repeated keys to avoid repeats in the output.
    */
-  default void writeNamedListAsMapMangled(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  default void writeNamedListAsMapMangled(
+      String name, @SuppressWarnings({"rawtypes"}) NamedList val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
     incLevel();
@@ -345,7 +347,7 @@ public interface JsonTextWriter extends TextWriter {
         } else {
           String newKey = key;
           int newCount = repeatCount;
-          do {  // avoid generated key clashing with a real key
+          do { // avoid generated key clashing with a real key
             newKey = key + ' ' + (++newCount);
             repeatCount = repeats.get(newKey);
           } while (repeatCount != null);
@@ -365,12 +367,12 @@ public interface JsonTextWriter extends TextWriter {
   }
 
   /**
-   * Represents a NamedList directly as a JSON Object (essentially a Map)
-   * repeating any keys if they are repeated in the NamedList.
-   * null key is mapped to "".
+   * Represents a NamedList directly as a JSON Object (essentially a Map) repeating any keys if they
+   * are repeated in the NamedList. null key is mapped to "".
    */
   // NamedList("a"=1,"bar"="foo",null=3,null=null) => {"a":1,"bar":"foo","":3,"":null}
-  default void writeNamedListAsMapWithDups(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  default void writeNamedListAsMapWithDups(
+      String name, @SuppressWarnings({"rawtypes"}) NamedList val) throws IOException {
     int sz = val.size();
     writeMapOpener(sz);
     incLevel();
@@ -393,7 +395,8 @@ public interface JsonTextWriter extends TextWriter {
 
   // Represents a NamedList directly as an array of JSON objects...
   // NamedList("a"=1,"b"=2,null=3,null=null) => [{"a":1},{"b":2},3,null]
-  default void writeNamedListAsArrMap(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  default void writeNamedListAsArrMap(String name, @SuppressWarnings({"rawtypes"}) NamedList val)
+      throws IOException {
     int sz = val.size();
     indent();
     writeArrayOpener(sz);
@@ -419,7 +422,6 @@ public interface JsonTextWriter extends TextWriter {
         writeVal(key, val.getVal(i));
         writeMapCloser();
       }
-
     }
 
     decLevel();
@@ -428,7 +430,8 @@ public interface JsonTextWriter extends TextWriter {
 
   // Represents a NamedList directly as an array of JSON objects...
   // NamedList("a"=1,"b"=2,null=3,null=null) => [["a",1],["b",2],[null,3],[null,null]]
-  default void writeNamedListAsArrArr(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  default void writeNamedListAsArrArr(String name, @SuppressWarnings({"rawtypes"}) NamedList val)
+      throws IOException {
     int sz = val.size();
     indent();
     writeArrayOpener(sz);
@@ -447,9 +450,9 @@ public interface JsonTextWriter extends TextWriter {
       indent();
 
       /*** if key is null, just write value???
-       if (key==null) {
-       writeVal(null,val.getVal(i));
-       } else {
+       * if (key==null) {
+       * writeVal(null,val.getVal(i));
+       * } else {
        ***/
 
       writeArrayOpener(1);
@@ -472,7 +475,8 @@ public interface JsonTextWriter extends TextWriter {
   // Represents a NamedList directly as an array with keys/values
   // interleaved.
   // NamedList("a"=1,"b"=2,null=3,null=null) => ["a",1,"b",2,null,3,null,null]
-  default void writeNamedListAsFlat(String name, @SuppressWarnings({"rawtypes"})NamedList val) throws IOException {
+  default void writeNamedListAsFlat(String name, @SuppressWarnings({"rawtypes"}) NamedList val)
+      throws IOException {
     int sz = val.size();
     writeArrayOpener(sz * 2);
     incLevel();
@@ -495,6 +499,4 @@ public interface JsonTextWriter extends TextWriter {
     decLevel();
     writeArrayCloser();
   }
-
-
 }

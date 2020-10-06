@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.handler;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -26,40 +27,39 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 
 /**
- * Shares common code between various handlers that manipulate 
- * {@link org.apache.solr.common.util.ContentStream} objects.
+ * Shares common code between various handlers that manipulate {@link
+ * org.apache.solr.common.util.ContentStream} objects.
  */
 public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
 
   @Override
-  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"}) NamedList args) {
     super.init(args);
 
     // Caching off by default
     httpCaching = false;
     if (args != null) {
       Object caching = args.get("httpCaching");
-      if(caching!=null) {
+      if (caching != null) {
         httpCaching = Boolean.parseBoolean(caching.toString());
       }
     }
   }
-  
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
-    UpdateRequestProcessorChain processorChain =
-        req.getCore().getUpdateProcessorChain(params);
+    UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(params);
 
     UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
 
     try {
       ContentStreamLoader documentLoader = newLoader(req, processor);
 
-
       Iterable<ContentStream> streams = req.getContentStreams();
       if (streams == null) {
-        if (!RequestHandlerUtils.handleCommit(req, processor, params, false) && !RequestHandlerUtils.handleRollback(req, processor, params, false)) {
+        if (!RequestHandlerUtils.handleCommit(req, processor, params, false)
+            && !RequestHandlerUtils.handleRollback(req, processor, params, false)) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing content stream");
         }
       } else {
@@ -82,5 +82,6 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
     }
   }
 
-  protected abstract ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor);
+  protected abstract ContentStreamLoader newLoader(
+      SolrQueryRequest req, UpdateRequestProcessor processor);
 }

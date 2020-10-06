@@ -17,10 +17,15 @@
 
 package org.apache.solr.jaeger;
 
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.AGENT_HOST;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.AGENT_PORT;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.FLUSH_INTERVAL;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.LOG_SPANS;
+import static org.apache.solr.jaeger.JaegerTracerConfigurator.MAX_QUEUE_SIZE;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -35,37 +40,30 @@ import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.junit.Test;
 
-import static org.apache.solr.jaeger.JaegerTracerConfigurator.AGENT_HOST;
-import static org.apache.solr.jaeger.JaegerTracerConfigurator.AGENT_PORT;
-import static org.apache.solr.jaeger.JaegerTracerConfigurator.FLUSH_INTERVAL;
-import static org.apache.solr.jaeger.JaegerTracerConfigurator.LOG_SPANS;
-import static org.apache.solr.jaeger.JaegerTracerConfigurator.MAX_QUEUE_SIZE;
-
 public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
   @Test
-  public void testInjected() throws Exception{
-    MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(2, createTempDir())
-        .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
-        .withSolrXml(getFile("solr/solr.xml").toPath())
-        .build();
+  public void testInjected() throws Exception {
+    MiniSolrCloudCluster cluster =
+        new SolrCloudTestCase.Builder(2, createTempDir())
+            .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
+            .withSolrXml(getFile("solr/solr.xml").toPath())
+            .build();
     CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "100.0")
         .process(cluster.getSolrClient());
     try {
       TimeOut timeOut = new TimeOut(2, TimeUnit.MINUTES, TimeSource.NANO_TIME);
-      timeOut.waitFor("Waiting for GlobalTracer is registered", () -> GlobalTracer.getTracer() instanceof io.jaegertracing.internal.JaegerTracer);
+      timeOut.waitFor(
+          "Waiting for GlobalTracer is registered",
+          () -> GlobalTracer.getTracer() instanceof io.jaegertracing.internal.JaegerTracer);
 
-      //TODO add run Jaeger through Docker and verify spans available after run these commands
+      // TODO add run Jaeger through Docker and verify spans available after run these commands
       CollectionAdminRequest.createCollection("test", 2, 1).process(cluster.getSolrClient());
-      new UpdateRequest()
-          .add("id", "1")
-          .add("id", "2")
-          .process(cluster.getSolrClient(), "test");
+      new UpdateRequest().add("id", "1").add("id", "2").process(cluster.getSolrClient(), "test");
       cluster.getSolrClient().query("test", new SolrQuery("*:*"));
     } finally {
       cluster.shutdown();
     }
-
   }
 
   @Test
@@ -74,7 +72,8 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
     JaegerTracerConfigurator configurator = new JaegerTracerConfigurator();
     @SuppressWarnings({"rawtypes"})
     NamedList initArgs = new NamedList();
-    IllegalArgumentException exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
+    IllegalArgumentException exc =
+        expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(AGENT_HOST) || exc.getMessage().contains(AGENT_PORT));
     initArgs.add(AGENT_HOST, "localhost");
 
@@ -84,13 +83,13 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
     // no exception should be thrown
     configurator.init(initArgs);
-    ((Closeable)configurator.getTracer()).close();
+    ((Closeable) configurator.getTracer()).close();
 
     initArgs.add(LOG_SPANS, true);
     initArgs.add(FLUSH_INTERVAL, 1000);
     initArgs.add(MAX_QUEUE_SIZE, 10000);
     configurator.init(initArgs);
-    ((Closeable)configurator.getTracer()).close();
+    ((Closeable) configurator.getTracer()).close();
   }
 
   @Test
@@ -102,7 +101,8 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
     initArgs.add(AGENT_HOST, 100);
     initArgs.add(AGENT_PORT, 5775);
 
-    IllegalArgumentException exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
+    IllegalArgumentException exc =
+        expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(AGENT_HOST));
 
     initArgs.clear();
@@ -131,6 +131,5 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
     initArgs.add(MAX_QUEUE_SIZE, "10");
     exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(MAX_QUEUE_SIZE));
-
   }
 }
