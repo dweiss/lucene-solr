@@ -23,12 +23,11 @@ description = 'Additional analysis components'
 dependencies {
   api project(':solr:core')
 
-  implementation project(':lucene:analysis:icu')
-  implementation project(':lucene:analysis:smartcn')
-  implementation project(':lucene:analysis:morfologik')
-  implementation project(':lucene:analysis:opennlp')
-  implementation project(':lucene:analysis:smartcn')
-  implementation project(':lucene:analysis:stempel')
+  implementation "org.apache.lucene:lucene-analyzers-icu"
+  implementation "org.apache.lucene:lucene-analyzers-smartcn"
+  implementation "org.apache.lucene:lucene-analyzers-morfologik"
+  implementation "org.apache.lucene:lucene-analyzers-opennlp"
+  implementation "org.apache.lucene:lucene-analyzers-stempel"
 
   testImplementation project(':solr:test-framework')
 }

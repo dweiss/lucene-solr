@@ -22,7 +22,7 @@ description = 'Clustering Integraton'
 
 dependencies {
   implementation project(':solr:core')
-  implementation project(':lucene:analysis:common')
+  implementation "org.apache.lucene:lucene-analyzers-common"
   implementation('org.carrot2:carrot2-mini', {
     exclude group: "org.simpleframework", module: "simple-xml"
   })

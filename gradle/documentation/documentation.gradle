@@ -20,14 +20,10 @@ configure(rootProject) {
   def refguideUrlVersion = project.baseVersion.replaceFirst(/^(\d+)\.(\d+).*$/, '$1_$2')
 
   ext {
+    // TODO: this should be computed from dynamic Lucene version actually resolved in the project.
     luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', {
-      if (project.version != project.baseVersion) {
-        // non-release build
-        project('lucene').file('build/documentation').toURI().toASCIIString()
-      } else {
-        // release build
-        "https://lucene.apache.org/core/${urlVersion}"
-      }
+      // release build
+      "https://lucene.apache.org/core/${urlVersion}"
     }())
 
     solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
