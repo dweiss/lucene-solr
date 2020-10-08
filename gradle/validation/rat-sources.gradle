@@ -49,6 +49,14 @@ configure(rootProject) {
     }
 }
 
+configure(project(":solr:core")) {
+    rat {
+        srcExcludes += [
+            "**/htmlStripReaderTest.html"
+        ]
+    }
+}
+
 configure(project(":solr:webapp")) {
     rat {
         includes = [ "**" ]
