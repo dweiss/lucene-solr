@@ -23,7 +23,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.util.FilesystemResourceLoader;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -90,7 +89,9 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
 
     final ResourceLoader loader;
     if (random().nextBoolean()) {
-      loader = new StringMockResourceLoader(tailoredRules);
+      // TODO: export Lucene test classes or make it available somehow.
+      // loader = new StringMockResourceLoader(tailoredRules);
+      loader = new FilesystemResourceLoader(confDir.toPath());
     } else {
       loader = new FilesystemResourceLoader(confDir.toPath());
     }
