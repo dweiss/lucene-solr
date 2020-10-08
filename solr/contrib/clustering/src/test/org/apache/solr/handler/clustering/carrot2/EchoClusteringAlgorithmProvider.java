@@ -14,16 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.clustering.carrot2;
 
+import org.carrot2.clustering.ClusteringAlgorithmProvider;
 
-apply plugin: 'java-library'
+public class EchoClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
+  @Override
+  public String name() {
+    return EchoClusteringAlgorithm.class.getName();
+  }
 
-description = 'Search Results Clustering Integraton'
-
-dependencies {
-  implementation project(':solr:core')
-  implementation project(':lucene:analysis:common')
-  implementation 'org.carrot2:carrot2-core'
-
-  testImplementation project(':solr:test-framework')
+  @Override
+  public EchoClusteringAlgorithm get() {
+    return new EchoClusteringAlgorithm();
+  }
 }

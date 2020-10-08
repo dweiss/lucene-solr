@@ -16,14 +16,6 @@
  */
 package org.apache.solr.handler.clustering.carrot2;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -36,17 +28,17 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
 import org.apache.solr.handler.clustering.ClusteringComponent;
-import org.apache.solr.handler.clustering.ClusteringEngine;
-import org.apache.solr.handler.clustering.SearchClusteringEngine;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
-import org.carrot2.clustering.lingo.LingoClusteringAlgorithm;
-import org.carrot2.core.LanguageCode;
-import org.carrot2.util.attribute.AttributeUtils;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
- *
+ * Tests {@link CarrotClusteringEngine}.
  */
 public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
@@ -57,21 +49,25 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     checkEngine(getClusteringEngine("default"), expectedNumClusters);
   }
 
+  /**
+   * We'll make two queries, one with- and another one without summary
+   * and assert that documents are shorter when highlighter is in use.
+   */
   @Test
-  public void testProduceSummary() throws Exception {
-    // We'll make two queries, one with- and another one without summary
-    // and assert that documents are shorter when highlighter is in use.
+  public void testClusteringHighlightsOrFullContent() throws Exception {
     final List<NamedList<Object>> noSummaryClusters = clusterWithHighlighting(false, 80);
     final List<NamedList<Object>> summaryClusters = clusterWithHighlighting(true, 80);
 
     assertEquals("Equal number of clusters", noSummaryClusters.size(), summaryClusters.size());
     for (int i = 0; i < noSummaryClusters.size(); i++) {
-      assertTrue("Summary shorter than original document", 
-          getLabels(noSummaryClusters.get(i)).get(1).length() > 
-          getLabels(summaryClusters.get(i)).get(1).length()); 
+      assertTrue("Summary shorter than original document",
+          getLabels(noSummaryClusters.get(i)).get(1).length() >
+              getLabels(summaryClusters.get(i)).get(1).length());
     }
   }
-  
+
+/*
+
   @Test
   public void testSummaryFragSize() throws Exception {
     // We'll make two queries, one short summaries and another one with longer
@@ -85,33 +81,6 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
           getLabels(shortSummaryClusters.get(i)).get(1).length() < 
       getLabels(longSummaryClusters.get(i)).get(1).length()); 
     }
-  }
-
-  private List<NamedList<Object>> clusterWithHighlighting(
-      boolean enableHighlighting, int fragSize) throws IOException {
-    // Some documents don't have mining in the snippet
-    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 7);
-  }
-
-  private List<NamedList<Object>> clusterWithHighlighting(
-      boolean enableHighlighting, int fragSize, int summarySnippets,
-      String term, int expectedNumDocuments) throws IOException {
-    
-    final TermQuery query = new TermQuery(new Term("snippet", term));
-
-    final ModifiableSolrParams summaryParams = new ModifiableSolrParams();
-    summaryParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
-    summaryParams.add(CarrotParams.PRODUCE_SUMMARY,
-        Boolean.toString(enableHighlighting));
-    summaryParams
-        .add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(fragSize));
-    summaryParams
-        .add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(summarySnippets));
-    final List<NamedList<Object>> summaryClusters = checkEngine(
-        getClusteringEngine("echo"), expectedNumDocuments,
-        expectedNumDocuments, query, summaryParams);
-    
-    return summaryClusters;
   }
 
   @Test
@@ -421,31 +390,58 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
         MockClusteringAlgorithm.class,
         ((CarrotClusteringEngine) engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME)).getClusteringAlgorithmClass());
   }
+*/
+
+  private List<NamedList<Object>> clusterWithHighlighting(
+      boolean enableHighlighting, int fragSize) throws IOException {
+    // Some documents don't have mining in the snippet
+    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 7);
+  }
+
+  private List<NamedList<Object>> clusterWithHighlighting(
+      boolean enableHighlighting, int fragSize, int summarySnippets,
+      String term, int expectedNumDocuments) throws IOException {
+
+    final TermQuery query = new TermQuery(new Term("snippet", term));
+
+    final ModifiableSolrParams summaryParams = new ModifiableSolrParams();
+    summaryParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
+    summaryParams.add(CarrotParams.PRODUCE_SUMMARY,
+        Boolean.toString(enableHighlighting));
+    summaryParams
+        .add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(fragSize));
+    summaryParams
+        .add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(summarySnippets));
+    final List<NamedList<Object>> summaryClusters = checkEngine(
+        getClusteringEngine("echo"), expectedNumDocuments,
+        expectedNumDocuments, query, summaryParams);
+
+    return summaryClusters;
+  }
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {
     ClusteringComponent comp = (ClusteringComponent) h.getCore()
-            .getSearchComponent("clustering");
+        .getSearchComponent("clustering");
     assertNotNull("clustering component should not be null", comp);
-    CarrotClusteringEngine engine = 
+    CarrotClusteringEngine engine =
         (CarrotClusteringEngine) getSearchClusteringEngines(comp).get(engineName);
     assertNotNull("clustering engine for name: " + engineName
-            + " should not be null", engine);
+        + " should not be null", engine);
     return engine;
   }
 
   private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine,
-                            int expectedNumClusters) throws IOException {
+                                              int expectedNumClusters) throws IOException {
     return checkEngine(engine, numberOfDocs, expectedNumClusters, new MatchAllDocsQuery(), new ModifiableSolrParams());
   }
 
   private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine,
-                            int expectedNumClusters, SolrParams clusteringParams) throws IOException {
+                                              int expectedNumClusters, SolrParams clusteringParams) throws IOException {
     return checkEngine(engine, numberOfDocs, expectedNumClusters, new MatchAllDocsQuery(), clusteringParams);
   }
 
-
   private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine, int expectedNumDocs,
-                           int expectedNumClusters, Query query, SolrParams clusteringParams) throws IOException {
+                                              int expectedNumClusters, Query query, SolrParams clusteringParams) throws IOException {
     // Get all documents to cluster
     return h.getCore().withSearcher(searcher -> {
       DocList docList = searcher.getDocList(query, (Query) null, new Sort(), 0,
@@ -457,8 +453,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
       // Perform clustering
       LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams);
-      Map<SolrDocument,Integer> docIds = new HashMap<>(docList.size());
-      SolrDocumentList solrDocList = ClusteringComponent.docListToSolrDocumentList( docList, searcher, engine.getFieldsToLoad(req), docIds );
+      Map<SolrDocument, Integer> docIds = new HashMap<>(docList.size());
+      SolrDocumentList solrDocList = ClusteringComponent.docListToSolrDocumentList(docList, searcher, engine.getFieldsToLoad(req), docIds);
 
       @SuppressWarnings("unchecked")
       List<NamedList<Object>> results = (List<NamedList<Object>>) engine.cluster(query, solrDocList, docIds, req);
@@ -474,7 +470,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     for (int i = 0; i < results.size(); i++) {
       NamedList<Object> cluster = results.get(i);
       checkCluster(cluster, expectedDocCount, expectedLabelCount,
-              expectedSubclusterCount);
+          expectedSubclusterCount);
     }
   }
 
@@ -505,15 +501,15 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
                             int expectedLabelCount, int expectedSubclusterCount) {
     checkCluster(cluster, expectedSubclusterCount > 0);
     assertEquals("number of docs in cluster", expectedDocCount,
-            getDocs(cluster).size());
+        getDocs(cluster).size());
     assertEquals("number of labels in cluster", expectedLabelCount,
-            getLabels(cluster).size());
+        getLabels(cluster).size());
 
     if (expectedSubclusterCount > 0) {
       List<NamedList<Object>> subclusters = getSubclusters(cluster);
       assertEquals("numClusters", expectedSubclusterCount, subclusters.size());
       assertEquals("number of subclusters in cluster",
-              expectedSubclusterCount, subclusters.size());
+          expectedSubclusterCount, subclusters.size());
     }
   }
 
@@ -532,7 +528,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   }
 
   private Boolean isOtherTopics(NamedList<Object> cluster) {
-    return (Boolean)cluster.get("other-topics");
+    return (Boolean) cluster.get("other-topics");
   }
 
   @SuppressWarnings("unchecked")

@@ -15,89 +15,77 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering.carrot2;
-import org.carrot2.core.*;
-import org.carrot2.core.attribute.AttributeNames;
-import org.carrot2.core.attribute.Processing;
-import org.carrot2.util.attribute.*;
-import org.carrot2.util.attribute.constraint.IntRange;
+
+import org.carrot2.attrs.AttrComposite;
+import org.carrot2.clustering.Cluster;
+import org.carrot2.clustering.ClusteringAlgorithm;
+import org.carrot2.clustering.Document;
+import org.carrot2.language.LanguageComponents;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-@Bindable(prefix = "MockClusteringAlgorithm")
-public class MockClusteringAlgorithm extends ProcessingComponentBase implements
-        IClusteringAlgorithm {
-  @Input
-  @Processing
-  @Attribute(key = AttributeNames.DOCUMENTS)
-  public List<Document> documents;
-
-  @Output
-  @Processing
-  @Attribute(key = AttributeNames.CLUSTERS)
-  public List<Cluster> clusters;
-
-  @Input
-  @Processing
-  @Attribute
-  @IntRange(min = 1, max = 5)
+public class MockClusteringAlgorithm extends AttrComposite implements ClusteringAlgorithm {
+  // @IntRange(min = 1, max = 5)
   public int depth = 2;
 
-  @Input
-  @Processing
-  @Attribute
-  @IntRange(min = 1, max = 5)
+  // @IntRange(min = 1, max = 5)
   public int labels = 1;
 
-  @Input
-  @Processing
-  @Attribute
-  @IntRange(min = 0)
+  //@IntRange(min = 0)
   public int maxClusters = 0;
 
-  @Input
-  @Processing
-  @Attribute
-  public int otherTopicsModulo = 0;
+  @Override
+  public boolean supports(LanguageComponents languageComponents) {
+    return true;
+  }
 
   @Override
-  public void process() throws ProcessingException {
-    clusters = new ArrayList<>();
-    if (documents == null) {
-      return;
-    }
+  public Set<Class<?>> requiredLanguageComponents() {
+    return Collections.emptySet();
+  }
+
+  @Override
+  public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream, LanguageComponents languageComponents) {
+    List<T> documents = documentStream.collect(Collectors.toList());
+    List<Cluster<T>> clusters = new ArrayList<>();
 
     if (maxClusters > 0) {
       documents = documents.subList(0, maxClusters);
     }
 
     int documentIndex = 1;
-    for (Document document : documents) {
+    for (T document : documents) {
       StringBuilder label = new StringBuilder("Cluster " + documentIndex);
-      Cluster cluster = createCluster(label.toString(), documentIndex, document);
+      Cluster<T> cluster = createCluster(label.toString(), documentIndex, document);
       clusters.add(cluster);
       for (int i = 1; i <= depth; i++) {
         label.append(".");
         label.append(i);
-        Cluster newCluster = createCluster(label.toString(), documentIndex, document);
-        cluster.addSubclusters(createCluster(label.toString(), documentIndex, document), newCluster);
+        Cluster<T> newCluster = createCluster(label.toString(), documentIndex, document);
+        cluster.addCluster(newCluster);
         cluster = newCluster;
       }
       documentIndex++;
     }
+
+    return clusters;
   }
 
-  private Cluster createCluster(String labelBase, int documentIndex, Document... documents) {
-    Cluster cluster = new Cluster();
+  private <T extends Document> Cluster<T> createCluster(String labelBase, int documentIndex, T document) {
+    Cluster<T> cluster = new Cluster<T>();
     cluster.setScore(documentIndex * 0.25);
-    if (otherTopicsModulo != 0 && documentIndex % otherTopicsModulo == 0)
-    {
-      cluster.setOtherTopics(true);
-    }
+
     for (int i = 0; i < labels; i++) {
-      cluster.addPhrases(labelBase + "#" + (i + 1));
+      cluster.addLabel(labelBase + "#" + (i + 1));
     }
-    cluster.addDocuments(documents);
+
+    cluster.addDocument(document);
+
     return cluster;
   }
 }

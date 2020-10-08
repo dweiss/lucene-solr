@@ -15,51 +15,50 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering.carrot2;
+
+import org.carrot2.attrs.AttrComposite;
+import org.carrot2.clustering.Cluster;
+import org.carrot2.clustering.ClusteringAlgorithm;
+import org.carrot2.clustering.Document;
+import org.carrot2.language.LanguageComponents;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.carrot2.core.Cluster;
-import org.carrot2.core.Document;
-import org.carrot2.core.IClusteringAlgorithm;
-import org.carrot2.core.ProcessingComponentBase;
-import org.carrot2.core.ProcessingException;
-import org.carrot2.core.attribute.AttributeNames;
-import org.carrot2.core.attribute.Processing;
-import org.carrot2.util.attribute.Attribute;
-import org.carrot2.util.attribute.Bindable;
-import org.carrot2.util.attribute.Input;
-import org.carrot2.util.attribute.Output;
-
-/**
- * A mock Carrot2 clustering algorithm that outputs input documents as clusters.
- * Useful only in tests.
- */
-@Bindable(prefix = "EchoClusteringAlgorithm")
-public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
-        IClusteringAlgorithm {
-  @Input
-  @Processing
-  @Attribute(key = AttributeNames.DOCUMENTS)
-  public List<Document> documents;
-
-  @Output
-  @Processing
-  @Attribute(key = AttributeNames.CLUSTERS)
-  public List<Cluster> clusters;
-
-  @Input
-  @Processing
-  @Attribute(key = "custom-fields")
-  public String customFields = "";
-
-  
+public class EchoClusteringAlgorithm extends AttrComposite implements ClusteringAlgorithm {
   @Override
-  public void process() throws ProcessingException {
-    clusters = new ArrayList<>();
-    
-    for (Document document : documents) {
-      final Cluster cluster = new Cluster();
-      cluster.addPhrases(document.getTitle(), document.getSummary());
+  public boolean supports(LanguageComponents languageComponents) {
+    return true;
+  }
+
+  @Override
+  public Set<Class<?>> requiredLanguageComponents() {
+    return Collections.emptySet();
+  }
+
+  @Override
+  public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream, LanguageComponents languageComponents) {
+    List<T> documents = documentStream.collect(Collectors.toList());
+    List<Cluster<T>> clusters = new ArrayList<>();
+
+    for (T document : documents) {
+      final Cluster<T> cluster = new Cluster();
+
+      Map<String, String> fields = new HashMap<>();
+      document.visitFields((field, value) -> {
+        fields.put(field, value);
+      });
+
+      cluster.addLabel(Objects.requireNonNull(fields.get("title")));
+      cluster.addLabel(Objects.requireNonNull(fields.get("snippet")));
+      /*
       if (document.getLanguage() != null) {
         cluster.addPhrases(document.getLanguage().name());
       }
@@ -69,8 +68,11 @@ public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
           cluster.addPhrases(value.toString());
         }
       }
-      cluster.addDocuments(document);
+       */
+      cluster.addDocument(document);
       clusters.add(cluster);
     }
+
+    return clusters;
   }
 }

@@ -282,13 +282,13 @@
     <lst name="engine">
       <str name="name">mock-external-attrs</str>
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithm</str>
-      <!-- takes precedence over external XML -->
       <int name="MockClusteringAlgorithm.labels">4</int>
     </lst>
     <lst name="engine">
       <str name="name">echo</str>
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.EchoClusteringAlgorithm</str>
     </lst>
+    <!--
     <lst name="engine">
       <str name="name">lexical-resource-check</str>
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
@@ -308,6 +308,7 @@
       <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.EchoStemsClusteringAlgorithm</str>
       <str name="PreprocessingPipeline.stemmerFactory">org.apache.solr.handler.clustering.carrot2.DuplicatingStemmerFactory</str>
     </lst>
+    -->
   </searchComponent>
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="doc-clustering">

@@ -40,9 +40,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- *
- *
- **/
+ * Test {@link ClusteringComponent}.
+ */
 public class ClusteringComponentTest extends AbstractClusteringTestCase {
 
   @Before
@@ -124,7 +123,6 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
       SolrDocumentList list = ClusteringComponent.docListToSolrDocumentList(docs, srchr, fields, null);
       assertEquals("wrong list Size", docs.size(), list.size());
       for (SolrDocument document : list) {
-
         assertTrue("unexpected field", ! document.containsKey("val_i"));
         assertTrue("unexpected id field", ! document.containsKey("id"));
 
@@ -139,5 +137,4 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
       return null;
     });
   }
-
 }

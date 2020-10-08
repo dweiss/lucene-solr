@@ -47,8 +47,5 @@ public class DistributedClusteringComponentTest extends
         CommonParams.Q, "*:*",
         CommonParams.SORT, id + " desc",
         ClusteringParams.USE_SEARCH_RESULTS, "true");
-    // destroy is not needed because distribTearDown method of base class does it.
-    //destroyServers();
   }
-
 }

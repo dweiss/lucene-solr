@@ -16,18 +16,16 @@
  */
 package org.apache.solr.handler.clustering.carrot2;
 
-import org.carrot2.core.LanguageCode;
-import org.carrot2.text.linguistic.IStemmer;
-import org.carrot2.text.linguistic.IStemmerFactory;
+import org.carrot2.clustering.ClusteringAlgorithmProvider;
 
-public class DuplicatingStemmerFactory implements IStemmerFactory {
+public class MockClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
   @Override
-  public IStemmer getStemmer(LanguageCode language) {
-    return new IStemmer() {
-      @Override
-      public CharSequence stem(CharSequence word) {
-        return word.toString() + word.toString();
-      }
-    };
+  public String name() {
+    return MockClusteringAlgorithm.class.getName();
+  }
+
+  @Override
+  public MockClusteringAlgorithm get() {
+    return new MockClusteringAlgorithm();
   }
 }
