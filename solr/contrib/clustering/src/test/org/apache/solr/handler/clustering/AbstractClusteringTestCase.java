@@ -28,22 +28,22 @@ import org.junit.BeforeClass;
  *
  */
 public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
-  protected static int numberOfDocs = 0;
+  protected static int numberOfTestDocs;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     File testHome = createTempDir().toFile();
     FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
     initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
-    numberOfDocs = 0;
+    int docCount = 0;
     for (String[] doc : DOCUMENTS) {
-      assertNull(h.validateUpdate(adoc("id", Integer.toString(numberOfDocs), "url", doc[0], "title", doc[1], "snippet", doc[2])));
-      numberOfDocs++;
+      assertNull(h.validateUpdate(adoc("id", Integer.toString(docCount), "url", doc[0], "title", doc[1], "snippet", doc[2])));
+      docCount++;
     }
     
     // Add a multi-valued snippet
     final SolrInputDocument multiValuedSnippet = new SolrInputDocument();
-    multiValuedSnippet.addField("id", numberOfDocs++);
+    multiValuedSnippet.addField("id", docCount++);
     multiValuedSnippet.addField("title", "Title");
     multiValuedSnippet.addField("url", "URL");
     multiValuedSnippet.addField("snippet", "First value of multi field. Some more text. And still more.");
@@ -53,7 +53,7 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
 
     // Add a document with multi-field title and snippet
     final SolrInputDocument multiFieldDoc = new SolrInputDocument();
-    multiFieldDoc.addField("id", numberOfDocs++);
+    multiFieldDoc.addField("id", docCount++);
     multiFieldDoc.addField("title", "Title field");
     multiFieldDoc.addField("heading", "Heading field");
     multiFieldDoc.addField("url", "URL");
@@ -63,7 +63,7 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     
     // Add a document with one language supported by Carrot2
     final SolrInputDocument docWithOneSupprtedLanguage = new SolrInputDocument();
-    docWithOneSupprtedLanguage.addField("id", numberOfDocs++);
+    docWithOneSupprtedLanguage.addField("id", docCount++);
     docWithOneSupprtedLanguage.addField("title", "");
     docWithOneSupprtedLanguage.addField("url", "one_supported_language");
     docWithOneSupprtedLanguage.addField("lang", "zh-cn");
@@ -71,7 +71,7 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     
     // Add a document with more languages, one supported by Carrot2
     final SolrInputDocument docWithOneSupprtedLanguageOfMany = new SolrInputDocument();
-    docWithOneSupprtedLanguageOfMany.addField("id", numberOfDocs++);
+    docWithOneSupprtedLanguageOfMany.addField("id", docCount++);
     docWithOneSupprtedLanguageOfMany.addField("url", "one_supported_language_of_many");
     docWithOneSupprtedLanguageOfMany.addField("lang", "zh-tw");
     docWithOneSupprtedLanguageOfMany.addField("lang", "POLISH");
@@ -80,7 +80,7 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     
     // Add a document with more languages, one supported by Carrot2
     final SolrInputDocument docWithCustomFields = new SolrInputDocument();
-    docWithCustomFields.addField("id", numberOfDocs++);
+    docWithCustomFields.addField("id", docCount++);
     docWithCustomFields.addField("url", "custom_fields");
     docWithCustomFields.addField("intfield_i", 10);
     docWithCustomFields.addField("floatfield_f", 10.5);
@@ -88,6 +88,8 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     docWithCustomFields.addField("heading", "second");
     assertNull(h.validateUpdate(adoc(docWithCustomFields)));
     assertNull(h.validateUpdate(commit()));
+
+    numberOfTestDocs = docCount;
   }
 
   /**

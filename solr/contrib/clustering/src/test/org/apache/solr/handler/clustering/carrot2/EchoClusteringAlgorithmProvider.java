@@ -21,7 +21,7 @@ import org.carrot2.clustering.ClusteringAlgorithmProvider;
 public class EchoClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
   @Override
   public String name() {
-    return EchoClusteringAlgorithm.class.getName();
+    return EchoClusteringAlgorithm.class.getSimpleName();
   }
 
   @Override

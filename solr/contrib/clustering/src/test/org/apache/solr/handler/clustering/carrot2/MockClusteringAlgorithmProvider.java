@@ -21,7 +21,7 @@ import org.carrot2.clustering.ClusteringAlgorithmProvider;
 public class MockClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
   @Override
   public String name() {
-    return MockClusteringAlgorithm.class.getName();
+    return MockClusteringAlgorithm.class.getSimpleName();
   }
 
   @Override

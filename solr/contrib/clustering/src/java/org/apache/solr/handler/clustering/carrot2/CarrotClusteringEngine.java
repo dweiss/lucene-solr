@@ -48,6 +48,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -422,7 +423,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       NamedList<Object> cluster = new SimpleOrderedMap<>();
       result.add(cluster);
       cluster.add("other-topics", true);
-      cluster.add("labels", Arrays.asList("Other topics"));
+      cluster.add("labels", Collections.singletonList("Other topics"));
       cluster.add("score", 0);
       cluster.add("docs", unclustered.stream().map(CarrotDocument::getSolrDocumentId)
           .collect(Collectors.toList()));

@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
 import org.apache.solr.handler.clustering.ClusteringComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -66,20 +67,20 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     }
   }
 
-/*
-
+  /**
+   * We'll make two queries, one short summaries and another one with longer
+   * summaries and will check that the results differ.
+   */
   @Test
   public void testSummaryFragSize() throws Exception {
-    // We'll make two queries, one short summaries and another one with longer
-    // summaries and will check that the results differ.
     final List<NamedList<Object>> shortSummaryClusters = clusterWithHighlighting(true, 30);
     final List<NamedList<Object>> longSummaryClusters = clusterWithHighlighting(true, 80);
-    
+
     assertEquals("Equal number of clusters", shortSummaryClusters.size(), longSummaryClusters.size());
     for (int i = 0; i < shortSummaryClusters.size(); i++) {
-      assertTrue("Summary shorter than original document", 
-          getLabels(shortSummaryClusters.get(i)).get(1).length() < 
-      getLabels(longSummaryClusters.get(i)).get(1).length()); 
+      assertTrue("Summary shorter than original document",
+          getLabels(shortSummaryClusters.get(i)).get(1).length() <
+              getLabels(longSummaryClusters.get(i)).get(1).length());
     }
   }
 
@@ -90,22 +91,27 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   @Test
   public void testWithoutSubclusters() throws Exception {
-    checkClusters(checkEngine(getClusteringEngine("mock"), AbstractClusteringTestCase.numberOfDocs),
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(CarrotParams.OUTPUT_SUB_CLUSTERS, false);
+    checkClusters(checkEngine(getClusteringEngine("mock"),
+        AbstractClusteringTestCase.numberOfTestDocs, params),
         1, 1, 0);
-  }
-
-  @Test
-  public void testExternalXmlAttributesFile() throws Exception {
-    checkClusters(
-        checkEngine(getClusteringEngine("mock-external-attrs"), 13),
-        1, 4, 0);
   }
 
   @Test
   public void testWithSubclusters() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CarrotParams.OUTPUT_SUB_CLUSTERS, true);
-    checkClusters(checkEngine(getClusteringEngine("mock"), AbstractClusteringTestCase.numberOfDocs), 1, 1, 2);
+    checkClusters(checkEngine(getClusteringEngine("mock"),
+        AbstractClusteringTestCase.numberOfTestDocs, params), 1, 1, 2);
+  }
+
+/*
+  @Test
+  public void testExternalXmlAttributesFile() throws Exception {
+    checkClusters(
+        checkEngine(getClusteringEngine("mock-external-attrs"), 13),
+        1, 4, 0);
   }
 
   @Test
@@ -395,7 +401,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   private List<NamedList<Object>> clusterWithHighlighting(
       boolean enableHighlighting, int fragSize) throws IOException {
     // Some documents don't have mining in the snippet
-    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfDocs - 7);
+    return clusterWithHighlighting(enableHighlighting, fragSize, 1, "mine", numberOfTestDocs - 7);
   }
 
   private List<NamedList<Object>> clusterWithHighlighting(
@@ -432,12 +438,12 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine,
                                               int expectedNumClusters) throws IOException {
-    return checkEngine(engine, numberOfDocs, expectedNumClusters, new MatchAllDocsQuery(), new ModifiableSolrParams());
+    return checkEngine(engine, numberOfTestDocs, expectedNumClusters, new MatchAllDocsQuery(), new ModifiableSolrParams());
   }
 
   private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine,
                                               int expectedNumClusters, SolrParams clusteringParams) throws IOException {
-    return checkEngine(engine, numberOfDocs, expectedNumClusters, new MatchAllDocsQuery(), clusteringParams);
+    return checkEngine(engine, numberOfTestDocs, expectedNumClusters, new MatchAllDocsQuery(), clusteringParams);
   }
 
   private List<NamedList<Object>> checkEngine(CarrotClusteringEngine engine, int expectedNumDocs,
@@ -445,7 +451,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     // Get all documents to cluster
     return h.getCore().withSearcher(searcher -> {
       DocList docList = searcher.getDocList(query, (Query) null, new Sort(), 0,
-          numberOfDocs);
+          numberOfTestDocs);
       assertEquals("docList size", expectedNumDocs, docList.matches());
 
       ModifiableSolrParams solrParams = new ModifiableSolrParams();
@@ -467,6 +473,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
   private void checkClusters(List<NamedList<Object>> results, int expectedDocCount,
                              int expectedLabelCount, int expectedSubclusterCount) {
+    System.out.println(Utils.toJSONString(results));
+
     for (int i = 0; i < results.size(); i++) {
       NamedList<Object> cluster = results.get(i);
       checkCluster(cluster, expectedDocCount, expectedLabelCount,
@@ -507,7 +515,6 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
     if (expectedSubclusterCount > 0) {
       List<NamedList<Object>> subclusters = getSubclusters(cluster);
-      assertEquals("numClusters", expectedSubclusterCount, subclusters.size());
       assertEquals("number of subclusters in cluster",
           expectedSubclusterCount, subclusters.size());
     }
