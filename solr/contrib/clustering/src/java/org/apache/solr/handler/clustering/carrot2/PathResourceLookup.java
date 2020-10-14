@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * A resource lookup from the provided list of paths.
+ * Carrot2 resource provider from the provided list of filesystem paths.
  */
-class PathResourceLookup implements ResourceLookup {
+final class PathResourceLookup implements ResourceLookup {
   private final List<Path> locations;
 
   PathResourceLookup(List<Path> locations) {

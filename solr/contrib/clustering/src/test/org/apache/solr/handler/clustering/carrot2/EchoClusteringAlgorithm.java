@@ -24,14 +24,16 @@ import org.carrot2.language.LanguageComponents;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Test-only pseudo clustering algorithm that creates
+ * a cluster for each input document and sets the labels
+ * of this cluster to the full content of clustered input
+ * fields.
+ */
 public class EchoClusteringAlgorithm extends AttrComposite implements ClusteringAlgorithm {
   @Override
   public boolean supports(LanguageComponents languageComponents) {
@@ -45,33 +47,15 @@ public class EchoClusteringAlgorithm extends AttrComposite implements Clustering
 
   @Override
   public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream, LanguageComponents languageComponents) {
-    List<T> documents = documentStream.collect(Collectors.toList());
     List<Cluster<T>> clusters = new ArrayList<>();
-
-    for (T document : documents) {
-      final Cluster<T> cluster = new Cluster();
-
-      Map<String, String> fields = new HashMap<>();
-      document.visitFields((field, value) -> {
-        fields.put(field, value);
-      });
-
-      cluster.addLabel(Objects.requireNonNull(fields.get("title")));
-      cluster.addLabel(Objects.requireNonNull(fields.get("snippet")));
-      /*
-      if (document.getLanguage() != null) {
-        cluster.addPhrases(document.getLanguage().name());
-      }
-      for (String field : customFields.split(",")) {
-        Object value = document.getField(field);
-        if (value != null) {
-          cluster.addPhrases(value.toString());
-        }
-      }
-       */
+    documentStream.forEach(document -> {
+      final Cluster<T> cluster = new Cluster<>();
       cluster.addDocument(document);
+      document.visitFields((field, value) -> {
+        cluster.addLabel(field + ":" + value);
+      });
       clusters.add(cluster);
-    }
+    });
 
     return clusters;
   }

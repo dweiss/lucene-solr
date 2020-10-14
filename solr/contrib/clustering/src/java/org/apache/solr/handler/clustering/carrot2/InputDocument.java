@@ -26,11 +26,11 @@ import java.util.function.BiConsumer;
 /**
  * Representation of a single logical "document" for clustering.
  */
-class CarrotDocument implements Document {
+final class InputDocument implements Document {
   private final Object solrDocumentId;
   private final Map<String, String> clusteredFields = new LinkedHashMap<>();
 
-  CarrotDocument(Object solrDocumentId) {
+  InputDocument(Object solrDocumentId) {
     this.solrDocumentId = Objects.requireNonNull(solrDocumentId);
   }
 

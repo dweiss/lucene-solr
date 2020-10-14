@@ -111,7 +111,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       DocList docs,
       SolrIndexSearcher searcher,
       Set<String> fields,
-      Map<SolrDocument, Integer> ids ) throws IOException
+      Map<SolrDocument, Integer> ids) throws IOException
   {
     IndexSchema schema = searcher.getSchema();
 

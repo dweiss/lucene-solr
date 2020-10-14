@@ -37,11 +37,11 @@
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>
 
-  <requestHandler name="/select" class="solr.SearchHandler">
+  <requestHandler name="select" class="solr.SearchHandler">
     <!-- default values for query parameters -->
-     <lst name="defaults">
-       <str name="echoParams">explicit</str>
-     </lst>
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
     <arr name="last-components">
       <str>clustering</str>
     </arr>
@@ -49,34 +49,46 @@
 
   <requestHandler name="docClustering" class="solr.SearchHandler">
     <!-- default values for query parameters -->
-     <lst name="defaults">
-       <str name="echoParams">explicit</str>
-     </lst>
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+    </lst>
     <arr name="last-components">
       <str>doc-clustering</str>
     </arr>
   </requestHandler>
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering">
-    <!-- Declare an engine -->
     <lst name="engine">
-      <!-- The name, only one can be named "default" -->
-      <str name="name">default</str>
+      <str name="name">lingo</str>
       <str name="carrot.algorithm">Lingo</str>
     </lst>
+
     <lst name="engine">
       <str name="name">stc</str>
       <str name="carrot.algorithm">STC</str>
     </lst>
+
+    <lst name="engine">
+      <str name="name">kmeans</str>
+      <str name="carrot.algorithm">Bisecting K-Means</str>
+    </lst>
+
+    <lst name="engine">
+      <str name="name">default</str>
+      <str name="carrot.algorithm">Lingo</str>
+    </lst>
+
     <lst name="engine">
       <str name="name">mock</str>
       <str name="carrot.algorithm">MockClusteringAlgorithm</str>
     </lst>
+
     <lst name="engine">
       <str name="name">mock-external-attrs</str>
       <str name="carrot.algorithm">MockClusteringAlgorithm</str>
       <int name="MockClusteringAlgorithm.labels">4</int>
     </lst>
+
     <lst name="engine">
       <str name="name">echo</str>
       <str name="carrot.algorithm">EchoClusteringAlgorithm</str>
@@ -113,7 +125,7 @@
       <str name="classname">org.apache.solr.handler.clustering.MockDocumentClusteringEngine</str>
     </lst>
   </searchComponent>
- 
+
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-default">
     <lst name="engine">
@@ -149,7 +161,7 @@
       <str name="carrot.algorithm">MockClusteringAlgorithm</str>
     </lst>
   </searchComponent>
-  
+
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-dups">
     <lst name="engine">
       <str name="carrot.algorithm">Lingo</str>
@@ -162,33 +174,12 @@
     </lst>
   </searchComponent>
 
-  <highlighting>
-   <!-- Configure the standard fragmenter -->
-   <!-- This could most likely be commented out in the "default" case -->
-   <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
-    <lst name="defaults">
-     <int name="hl.fragsize">100</int>
-    </lst>
-   </fragmenter>
-
-   <!-- A regular-expression-based fragmenter (f.i., for sentence extraction) -->
-   <fragmenter name="regex" class="org.apache.solr.highlight.RegexFragmenter">
-    <lst name="defaults">
-      <!-- slightly smaller fragsizes work better because of slop -->
-      <int name="hl.fragsize">70</int>
-      <!-- allow 50% slop on fragment sizes -->
-      <float name="hl.regex.slop">0.5</float> 
-      <!-- a basic sentence pattern -->
-      <str name="hl.regex.pattern">[-\w ,/\n\"']{20,200}</str>
-    </lst>
-   </fragmenter>
-   
-   <!-- Configure the standard formatter -->
-   <formatter name="html" class="org.apache.solr.highlight.HtmlFormatter" default="true">
-    <lst name="defaults">
-     <str name="hl.simple.pre"><![CDATA[<em>]]></str>
-     <str name="hl.simple.post"><![CDATA[</em>]]></str>
-    </lst>
-   </formatter>
-  </highlighting>
+  <searchComponent class="solr.HighlightComponent" name="highlight">
+    <highlighting>
+      <!--
+      No special configuration needed since clustering configures
+      highlighter parameters internally anyway.
+      -->
+    </highlighting>
+  </searchComponent>
 </config>

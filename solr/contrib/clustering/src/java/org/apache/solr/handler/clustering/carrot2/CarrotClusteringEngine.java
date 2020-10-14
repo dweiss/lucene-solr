@@ -17,7 +17,9 @@
 package org.apache.solr.handler.clustering.carrot2;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -52,6 +54,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -136,28 +139,43 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   }
 
   @Override
-  public Object cluster(Query query, SolrDocumentList solrDocList,
+  public List<NamedList<Object>> cluster(Query query, SolrDocumentList solrDocList,
                         Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
     try {
       ClusteringAlgorithm algorithm = engineContext.getAlgorithm(clusteringAlgorithmName);
 
-      /*
-      // Prepare attributes for Carrot2 clustering call
-      Map<String, Object> attributes = new HashMap<>();
-      List<Document> documents = getDocuments(solrDocList, docIds, query, sreq);
-      attributes.put(AttributeNames.DOCUMENTS, documents);
-      attributes.put(AttributeNames.QUERY, query.toString());
+      // Set any algorithm attributes from the request. These are "flattened" attribute key-value
+      // pairs.
+      LinkedHashMap<String, String> attrs = new LinkedHashMap<>();
+      for (Map.Entry<String, String[]> e : sreq.getParams()) {
+        String[] value = e.getValue();
+        if (value != null) {
+          attrs.put(e.getKey(), value.length == 1 ? value[0] : String.join(", ",  value));
+        }
+      }
 
-      // Pass the fields on which clustering runs.
-      attributes.put("solrFieldNames", getFieldsForClustering(sreq));
+      // Set the optional query hint. We extract just the terms
+      if (!attrs.containsKey("queryHint")) {
+        Set<String> termSet = new LinkedHashSet<>();
+        query.visit(new QueryVisitor() {
+          @Override
+          public void consumeTerms(Query query, Term... terms) {
+            for (Term t : terms) {
+              termSet.add(t.text());
+            }
+          }
+        });
+        attrs.put("queryHint", String.join(" ", termSet));
+      }
 
-      // Pass extra overriding attributes from the request, if any
-      extractCarrotAttributes(sreq.getParams(), attributes);
-       */
+      algorithm.accept(new AttrVisitorFromFlattenedKeys(attrs));
+
+      // TODO: Pass the fields on which clustering runs.
+      // attributes.put("solrFieldNames", getFieldsForClustering(sreq));
 
       // Perform clustering and convert to an output structure of clusters.
-      List<CarrotDocument> documents = getDocuments(solrDocList, docIds, query, sreq);
-      List<Cluster<CarrotDocument>> clusters = algorithm.cluster(documents.stream(),
+      List<InputDocument> documents = getDocuments(solrDocList, docIds, query, sreq);
+      List<Cluster<InputDocument>> clusters = algorithm.cluster(documents.stream(),
           engineContext.getLanguage("English"));
       return clustersToNamedList(documents, clusters, sreq.getParams());
     } catch (Exception e) {
@@ -206,8 +224,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   /**
    * Prepares Carrot2 documents for clustering.
    */
-  private List<CarrotDocument> getDocuments(SolrDocumentList solrDocList, Map<SolrDocument, Integer> docIds,
-                                            Query query, final SolrQueryRequest sreq) throws IOException {
+  private List<InputDocument> getDocuments(SolrDocumentList solrDocList, Map<SolrDocument, Integer> docIds,
+                                           Query query, final SolrQueryRequest sreq) throws IOException {
     SolrHighlighter highlighter = null;
     SolrParams solrParams = sreq.getParams();
     SolrCore core = sreq.getCore();
@@ -243,13 +261,14 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     SolrQueryRequest req = null;
     String[] snippetFieldAry = null;
     if (produceSummary) {
-      highlighter = HighlightComponent.getHighlighter(core);
+      highlighter = ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME)).getHighlighter();
       if (highlighter != null) {
         Map<String, Object> args = new HashMap<>();
         snippetFieldAry = snippetFieldSpec.split("[, ]");
         args.put(HighlightParams.FIELDS, snippetFieldAry);
         args.put(HighlightParams.HIGHLIGHT, "true");
-        args.put(HighlightParams.SIMPLE_PRE, ""); //we don't care about actually highlighting the area
+        // We don't want any highlight marks.
+        args.put(HighlightParams.SIMPLE_PRE, "");
         args.put(HighlightParams.SIMPLE_POST, "");
         args.put(HighlightParams.FRAGSIZE, solrParams.getInt(CarrotParams.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
         args.put(HighlightParams.SNIPPETS, solrParams.getInt(CarrotParams.SUMMARY_SNIPPETS, solrParams.getInt(HighlightParams.SNIPPETS, 1)));
@@ -266,7 +285,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
 
     Iterator<SolrDocument> docsIter = solrDocList.iterator();
-    List<CarrotDocument> result = new ArrayList<>(solrDocList.size());
+    List<InputDocument> result = new ArrayList<>(solrDocList.size());
 
     float[] scores = {1.0f};
     int[] docsHolder = new int[1];
@@ -311,9 +330,9 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
       // Store Solr id of the document, we need it to map document instances
       // found in clusters back to identifiers.
-      CarrotDocument carrotDocument = new CarrotDocument(sdoc.getFieldValue(idFieldName));
-      carrotDocument.addClusteredField("title", getConcatenated(sdoc, titleFieldSpec));
-      carrotDocument.addClusteredField("snippet", snippet);
+      InputDocument inputDocument = new InputDocument(sdoc.getFieldValue(idFieldName));
+      inputDocument.addClusteredField("title", getConcatenated(sdoc, titleFieldSpec));
+      inputDocument.addClusteredField("snippet", snippet);
       /*
         // TODO: url field is no more
         //Objects.toString(sdoc.getFieldValue(urlField), "");
@@ -361,7 +380,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       }
        */
 
-      result.add(carrotDocument);
+      result.add(inputDocument);
     }
 
     return result;
@@ -405,37 +424,39 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     return result.toString().trim();
   }
 
-  private List<NamedList<Object>> clustersToNamedList(List<CarrotDocument> documents,
-                                                      List<Cluster<CarrotDocument>> clusters,
+  private List<NamedList<Object>> clustersToNamedList(List<InputDocument> documents,
+                                                      List<Cluster<InputDocument>> clusters,
                                                       SolrParams solrParams) {
     List<NamedList<Object>> result = new ArrayList<>();
     clustersToNamedList(clusters, result, solrParams.getBool(
         CarrotParams.OUTPUT_SUB_CLUSTERS, true), solrParams.getInt(
         CarrotParams.NUM_DESCRIPTIONS, Integer.MAX_VALUE));
 
-    LinkedHashSet<CarrotDocument> clustered = new LinkedHashSet<>();
-    clusters.forEach(cluster -> collectUniqueDocuments(cluster, clustered));
-    List<CarrotDocument> unclustered = documents.stream()
-        .filter(doc -> !clustered.contains(doc))
-        .collect(Collectors.toList());
+    if (solrParams.getBool(CarrotParams.OUTPUT_OTHER_TOPICS, true)) {
+      LinkedHashSet<InputDocument> clustered = new LinkedHashSet<>();
+      clusters.forEach(cluster -> collectUniqueDocuments(cluster, clustered));
+      List<InputDocument> unclustered = documents.stream()
+          .filter(doc -> !clustered.contains(doc))
+          .collect(Collectors.toList());
 
-    if (!unclustered.isEmpty()) {
-      NamedList<Object> cluster = new SimpleOrderedMap<>();
-      result.add(cluster);
-      cluster.add("other-topics", true);
-      cluster.add("labels", Collections.singletonList("Other topics"));
-      cluster.add("score", 0);
-      cluster.add("docs", unclustered.stream().map(CarrotDocument::getSolrDocumentId)
-          .collect(Collectors.toList()));
+      if (!unclustered.isEmpty()) {
+        NamedList<Object> cluster = new SimpleOrderedMap<>();
+        result.add(cluster);
+        cluster.add("other-topics", true);
+        cluster.add("labels", Collections.singletonList("Other topics"));
+        cluster.add("score", 0);
+        cluster.add("docs", unclustered.stream().map(InputDocument::getSolrDocumentId)
+            .collect(Collectors.toList()));
+      }
     }
 
     return result;
   }
 
   private void clustersToNamedList(
-      List<Cluster<CarrotDocument>> outputClusters,
+      List<Cluster<InputDocument>> outputClusters,
       List<NamedList<Object>> parent, boolean outputSubClusters, int maxLabels) {
-    for (Cluster<CarrotDocument> outCluster : outputClusters) {
+    for (Cluster<InputDocument> outCluster : outputClusters) {
       NamedList<Object> cluster = new SimpleOrderedMap<>();
       parent.add(cluster);
 
@@ -453,10 +474,10 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       }
 
       // Add documents
-      List<CarrotDocument> docs = outputSubClusters ? outCluster.getDocuments() :
+      List<InputDocument> docs = outputSubClusters ? outCluster.getDocuments() :
           new ArrayList<>(collectUniqueDocuments(outCluster, new LinkedHashSet<>()));
 
-      cluster.add("docs", docs.stream().map(CarrotDocument::getSolrDocumentId)
+      cluster.add("docs", docs.stream().map(InputDocument::getSolrDocumentId)
           .collect(Collectors.toList()));
 
       // Add subclusters
@@ -469,9 +490,9 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
   }
 
-  private LinkedHashSet<CarrotDocument> collectUniqueDocuments(Cluster<CarrotDocument> cluster, LinkedHashSet<CarrotDocument> unique) {
+  private LinkedHashSet<InputDocument> collectUniqueDocuments(Cluster<InputDocument> cluster, LinkedHashSet<InputDocument> unique) {
     unique.addAll(cluster.getDocuments());
-    for (Cluster<CarrotDocument> sub : cluster.getClusters()) {
+    for (Cluster<InputDocument> sub : cluster.getClusters()) {
       collectUniqueDocuments(sub, unique);
     }
     return unique;

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.clustering.carrot2;
 
 import org.carrot2.attrs.AttrComposite;
+import org.carrot2.attrs.AttrInteger;
 import org.carrot2.clustering.Cluster;
 import org.carrot2.clustering.ClusteringAlgorithm;
 import org.carrot2.clustering.Document;
@@ -24,20 +25,37 @@ import org.carrot2.language.LanguageComponents;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MockClusteringAlgorithm extends AttrComposite implements ClusteringAlgorithm {
-  // @IntRange(min = 1, max = 5)
-  public int depth = 2;
+  public AttrInteger docsInCluster =
+      attributes.register(
+          "docsInCluster",
+          AttrInteger.builder().label("Number of documents in each cluster.")
+              .min(1)
+              .max(5)
+              .defaultValue(3));
 
-  // @IntRange(min = 1, max = 5)
-  public int labels = 1;
+  public AttrInteger hierarchyDepth =
+      attributes.register(
+          "hierarchyDepth",
+          AttrInteger.builder().label("Levels of clusters hierarchy.")
+              .min(1)
+              .max(3)
+              .defaultValue(2));
 
-  //@IntRange(min = 0)
-  public int maxClusters = 0;
+  public AttrInteger maxClusters =
+      attributes.register(
+          "maxClusters",
+          AttrInteger.builder().label("Maximum number of clusters at each hierarchy level.")
+              .min(2)
+              .max(100)
+              .defaultValue(3));
 
   @Override
   public boolean supports(LanguageComponents languageComponents) {
@@ -50,42 +68,48 @@ public class MockClusteringAlgorithm extends AttrComposite implements Clustering
   }
 
   @Override
-  public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream, LanguageComponents languageComponents) {
+  public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream,
+                                                       LanguageComponents languageComponents) {
     List<T> documents = documentStream.collect(Collectors.toList());
-    List<Cluster<T>> clusters = new ArrayList<>();
-
-    if (maxClusters > 0) {
-      documents = documents.subList(0, maxClusters);
+    if (docsInCluster.get() > documents.size()) {
+      throw new AssertionError();
     }
 
-    int documentIndex = 1;
-    for (T document : documents) {
-      StringBuilder label = new StringBuilder("Cluster " + documentIndex);
-      Cluster<T> cluster = createCluster(label.toString(), documentIndex, document);
-      clusters.add(cluster);
-      for (int i = 1; i <= depth; i++) {
-        label.append(".");
-        label.append(i);
-        Cluster<T> newCluster = createCluster(label.toString(), documentIndex, document);
-        cluster.addCluster(newCluster);
-        cluster = newCluster;
+    Supplier<T> docSupplier = new Supplier<>() {
+      Iterator<T> i = documents.iterator();
+
+      @Override
+      public T get() {
+        if (!i.hasNext()) {
+          i = documents.iterator();
+        }
+        return i.next();
       }
-      documentIndex++;
-    }
+    };
 
-    return clusters;
+    return createClusters(hierarchyDepth.get(), "Cluster ", docSupplier);
   }
 
-  private <T extends Document> Cluster<T> createCluster(String labelBase, int documentIndex, T document) {
-    Cluster<T> cluster = new Cluster<T>();
-    cluster.setScore(documentIndex * 0.25);
+  private <T extends Document> List<Cluster<T>> createClusters(int level, String prefix,
+                                                               Supplier<T> docSupplier) {
+    ArrayList<Cluster<T>> clusters = new ArrayList<>();
+    for (int count = maxClusters.get(), idx = 1; count > 0; count--, idx++) {
+      String label = prefix + (prefix.endsWith(" ") ? "" : ".") + idx;
 
-    for (int i = 0; i < labels; i++) {
-      cluster.addLabel(labelBase + "#" + (i + 1));
+      Cluster<T> c = new Cluster<>();
+      c.addLabel(label);
+      c.setScore(level * count * 0.01);
+
+      if (level == 1) {
+        for (int j = docsInCluster.get(); j > 0; j--) {
+          c.addDocument(docSupplier.get());
+        }
+      } else {
+        createClusters(level - 1, label, docSupplier).forEach(c::addCluster);
+      }
+
+      clusters.add(c);
     }
-
-    cluster.addDocument(document);
-
-    return cluster;
+    return clusters;
   }
 }

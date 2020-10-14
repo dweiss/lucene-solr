@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * {@link org.apache.solr.handler.clustering.ClusteringComponent} and common APIs for specific implementations.
 
+/**
+ * {@link org.apache.solr.handler.clustering.ClusteringComponent} and common APIs
+ * for specific implementations.
  */
 package org.apache.solr.handler.clustering;
 

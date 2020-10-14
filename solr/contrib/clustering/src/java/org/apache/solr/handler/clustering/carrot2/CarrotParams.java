@@ -42,6 +42,7 @@ public final class CarrotParams {
 
   public static String NUM_DESCRIPTIONS = CARROT_PREFIX + "numDescriptions";
   public static String OUTPUT_SUB_CLUSTERS = CARROT_PREFIX + "outputSubClusters";
+  public static String OUTPUT_OTHER_TOPICS = CARROT_PREFIX + "outputOtherTopics";
 
   public static String LANGUAGE_CODE_MAP = CARROT_PREFIX + "lcmap";
 

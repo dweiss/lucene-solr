@@ -42,6 +42,4 @@ public abstract class DocumentClusteringEngine extends ClusteringEngine {
    * @return The results.
    */
   public abstract NamedList<?> cluster(DocSet docs, SolrParams solrParams);
-
-
 }
