@@ -29,7 +29,6 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.clustering.SearchClusteringEngine;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -57,10 +56,10 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -85,14 +84,9 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   private String idFieldName;
 
   /**
-   * A {@link ClusteringAlgorithm} name (provider name) used for actual clustering.
+   * Set to {@code true} if the default algorithm is available.
    */
-  private String clusteringAlgorithmName;
-
-  /**
-   * Set to {@code true} if {@link #clusteringAlgorithmName} is available.
-   */
-  private boolean algorithmAvailable;
+  private boolean engineAvailable;
 
   /**
    * Solr core we're bound to.
@@ -102,30 +96,34 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   /**
    * All resources required for the clustering engine.
    */
-  private ClusteringEngineContext engineContext;
+  private EngineContext engineContext;
+
+  /**
+   * Default configuration parameters.
+   */
+  private EngineConfiguration defaultParams;
 
   @Override
   public boolean isAvailable() {
-    return algorithmAvailable;
+    return engineAvailable;
   }
 
   @Override
-  @SuppressWarnings("rawtypes")
-  public String init(NamedList config, final SolrCore core) {
+  public String init(NamedList<?> config, final SolrCore core) {
     this.core = core;
 
-    String result = super.init(config, core);
+    final String engineName = super.init(config, core);
     final SolrParams initParams = config.toSolrParams();
 
-    this.engineContext = new ClusteringEngineContext();
-
-    // Make sure the requested Carrot2 clustering algorithm class is available
-    clusteringAlgorithmName = initParams.get(CarrotParams.ALGORITHM);
+    this.defaultParams = new EngineConfiguration();
+    this.defaultParams.extractFrom(initParams);
+    this.engineContext = new EngineContext();
 
     // TODO: core.getResourceLoader()?
-    algorithmAvailable = (engineContext.getAlgorithm(clusteringAlgorithmName) != null);
+    engineAvailable = (engineContext.getAlgorithm(defaultParams.algorithmName()) != null);
     if (!isAvailable()) {
-      log.info("Clustering algorithm is not available: " + clusteringAlgorithmName);
+      log.warn("The default clustering algorithm for engine {} is not available: {}",
+          engineName, defaultParams.algorithmName());
     }
 
     SchemaField uniqueField = core.getLatestSchema().getUniqueKeyField();
@@ -135,25 +133,26 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
     this.idFieldName = uniqueField.getName();
 
-    return result;
+    return engineName;
   }
 
   @Override
   public List<NamedList<Object>> cluster(Query query, SolrDocumentList solrDocList,
-                        Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
+                                         Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
     try {
-      ClusteringAlgorithm algorithm = engineContext.getAlgorithm(clusteringAlgorithmName);
+      // Layer any parameters from the request over the defaults.
+      EngineConfiguration requestParameters = this.defaultParams.clone();
+      requestParameters.extractFrom(sreq.getParams());
 
-      // Set any algorithm attributes from the request. These are "flattened" attribute key-value
-      // pairs.
-      LinkedHashMap<String, String> attrs = new LinkedHashMap<>();
-      for (Map.Entry<String, String[]> e : sreq.getParams()) {
-        String[] value = e.getValue();
-        if (value != null) {
-          attrs.put(e.getKey(), value.length == 1 ? value[0] : String.join(", ",  value));
-        }
+      ClusteringAlgorithm algorithm = engineContext.getAlgorithm(requestParameters.algorithmName());
+      if (algorithm == null) {
+        throw new RuntimeException(String.format(Locale.ROOT,
+            "Algorithm '%s' not found in clustering component '%s'.",
+            requestParameters.algorithmName(),
+            getName()));
       }
 
+      LinkedHashMap<String, String> attrs = requestParameters.otherParameters();
       // Set the optional query hint. We extract just the terms
       if (!attrs.containsKey("queryHint")) {
         Set<String> termSet = new LinkedHashSet<>();
@@ -167,7 +166,6 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         });
         attrs.put("queryHint", String.join(" ", termSet));
       }
-
       algorithm.accept(new AttrVisitorFromFlattenedKeys(attrs));
 
       // TODO: Pass the fields on which clustering runs.
@@ -177,7 +175,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       List<InputDocument> documents = getDocuments(solrDocList, docIds, query, sreq);
       List<Cluster<InputDocument>> clusters = algorithm.cluster(documents.stream(),
           engineContext.getLanguage("English"));
-      return clustersToNamedList(documents, clusters, sreq.getParams());
+
+      return clustersToNamedList(documents, clusters, requestParameters);
     } catch (Exception e) {
       log.error("Carrot2 clustering failed", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Carrot2 clustering failed", e);
@@ -185,15 +184,15 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   }
 
   @Override
-  protected Set<String> getFieldsToLoad(SolrQueryRequest sreq) {
+  public Set<String> getFieldsToLoad(SolrQueryRequest sreq) {
     SolrParams solrParams = sreq.getParams();
 
     HashSet<String> fields = new HashSet<>(getFieldsForClustering(sreq));
     fields.add(idFieldName);
-    fields.add(solrParams.get(CarrotParams.URL_FIELD_NAME, "url"));
+    fields.add(solrParams.get(EngineConfiguration.URL_FIELD_NAME, "url"));
     fields.addAll(getCustomFieldsMap(solrParams).keySet());
 
-    String languageField = solrParams.get(CarrotParams.LANGUAGE_FIELD_NAME);
+    String languageField = solrParams.get(EngineConfiguration.LANGUAGE_FIELD_NAME);
     if (StringUtils.isNotBlank(languageField)) {
       fields.add(languageField);
     }
@@ -208,10 +207,10 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   private Set<String> getFieldsForClustering(SolrQueryRequest sreq) {
     SolrParams solrParams = sreq.getParams();
 
-    String titleFieldSpec = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
-    String snippetFieldSpec = solrParams.get(CarrotParams.SNIPPET_FIELD_NAME, titleFieldSpec);
+    String titleFieldSpec = solrParams.get(EngineConfiguration.TITLE_FIELD_NAME, "title");
+    String snippetFieldSpec = solrParams.get(EngineConfiguration.SNIPPET_FIELD_NAME, titleFieldSpec);
     if (StringUtils.isBlank(snippetFieldSpec)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, CarrotParams.SNIPPET_FIELD_NAME
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, EngineConfiguration.SNIPPET_FIELD_NAME
           + " must not be blank.");
     }
 
@@ -230,9 +229,9 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     SolrParams solrParams = sreq.getParams();
     SolrCore core = sreq.getCore();
 
-    String urlField = solrParams.get(CarrotParams.URL_FIELD_NAME, "url");
-    String titleFieldSpec = solrParams.get(CarrotParams.TITLE_FIELD_NAME, "title");
-    String snippetFieldSpec = solrParams.get(CarrotParams.SNIPPET_FIELD_NAME, titleFieldSpec);
+    String urlField = solrParams.get(EngineConfiguration.URL_FIELD_NAME, "url");
+    String titleFieldSpec = solrParams.get(EngineConfiguration.TITLE_FIELD_NAME, "title");
+    String snippetFieldSpec = solrParams.get(EngineConfiguration.SNIPPET_FIELD_NAME, titleFieldSpec);
     // TODO: language handling.
     //String languageField = solrParams.get(CarrotParams.LANGUAGE_FIELD_NAME, null);
 
@@ -256,7 +255,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
      */
 
     // Get the documents
-    boolean produceSummary = solrParams.getBool(CarrotParams.PRODUCE_SUMMARY, false);
+    boolean produceSummary = solrParams.getBool(EngineConfiguration.PRODUCE_SUMMARY, false);
 
     SolrQueryRequest req = null;
     String[] snippetFieldAry = null;
@@ -270,8 +269,8 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         // We don't want any highlight marks.
         args.put(HighlightParams.SIMPLE_PRE, "");
         args.put(HighlightParams.SIMPLE_POST, "");
-        args.put(HighlightParams.FRAGSIZE, solrParams.getInt(CarrotParams.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
-        args.put(HighlightParams.SNIPPETS, solrParams.getInt(CarrotParams.SUMMARY_SNIPPETS, solrParams.getInt(HighlightParams.SNIPPETS, 1)));
+        args.put(HighlightParams.FRAGSIZE, solrParams.getInt(EngineConfiguration.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
+        args.put(HighlightParams.SNIPPETS, solrParams.getInt(EngineConfiguration.SUMMARY_SNIPPETS, solrParams.getInt(HighlightParams.SNIPPETS, 1)));
         req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
           @Override
           public SolrIndexSearcher getSearcher() {
@@ -392,7 +391,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
    */
   private Map<String, String> getCustomFieldsMap(SolrParams solrParams) {
     Map<String, String> customFields = new HashMap<>();
-    String[] customFieldsSpec = solrParams.getParams(CarrotParams.CUSTOM_FIELD_NAME);
+    String[] customFieldsSpec = solrParams.getParams(EngineConfiguration.CUSTOM_FIELD_NAME);
     if (customFieldsSpec != null) {
       customFields = new HashMap<>();
       for (String customFieldSpec : customFieldsSpec) {
@@ -401,7 +400,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
           customFields.put(split[0], split[1]);
         } else {
           log.warn("Unsupported format for {}: '{}'. Skipping this field definition."
-              , CarrotParams.CUSTOM_FIELD_NAME, customFieldSpec);
+              , EngineConfiguration.CUSTOM_FIELD_NAME, customFieldSpec);
         }
       }
     }
@@ -426,13 +425,11 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
   private List<NamedList<Object>> clustersToNamedList(List<InputDocument> documents,
                                                       List<Cluster<InputDocument>> clusters,
-                                                      SolrParams solrParams) {
+                                                      EngineConfiguration params) {
     List<NamedList<Object>> result = new ArrayList<>();
-    clustersToNamedList(clusters, result, solrParams.getBool(
-        CarrotParams.OUTPUT_SUB_CLUSTERS, true), solrParams.getInt(
-        CarrotParams.NUM_DESCRIPTIONS, Integer.MAX_VALUE));
+    clustersToNamedListRecursive(clusters, result, params);
 
-    if (solrParams.getBool(CarrotParams.OUTPUT_OTHER_TOPICS, true)) {
+    if (params.includeOtherTopics()) {
       LinkedHashSet<InputDocument> clustered = new LinkedHashSet<>();
       clusters.forEach(cluster -> collectUniqueDocuments(cluster, clustered));
       List<InputDocument> unclustered = documents.stream()
@@ -453,39 +450,40 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     return result;
   }
 
-  private void clustersToNamedList(
+  private void clustersToNamedListRecursive(
       List<Cluster<InputDocument>> outputClusters,
-      List<NamedList<Object>> parent, boolean outputSubClusters, int maxLabels) {
-    for (Cluster<InputDocument> outCluster : outputClusters) {
-      NamedList<Object> cluster = new SimpleOrderedMap<>();
-      parent.add(cluster);
+      List<NamedList<Object>> parent, EngineConfiguration params) {
+    for (Cluster<InputDocument> cluster : outputClusters) {
+      NamedList<Object> converted = new SimpleOrderedMap<>();
+      parent.add(converted);
 
       // Add labels
-      List<String> labels = outCluster.getLabels();
-      if (labels.size() > maxLabels) {
-        labels = labels.subList(0, maxLabels);
+      List<String> labels = cluster.getLabels();
+      if (labels.size() > params.maxLabels()) {
+        labels = labels.subList(0, params.maxLabels());
       }
-      cluster.add("labels", labels);
+      converted.add("labels", labels);
 
       // Add cluster score
-      final Double score = outCluster.getScore();
+      final Double score = cluster.getScore();
       if (score != null) {
-        cluster.add("score", score);
+        converted.add("score", score);
       }
 
-      // Add documents
-      List<InputDocument> docs = outputSubClusters ? outCluster.getDocuments() :
-          new ArrayList<>(collectUniqueDocuments(outCluster, new LinkedHashSet<>()));
+      List<InputDocument> docs;
+      if (params.includeSubclusters()) {
+        docs = cluster.getDocuments();
+      } else {
+        docs = new ArrayList<>(collectUniqueDocuments(cluster, new LinkedHashSet<>()));
+      }
 
-      cluster.add("docs", docs.stream().map(InputDocument::getSolrDocumentId)
+      converted.add("docs", docs.stream().map(InputDocument::getSolrDocumentId)
           .collect(Collectors.toList()));
 
-      // Add subclusters
-      if (outputSubClusters && !outCluster.getClusters().isEmpty()) {
+      if (params.includeSubclusters() && !cluster.getClusters().isEmpty()) {
         List<NamedList<Object>> subclusters = new ArrayList<>();
-        cluster.add("clusters", subclusters);
-        clustersToNamedList(outCluster.getClusters(), subclusters,
-            outputSubClusters, maxLabels);
+        converted.add("clusters", subclusters);
+        clustersToNamedListRecursive(cluster.getClusters(), subclusters, params);
       }
     }
   }
@@ -496,17 +494,5 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       collectUniqueDocuments(sub, unique);
     }
     return unique;
-  }
-
-  @SuppressForbidden(reason = "Uses context class loader as a workaround to inject correct classloader to 3rd party libs")
-  private static <T> T withContextClassLoader(ClassLoader loader, Supplier<T> action) {
-    Thread ct = Thread.currentThread();
-    ClassLoader prev = ct.getContextClassLoader();
-    try {
-      ct.setContextClassLoader(loader);
-      return action.get();
-    } finally {
-      ct.setContextClassLoader(prev);
-    }
   }
 }

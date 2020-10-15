@@ -28,6 +28,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
 import org.apache.solr.handler.clustering.ClusteringComponent;
+import org.apache.solr.handler.clustering.ClusteringEngine;
+import org.apache.solr.handler.clustering.SearchClusteringEngine;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.carrot2.clustering.Cluster;
@@ -38,6 +40,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -68,17 +72,17 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testParamSubClusters() throws Exception {
     compareToExpected("off", clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
-      params.set(CarrotParams.OUTPUT_SUB_CLUSTERS, false);
+      params.set(EngineConfiguration.PARAM_INCLUDE_SUBCLUSTERS, false);
     }));
     compareToExpected("on", clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
-      params.set(CarrotParams.OUTPUT_SUB_CLUSTERS, true);
+      params.set(EngineConfiguration.PARAM_INCLUDE_SUBCLUSTERS, true);
     }));
   }
 
   @Test
   public void testParamOtherTopics() throws Exception {
     compareToExpected(clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
-      params.set(CarrotParams.OUTPUT_OTHER_TOPICS, false);
+      params.set(EngineConfiguration.PARAM_INCLUDE_OTHER_TOPICS, false);
     }));
   }
 
@@ -91,19 +95,19 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     Query query = new TermQuery(new Term("snippet", "mine"));
 
     Consumer<ModifiableSolrParams> common = params -> {
-      params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
-      params.add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(80));
-      params.add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(1));
+      params.add(EngineConfiguration.SNIPPET_FIELD_NAME, "snippet");
+      params.add(EngineConfiguration.SUMMARY_FRAGSIZE, Integer.toString(80));
+      params.add(EngineConfiguration.SUMMARY_SNIPPETS, Integer.toString(1));
     };
 
     List<Cluster<SolrDocument>> highlighted = clusters(getClusteringEngine("echo"), query,
         common.andThen(params -> {
-          params.add(CarrotParams.PRODUCE_SUMMARY, "true");
+          params.add(EngineConfiguration.PRODUCE_SUMMARY, "true");
         }));
 
     List<Cluster<SolrDocument>> full = clusters(getClusteringEngine("echo"), query,
         common.andThen(params -> {
-          params.add(CarrotParams.PRODUCE_SUMMARY, "false");
+          params.add(EngineConfiguration.PRODUCE_SUMMARY, "false");
         }));
 
     // Echo clustering algorithm just returns document fields as cluster labels
@@ -130,19 +134,19 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     Query query = new TermQuery(new Term("snippet", "mine"));
 
     Consumer<ModifiableSolrParams> common = params -> {
-      params.add(CarrotParams.PRODUCE_SUMMARY, "true");
-      params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
-      params.add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(1));
+      params.add(EngineConfiguration.PRODUCE_SUMMARY, "true");
+      params.add(EngineConfiguration.SNIPPET_FIELD_NAME, "snippet");
+      params.add(EngineConfiguration.SUMMARY_SNIPPETS, Integer.toString(1));
     };
 
     List<Cluster<SolrDocument>> shortSummaries = clusters(getClusteringEngine("echo"), query,
         common.andThen(params -> {
-          params.add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(30));
+          params.add(EngineConfiguration.SUMMARY_FRAGSIZE, Integer.toString(30));
         }));
 
     List<Cluster<SolrDocument>> longSummaries = clusters(getClusteringEngine("echo"), query,
         common.andThen(params -> {
-          params.add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(80));
+          params.add(EngineConfiguration.SUMMARY_FRAGSIZE, Integer.toString(80));
         }));
 
     Assert.assertEquals(shortSummaries.size(), longSummaries.size());
@@ -158,32 +162,57 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     }
   }
 
+  /**
+   * Test passing algorithm parameters via SolrParams.
+   */
   @Test
   public void testPassingAttributes() throws Exception {
     compareToExpected(clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
       params.set("maxClusters", 2);
       params.set("hierarchyDepth", 1);
-      params.add(CarrotParams.OUTPUT_OTHER_TOPICS, "false");
+      params.add(EngineConfiguration.PARAM_INCLUDE_OTHER_TOPICS, "false");
     }));
   }
 
+  /**
+   * Test passing algorithm parameters via Solr configuration file.
+   */
+  @Test
+  public void testPassingAttributesViaSolrConfig() throws Exception {
+    compareToExpected(clusters(getClusteringEngine("mock-solrconfig-attrs"), new MatchAllDocsQuery()));
+  }
+
+  /**
+   * Test maximum label truncation.
+   */
+  @Test
+  public void testParamMaxLabels() throws Exception {
+    List<Cluster<SolrDocument>> clusters = clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
+      params.set("labelsPerCluster", "5");
+      params.set(EngineConfiguration.PARAM_INCLUDE_OTHER_TOPICS, "false");
+      params.set(EngineConfiguration.PARAM_MAX_LABELS, "3");
+    });
+
+    clusters.forEach(c -> {
+      assertThat(c.getLabels(), Matchers.hasSize(3));
+    });
+  }
+
+  /**
+   * Verify the engine ordering is respected.
+   */
+  @Test
+  public void testDefaultEngineOrder() throws IOException {
+    ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("testDefaultEngineOrder");
+    Map<String, SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
+    assertEquals(
+        Arrays.asList("stc", "default", "mock"),
+        new ArrayList<>(engines.keySet()));
+
+    compareToExpected(clusters(engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME), new MatchAllDocsQuery()));
+  }
+
 /*
-  @Test
-  public void testExternalXmlAttributesFile() throws Exception {
-    checkClusters(
-        checkEngine(getClusteringEngine("mock-external-attrs"), 13),
-        1, 4, 0);
-  }
-
-  @Test
-  public void testNumDescriptions() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "labels"), 5);
-    params.set(CarrotParams.NUM_DESCRIPTIONS, 3);
-    checkClusters(checkEngine(getClusteringEngine("mock"), AbstractClusteringTestCase.numberOfDocs,
-            params), 1, 3, 0);
-  }
-
   @Test
   public void testLexicalResourcesFromSolrConfigDefaultDir() throws Exception {
     checkLexicalResourcesFromSolrConfig("lexical-resource-check",
@@ -385,43 +414,8 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     // The custom test stemmer duplicates and lowercases each token's text
     assertTrue("First token", labels.get(0).contains("titletitle"));
   }
-
-  @Test
-  public void testDefaultEngineOrder() throws Exception {
-    ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("clustering-name-default");
-    Map<String,SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
-    assertEquals(
-        Arrays.asList("stc", "default", "mock"),
-        new ArrayList<>(engines.keySet()));
-    assertEquals(
-        LingoClusteringAlgorithm.class,
-        ((CarrotClusteringEngine) engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME)).getClusteringAlgorithmClass());
-  }
-
-  @Test
-  public void testDeclarationEngineOrder() throws Exception {
-    ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("clustering-name-decl-order");
-    Map<String,SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
-    assertEquals(
-        Arrays.asList("unavailable", "lingo", "stc", "mock", "default"),
-        new ArrayList<>(engines.keySet()));
-    assertEquals(
-        LingoClusteringAlgorithm.class,
-        ((CarrotClusteringEngine) engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME)).getClusteringAlgorithmClass());
-  }
-
-  @Test
-  public void testDeclarationNameDuplicates() throws Exception {
-    ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("clustering-name-dups");
-    Map<String,SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
-    assertEquals(
-        Arrays.asList("", "default"),
-        new ArrayList<>(engines.keySet()));
-    assertEquals(
-        MockClusteringAlgorithm.class,
-        ((CarrotClusteringEngine) engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME)).getClusteringAlgorithmClass());
-  }
 */
+
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {
     ClusteringComponent comp = (ClusteringComponent) h.getCore()
@@ -489,12 +483,12 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     return sb;
   }
 
-  private List<Cluster<SolrDocument>> clusters(CarrotClusteringEngine engine, Query query) throws IOException {
+  private List<Cluster<SolrDocument>> clusters(SearchClusteringEngine engine, Query query) throws IOException {
     return clusters(engine, query, params -> {
     });
   }
 
-  private List<Cluster<SolrDocument>> clusters(CarrotClusteringEngine engine, Query query, Consumer<ModifiableSolrParams> params)
+  private List<Cluster<SolrDocument>> clusters(SearchClusteringEngine engine, Query query, Consumer<ModifiableSolrParams> params)
       throws IOException {
     return h.getCore().withSearcher(searcher -> {
       DocList docList = searcher.getDocList(query, (Query) null, new Sort(), 0,

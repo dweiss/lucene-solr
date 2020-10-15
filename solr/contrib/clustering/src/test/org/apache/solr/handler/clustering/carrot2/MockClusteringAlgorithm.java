@@ -57,6 +57,14 @@ public class MockClusteringAlgorithm extends AttrComposite implements Clustering
               .max(100)
               .defaultValue(3));
 
+  public AttrInteger labelsPerCluster =
+      attributes.register(
+          "labelsPerCluster",
+          AttrInteger.builder().label("Number of labels generated for each cluster.")
+              .min(1)
+              .max(5)
+              .defaultValue(1));
+
   @Override
   public boolean supports(LanguageComponents languageComponents) {
     return true;
@@ -98,6 +106,9 @@ public class MockClusteringAlgorithm extends AttrComposite implements Clustering
 
       Cluster<T> c = new Cluster<>();
       c.addLabel(label);
+      for (int cnt = 1, max = labelsPerCluster.get(); cnt < max; cnt++) {
+        c.addLabel("Label " + cnt);
+      }
       c.setScore(level * count * 0.01);
 
       if (level == 1) {

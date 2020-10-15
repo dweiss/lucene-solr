@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -179,7 +180,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
           if (!engine.isAvailable()) {
             if (optional) {
-              log.info("Optional clustering engine not available: {}", name);
+              log.info("Optional clustering engine reports it is not available: {}", name);
             } else {
               throw new SolrException(ErrorCode.SERVER_ERROR, 
                   "A required clustering engine failed to initialize, check the logs: " + name);
@@ -195,8 +196,11 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
             log.warn("Unknown type of a clustering engine for class: {}", engineClassName);
             continue;
           }
+
           if (previousEntry != null) {
-            log.warn("Duplicate clustering engine component named '{}'.", name);
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                String.format(Locale.ROOT,
+                    "Duplicate clustering engine named '%s'.", previousEntry.getName()));
           }
         }
       }

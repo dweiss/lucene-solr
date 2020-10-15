@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
  * Clustering engine context: algorithms, preloaded language
  * resources and initial validation.
  */
-final class ClusteringEngineContext {
+final class EngineContext {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final LinkedHashMap<String, LanguageComponents> languages;
@@ -63,7 +63,7 @@ final class ClusteringEngineContext {
     aliasedNames.put(BisectingKMeansClusteringAlgorithm.class.getName(), BisectingKMeansClusteringAlgorithm.NAME);
   }
 
-  ClusteringEngineContext() {
+  EngineContext() {
     LanguageComponentsLoader loader = LanguageComponents.loader();
 
     List<Path> resourceLocations = Collections.emptyList();

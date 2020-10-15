@@ -59,62 +59,88 @@
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering">
     <lst name="engine">
+      <str name="name">default</str>
+      <str name="engine.algorithm">MockClusteringAlgorithm</str>
+    </lst>
+
+    <lst name="engine">
       <str name="name">lingo</str>
-      <str name="carrot.algorithm">Lingo</str>
+      <str name="engine.algorithm">Lingo</str>
     </lst>
 
     <lst name="engine">
       <str name="name">stc</str>
-      <str name="carrot.algorithm">STC</str>
+      <str name="engine.algorithm">STC</str>
     </lst>
 
     <lst name="engine">
       <str name="name">kmeans</str>
-      <str name="carrot.algorithm">Bisecting K-Means</str>
-    </lst>
-
-    <lst name="engine">
-      <str name="name">default</str>
-      <str name="carrot.algorithm">Lingo</str>
+      <str name="engine.algorithm">Bisecting K-Means</str>
     </lst>
 
     <lst name="engine">
       <str name="name">mock</str>
-      <str name="carrot.algorithm">MockClusteringAlgorithm</str>
+      <str name="engine.algorithm">MockClusteringAlgorithm</str>
     </lst>
 
     <lst name="engine">
-      <str name="name">mock-external-attrs</str>
-      <str name="carrot.algorithm">MockClusteringAlgorithm</str>
-      <int name="MockClusteringAlgorithm.labels">4</int>
+      <str name="name">mock-solrconfig-attrs</str>
+      <str name="engine.algorithm">MockClusteringAlgorithm</str>
+      <bool name="engine.includeOtherTopics">false</bool>
+      <int name="maxClusters">2</int>
+      <int name="hierarchyDepth">1</int>
     </lst>
 
     <lst name="engine">
       <str name="name">echo</str>
-      <str name="carrot.algorithm">EchoClusteringAlgorithm</str>
+      <str name="engine.algorithm">EchoClusteringAlgorithm</str>
     </lst>
 
     <!--
     <lst name="engine">
       <str name="name">lexical-resource-check</str>
-      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
+      <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
     </lst>
     <lst name="engine">
       <str name="name">lexical-resource-check-custom-resource-dir</str>
-      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
-      <str name="carrot.resourcesDir">clustering/custom</str>
+      <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
+      <str name="engine.resourcesDir">clustering/custom</str>
     </lst>
     <lst name="engine">
       <str name="name">custom-duplicating-tokenizer</str>
-      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.EchoTokensClusteringAlgorithm</str>
+      <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.EchoTokensClusteringAlgorithm</str>
       <str name="PreprocessingPipeline.tokenizerFactory">org.apache.solr.handler.clustering.carrot2.DuplicatingTokenizerFactory</str>
     </lst>
     <lst name="engine">
       <str name="name">custom-duplicating-stemmer</str>
-      <str name="carrot.algorithm">org.apache.solr.handler.clustering.carrot2.EchoStemsClusteringAlgorithm</str>
+      <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.EchoStemsClusteringAlgorithm</str>
       <str name="PreprocessingPipeline.stemmerFactory">org.apache.solr.handler.clustering.carrot2.DuplicatingStemmerFactory</str>
     </lst>
     -->
+  </searchComponent>
+
+  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="testDefaultEngineOrder">
+    <lst name="engine">
+      <str name="name">stc</str>
+      <str name="engine.algorithm">MockClusteringAlgorithm</str>
+      <bool name="engine.includeOtherTopics">false</bool>
+      <int name="hierarchyDepth">1</int>
+      <int name="maxClusters">1</int>
+    </lst>
+    <lst name="engine">
+      <str name="name">default</str>
+      <str name="engine.algorithm">MockClusteringAlgorithm</str>
+      <bool name="engine.includeOtherTopics">false</bool>
+      <int name="hierarchyDepth">1</int>
+      <int name="maxClusters">2</int>
+    </lst>
+    <lst name="engine">
+      <str name="name">mock</str>
+      <str name="engine.algorithm">MockClusteringAlgorithm</str>
+      <bool name="engine.includeOtherTopics">false</bool>
+      <int name="hierarchyDepth">1</int>
+      <int name="maxClusters">3</int>
+    </lst>
   </searchComponent>
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="doc-clustering">
@@ -123,54 +149,6 @@
       <!-- The name, only one can be named "default" -->
       <str name="name">mock</str>
       <str name="classname">org.apache.solr.handler.clustering.MockDocumentClusteringEngine</str>
-    </lst>
-  </searchComponent>
-
-
-  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-default">
-    <lst name="engine">
-      <str name="name">stc</str>
-      <str name="carrot.algorithm">STC</str>
-    </lst>
-    <lst name="engine">
-      <str name="name">default</str>
-      <str name="carrot.algorithm">Lingo</str>
-    </lst>
-    <lst name="engine">
-      <str name="name">mock</str>
-      <str name="carrot.algorithm">MockClusteringAlgorithm</str>
-    </lst>
-  </searchComponent>
-
-  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-decl-order">
-    <lst name="engine">
-      <bool name="optional">true</bool>
-      <str name="name">unavailable</str>
-      <str name="carrot.algorithm">org.carrot2.clustering.lingo.UnavailableAlgorithm</str>
-    </lst>
-    <lst name="engine">
-      <str name="name">lingo</str>
-      <str name="carrot.algorithm">Lingo</str>
-    </lst>
-    <lst name="engine">
-      <str name="name">stc</str>
-      <str name="carrot.algorithm">STC</str>
-    </lst>
-    <lst name="engine">
-      <str name="name">mock</str>
-      <str name="carrot.algorithm">MockClusteringAlgorithm</str>
-    </lst>
-  </searchComponent>
-
-  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering-name-dups">
-    <lst name="engine">
-      <str name="carrot.algorithm">Lingo</str>
-    </lst>
-    <lst name="engine">
-      <str name="carrot.algorithm">STC</str>
-    </lst>
-    <lst name="engine">
-      <str name="carrot.algorithm">MockClusteringAlgorithm</str>
     </lst>
   </searchComponent>
 
