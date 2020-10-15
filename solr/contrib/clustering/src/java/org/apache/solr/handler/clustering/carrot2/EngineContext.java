@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
  * resources and initial validation.
  */
 final class EngineContext {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final LinkedHashMap<String, LanguageComponents> languages;
   private final Map<String, ClusteringAlgorithmProvider> algorithmProviders;
@@ -68,7 +68,7 @@ final class EngineContext {
 
     List<Path> resourceLocations = Collections.emptyList();
     if (!resourceLocations.isEmpty()) {
-      logger.info(
+      log.info(
           "Clustering algorithm resources first looked up relative to: {}", resourceLocations);
 
       loader.withResourceLookup(
@@ -78,7 +78,7 @@ final class EngineContext {
                       new PathResourceLookup(resourceLocations),
                       provider.defaultResourceLookup())));
     } else {
-      logger.info("Resources read from defaults (JARs).");
+      log.info("Resources read from defaults (JARs).");
     }
 
     ClassLoader classLoader = getClass().getClassLoader();
@@ -105,14 +105,12 @@ final class EngineContext {
     }
 
     // Debug info about loaded languages.
-    if (logger.isDebugEnabled()) {
-      for (String lang : languages.keySet()) {
-        logger.trace(
-            "Loaded language '"
-                + lang
-                + "' with components: "
-                + "\n  - "
-                + languages.get(lang).components().stream()
+    for (String lang : languages.keySet()) {
+      if (log.isTraceEnabled()) {
+        log.trace(
+            "Loaded language '{}' with components:\n  - {}",
+            lang,
+            languages.get(lang).components().stream()
                 .map(Class::getSimpleName)
                 .collect(Collectors.joining("\n  - ")));
       }
@@ -131,16 +129,18 @@ final class EngineContext {
                   .map(LanguageComponents::language)
                   .collect(Collectors.joining(", "));
 
-          logger.info(
+          log.info(
               "Clustering algorithm {} loaded with support for the following languages: {}",
               name,
               supportedLanguages);
         });
 
-    logger.info("Available clustering algorithms: " +
-        algorithmProviders.keySet().stream().collect(Collectors.joining(", ")));
-    logger.info("Available languages: " +
-        languages.keySet().stream().collect(Collectors.joining(", ")));
+    if (log.isInfoEnabled()) {
+      log.info("Available clustering algorithms: {}",
+          algorithmProviders.keySet().stream().collect(Collectors.joining(", ")));
+      log.info("Available languages: {}",
+          languages.keySet().stream().collect(Collectors.joining(", ")));
+    }
   }
 
   public ClusteringAlgorithm getAlgorithm(String algorithmName) {
@@ -165,7 +165,7 @@ final class EngineContext {
     ClusteringAlgorithm algorithm = provider.get();
     Optional<LanguageComponents> first = languages.stream().filter(algorithm::supports).findFirst();
     if (first.isEmpty()) {
-      logger.warn("Algorithm does not support any of the available languages: {}", provider.name());
+      log.warn("Algorithm does not support any of the available languages: {}", provider.name());
       return false;
     } else {
       return true;
