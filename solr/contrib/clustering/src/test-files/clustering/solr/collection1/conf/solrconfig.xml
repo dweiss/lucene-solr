@@ -137,7 +137,7 @@
     <highlighting>
       <!--
       No special configuration needed since clustering configures
-      highlighter parameters internally anyway.
+      highlighter parameters internally.
       -->
     </highlighting>
   </searchComponent>

@@ -36,10 +36,8 @@ public final class EngineConfiguration implements Cloneable {
   public static final String PARAM_INCLUDE_OTHER_TOPICS = PARAM_PREFIX + "includeOtherTopics";
 
   public static String TITLE_FIELD_NAME = PARAM_PREFIX + "title";
-  public static String URL_FIELD_NAME = PARAM_PREFIX + "url";
   public static String SNIPPET_FIELD_NAME = PARAM_PREFIX + "snippet";
   public static String LANGUAGE_FIELD_NAME = PARAM_PREFIX + "lang";
-  public static String CUSTOM_FIELD_NAME = PARAM_PREFIX + "custom";
 
   public static String PRODUCE_SUMMARY = PARAM_PREFIX + "produceSummary";
   public static String SUMMARY_FRAGSIZE = PARAM_PREFIX + "fragSize";
