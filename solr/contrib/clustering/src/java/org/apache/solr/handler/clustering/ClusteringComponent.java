@@ -71,7 +71,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
    * Request parameter selecting a named {@link ClusteringEngine} to use for performing
    * clustering.
    */
-  public static final String PARAM_SELECT_ENGINE = COMPONENT_NAME + ".engine";
+  public static final String REQ_PARAM_ENGINE = COMPONENT_NAME + ".engine";
 
   /**
    * Engine name in component configuration parameters.
@@ -253,7 +253,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   }
 
   private String getClusteringEngineName(ResponseBuilder rb) {
-    return rb.req.getParams().get(PARAM_SELECT_ENGINE, DEFAULT_ENGINE_NAME);
+    return rb.req.getParams().get(REQ_PARAM_ENGINE, DEFAULT_ENGINE_NAME);
   }
 
   @Override
