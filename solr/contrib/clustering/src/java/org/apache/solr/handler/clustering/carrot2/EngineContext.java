@@ -166,6 +166,10 @@ final class EngineContext {
     return languages.get(language);
   }
 
+  public boolean isLanguageSupported(String language) {
+    return languages.containsKey(language);
+  }
+
   private boolean isAlgorithmAvailable(
       ClusteringAlgorithmProvider provider, Collection<LanguageComponents> languages) {
     ClusteringAlgorithm algorithm = provider.get();

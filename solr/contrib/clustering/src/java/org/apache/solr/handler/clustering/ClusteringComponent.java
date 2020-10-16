@@ -236,8 +236,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       checkAvailable(name, engine);
       DocListAndSet results = rb.getResults();
       Map<SolrDocument, Integer> docIds = new HashMap<>(results.docList.size());
+      Set<String> fieldsToLoad = engine.getFieldsToLoad(rb.req);
       SolrDocumentList solrDocList = docListToSolrDocumentList(
-          results.docList, rb.req.getSearcher(), engine.getFieldsToLoad(rb.req), docIds);
+          results.docList, rb.req.getSearcher(), fieldsToLoad, docIds);
       Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
       rb.rsp.add("clusters", clusters);
     } else {

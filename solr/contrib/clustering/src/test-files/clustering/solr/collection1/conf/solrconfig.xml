@@ -108,6 +108,13 @@
       </str>
     </lst>
 
+    <lst name="engine">
+      <str name="name">testParamLanguageField</str>
+      <str name="engine.algorithm">ResourceCheckAlgorithm</str>
+      <bool name="engine.includeOtherTopics">false</bool>
+      <str name="engine.languageField">lang</str>
+      <str name="text">test</str>
+    </lst>
 
 
     <!--

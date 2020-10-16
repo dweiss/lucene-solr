@@ -7,4 +7,4 @@ All rights reserved.
 
 This product includes software developed by the Carrot2 Project.
 
-See http://project.carrot2.org/
+See https://project.carrot2.org/

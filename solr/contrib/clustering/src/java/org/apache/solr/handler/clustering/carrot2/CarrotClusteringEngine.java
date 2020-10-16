@@ -61,13 +61,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * Search results clustering engine based on Carrot2 clustering algorithms.
  *
  * @lucene.experimental
- * @see "http://project.carrot2.org"
+ * @see "https://project.carrot2.org"
  */
 public class CarrotClusteringEngine extends ClusteringEngine {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -165,18 +166,19 @@ public class CarrotClusteringEngine extends ClusteringEngine {
             getName()));
       }
 
-      LanguageComponents languageComponents = engineContext.getLanguage(requestParameters.language());
+      String defaultLanguage = requestParameters.language();
+      LanguageComponents languageComponents = engineContext.getLanguage(defaultLanguage);
       if (languageComponents == null) {
         throw new RuntimeException(String.format(Locale.ROOT,
             "Language '%s' is not supported in clustering component '%s'.",
-            requestParameters.language(),
+            defaultLanguage,
             getName()));
       }
 
       if (!algorithm.supports(languageComponents)) {
         throw new RuntimeException(String.format(Locale.ROOT,
             "Language '%s' is not supported by algorithm '%s' in clustering component '%s'.",
-            requestParameters.language(),
+            defaultLanguage,
             requestParameters.algorithmName(),
             getName()));
       }
@@ -197,13 +199,60 @@ public class CarrotClusteringEngine extends ClusteringEngine {
       }
       algorithm.accept(new AttrVisitorFromFlattenedKeys(attrs));
 
-      // TODO: Pass the fields on which clustering runs.
-      // attributes.put("solrFieldNames", getFieldsForClustering(sreq));
+      // Collect logical input "documents".
+      List<InputDocument> documents = getDocuments(requestParameters, solrDocList, docIds, query, sreq);
 
-      // Perform clustering and convert to an output structure of clusters.
-      List<InputDocument> documents = getDocuments(solrDocList, docIds, query, sreq);
-      List<Cluster<InputDocument>> clusters = algorithm.cluster(documents.stream(),
-          languageComponents);
+      // Split documents into language groups.
+      Map<String, List<InputDocument>> documentsByLanguage =
+          documents.stream()
+              .collect(
+                  Collectors.groupingBy(
+                      doc -> {
+                        String lang = doc.language();
+                        return lang == null ? defaultLanguage : lang;
+                      }));
+
+      // Cluster documents within each language group.
+      HashSet<String> warnOnce = new HashSet<>();
+      LinkedHashMap<String, List<Cluster<InputDocument>>> clustersByLanguage =
+          new LinkedHashMap<>();
+      for (Map.Entry<String, List<InputDocument>> e : documentsByLanguage.entrySet()) {
+        String lang = e.getKey();
+        if (!engineContext.isLanguageSupported(lang)) {
+          if (warnOnce.add(lang)) {
+            log.warn(
+                "Language '{}' is not supported, documents in this "
+                    + "language will not be clustered.", lang);
+          }
+        } else {
+          LanguageComponents langComponents = engineContext.getLanguage(lang);
+          if (!algorithm.supports(langComponents)) {
+            if (warnOnce.add(lang)) {
+              log.warn(
+                  "Language '{}' is not supported by algorithm '{}', documents in this "
+                      + "language will not be clustered.", lang,
+                    requestParameters.algorithmName());
+            }
+          } else {
+            clustersByLanguage.put(
+                lang, algorithm.cluster(e.getValue().stream(), langComponents));
+          }
+        }
+      }
+
+      List<Cluster<InputDocument>> clusters;
+      if (clustersByLanguage.size() == 1) {
+        clusters = clustersByLanguage.values().iterator().next();
+      } else {
+        clusters = clustersByLanguage.entrySet().stream()
+            .map(e -> {
+              Cluster<InputDocument> cluster = new Cluster<>();
+              cluster.addLabel(e.getKey());
+              e.getValue().forEach(cluster::addCluster);
+              return cluster;
+            })
+            .collect(Collectors.toList());
+      }
 
       return clustersToNamedList(documents, clusters, requestParameters);
     } catch (Exception e) {
@@ -214,12 +263,10 @@ public class CarrotClusteringEngine extends ClusteringEngine {
 
   @Override
   public Set<String> getFieldsToLoad(SolrQueryRequest sreq) {
-    SolrParams solrParams = sreq.getParams();
-
     HashSet<String> fields = new HashSet<>(getFieldsForClustering(sreq));
     fields.add(idFieldName);
 
-    String languageField = solrParams.get(EngineConfiguration.LANGUAGE_FIELD_NAME);
+    String languageField = defaultParams.languageField();
     if (StringUtils.isNotBlank(languageField)) {
       fields.add(languageField);
     }
@@ -251,7 +298,8 @@ public class CarrotClusteringEngine extends ClusteringEngine {
   /**
    * Prepares Carrot2 documents for clustering.
    */
-  private List<InputDocument> getDocuments(SolrDocumentList solrDocList, Map<SolrDocument, Integer> docIds,
+  private List<InputDocument> getDocuments(EngineConfiguration requestParameters,
+                                           SolrDocumentList solrDocList, Map<SolrDocument, Integer> docIds,
                                            Query query, final SolrQueryRequest sreq) throws IOException {
     SolrHighlighter highlighter = null;
     SolrParams solrParams = sreq.getParams();
@@ -259,25 +307,6 @@ public class CarrotClusteringEngine extends ClusteringEngine {
 
     String titleFieldSpec = solrParams.get(EngineConfiguration.TITLE_FIELD_NAME, "title");
     String snippetFieldSpec = solrParams.get(EngineConfiguration.SNIPPET_FIELD_NAME, titleFieldSpec);
-
-    // TODO: language handling.
-    //String languageField = solrParams.get(CarrotParams.LANGUAGE_FIELD_NAME, null);
-
-    // Parse language code map string into a map
-    /*
-    Map<String, String> languageCodeMap = new HashMap<>();
-    if (StringUtils.isNotBlank(languageField)) {
-      for (String pair : solrParams.get(CarrotParams.LANGUAGE_CODE_MAP, "").split("[, ]")) {
-        final String[] split = pair.split(":");
-        if (split.length == 2 && StringUtils.isNotBlank(split[0]) && StringUtils.isNotBlank(split[1])) {
-          languageCodeMap.put(split[0], split[1]);
-        } else {
-          log.warn("Unsupported format for {}: '{}'. Skipping this mapping."
-              , CarrotParams.LANGUAGE_CODE_MAP, pair);
-        }
-      }
-    }
-     */
 
     // Get the documents
     boolean produceSummary = solrParams.getBool(EngineConfiguration.PRODUCE_SUMMARY, false);
@@ -314,6 +343,17 @@ public class CarrotClusteringEngine extends ClusteringEngine {
     float[] scores = {1.0f};
     int[] docsHolder = new int[1];
     Query theQuery = query;
+
+    Function<SolrDocument, String> assignLanguage;
+    String languageField = requestParameters.languageField();
+    if (languageField != null) {
+      assignLanguage = (doc) -> {
+        Object fieldValue = doc.getFieldValue(languageField);
+        return Objects.requireNonNullElse(fieldValue, requestParameters.language()).toString();
+      };
+    } else {
+      assignLanguage = (doc) -> requestParameters.language();
+    }
 
     while (docsIter.hasNext()) {
       SolrDocument sdoc = docsIter.next();
@@ -352,16 +392,12 @@ public class CarrotClusteringEngine extends ClusteringEngine {
         snippet = getConcatenated(sdoc, snippetFieldSpec);
       }
 
+
       // Store Solr id of the document, we need it to map document instances
       // found in clusters back to identifiers.
-      InputDocument inputDocument = new InputDocument(sdoc.getFieldValue(idFieldName));
+      InputDocument inputDocument = new InputDocument(assignLanguage.apply(sdoc), sdoc.getFieldValue(idFieldName));
       inputDocument.addClusteredField("title", getConcatenated(sdoc, titleFieldSpec));
       inputDocument.addClusteredField("snippet", snippet);
-      /*
-        // TODO: url field is no more
-        //Objects.toString(sdoc.getFieldValue(urlField), "");
-      };
-       */
 
       // Set language
       /*
@@ -390,16 +426,6 @@ public class CarrotClusteringEngine extends ClusteringEngine {
               break;
             }
           }
-        }
-      }
-       */
-
-      /*
-      // TODO: custom fields?
-      // Add custom fields
-      if (customFields != null) {
-        for (Entry<String, String> entry : customFields.entrySet()) {
-          carrotDocument.setField(entry.getValue(), sdoc.getFieldValue(entry.getKey()));
         }
       }
        */

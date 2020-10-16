@@ -29,9 +29,11 @@ import java.util.function.BiConsumer;
 final class InputDocument implements Document {
   private final Object solrDocumentId;
   private final Map<String, String> clusteredFields = new LinkedHashMap<>();
+  private final String language;
 
-  InputDocument(Object solrDocumentId) {
+  InputDocument(String language, Object solrDocumentId) {
     this.solrDocumentId = Objects.requireNonNull(solrDocumentId);
+    this.language = language;
   }
 
   @Override
@@ -46,5 +48,9 @@ final class InputDocument implements Document {
   public void addClusteredField(String fieldName, String fieldValue) {
     assert !clusteredFields.containsKey(fieldName);
     clusteredFields.put(fieldName, fieldValue);
+  }
+
+  public String language() {
+    return language;
   }
 }

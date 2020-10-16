@@ -62,9 +62,14 @@ public final class EngineConfiguration implements Cloneable {
    */
   public static final String PARAM_RESOURCES = PARAM_PREFIX + "resources";
 
+  /**
+   * @see #languageField()
+   */
+  public static final String PARAM_LANGUAGE_FIELD = PARAM_PREFIX + "languageField";
+
+
   public static String TITLE_FIELD_NAME = PARAM_PREFIX + "title";
   public static String SNIPPET_FIELD_NAME = PARAM_PREFIX + "snippet";
-  public static String LANGUAGE_FIELD_NAME = PARAM_PREFIX + "lang";
 
   public static String PRODUCE_SUMMARY = PARAM_PREFIX + "produceSummary";
   public static String SUMMARY_FRAGSIZE = PARAM_PREFIX + "fragSize";
@@ -103,6 +108,11 @@ public final class EngineConfiguration implements Cloneable {
   private String language = "English";
 
   /**
+   * @see #PARAM_LANGUAGE_FIELD
+   */
+  private String languageField;
+
+  /**
    * Non-engine configuration parameters (algorithm parameters).
    */
   private LinkedHashMap<String, String> otherParameters = new LinkedHashMap<>();
@@ -134,6 +144,9 @@ public final class EngineConfiguration implements Cloneable {
           break;
         case PARAM_LANGUAGE:
           language = params.get(PARAM_LANGUAGE);
+          break;
+        case PARAM_LANGUAGE_FIELD:
+          languageField = params.get(PARAM_LANGUAGE_FIELD);
           break;
         default:
           // Unrecognized parameter. Preserve it.
@@ -196,6 +209,16 @@ public final class EngineConfiguration implements Cloneable {
    */
   public String language() {
     return language;
+  }
+
+  /**
+   * @return Name of the field that carries each document's language. {@code null} value
+   * means all documents will be clustered according to the default {@link #language()}.
+   * If not {@code null} and the document's field has a missing value, it will be clustered
+   * using the default {@link #language()} as well.
+   */
+  public String languageField() {
+    return languageField;
   }
 
   LinkedHashMap<String, String> otherParameters() {

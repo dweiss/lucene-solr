@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -223,6 +224,13 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   public void testParamDefaultLanguage() throws Exception {
     compareToExpected(clusters(
         getClusteringEngine("testParamDefaultLanguage"),
+        new MatchAllDocsQuery()));
+  }
+
+  @Test
+  public void testParamLanguageField() throws Exception {
+    compareToExpected(clusters(
+        getClusteringEngine("testParamLanguageField"),
         new MatchAllDocsQuery()));
   }
 
@@ -486,8 +494,9 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
       try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams)) {
         Map<SolrDocument, Integer> docToId = new HashMap<>();
+        Set<String> fieldsToLoad = engine.getFieldsToLoad(req);
         SolrDocumentList solrDocList =
-            ClusteringComponent.docListToSolrDocumentList(docList, searcher, engine.getFieldsToLoad(req), docToId);
+            ClusteringComponent.docListToSolrDocumentList(docList, searcher, fieldsToLoad, docToId);
 
         List<NamedList<Object>> results = engine.cluster(query, solrDocList, docToId, req);
 
