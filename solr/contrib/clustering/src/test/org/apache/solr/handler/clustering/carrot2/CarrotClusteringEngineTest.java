@@ -219,6 +219,13 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
         new MatchAllDocsQuery()));
   }
 
+  @Test
+  public void testParamDefaultLanguage() throws Exception {
+    compareToExpected(clusters(
+        getClusteringEngine("testParamDefaultLanguage"),
+        new MatchAllDocsQuery()));
+  }
+
 /*
   @Test
   public void testSolrStopWordsUsedInCarrot2Clustering() throws Exception {

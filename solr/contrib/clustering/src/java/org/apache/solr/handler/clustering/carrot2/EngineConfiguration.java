@@ -27,15 +27,40 @@ import java.util.LinkedHashMap;
  * @lucene.experimental
  */
 public final class EngineConfiguration implements Cloneable {
+  /**
+   * Common prefix for configuration of engine settings.
+   */
   private static final String PARAM_PREFIX = "engine.";
 
+  /**
+   * @see #algorithmName()
+   */
   public static final String PARAM_ALGORITHM = PARAM_PREFIX + "algorithm";
 
+  /**
+   * @see #maxLabels()
+   */
   public static final String PARAM_MAX_LABELS = PARAM_PREFIX + "maxLabels";
-  public static final String PARAM_INCLUDE_SUBCLUSTERS = PARAM_PREFIX + "includeSubclusters";
-  public static final String PARAM_INCLUDE_OTHER_TOPICS = PARAM_PREFIX + "includeOtherTopics";
-  public static final String PARAM_RESOURCES = PARAM_PREFIX + "resources";
 
+  /**
+   * @see #includeSubclusters()
+   */
+  public static final String PARAM_INCLUDE_SUBCLUSTERS = PARAM_PREFIX + "includeSubclusters";
+
+  /**
+   * @see #includeOtherTopics()
+   */
+  public static final String PARAM_INCLUDE_OTHER_TOPICS = PARAM_PREFIX + "includeOtherTopics";
+
+  /**
+   * @see #language()
+   */
+  public static final String PARAM_LANGUAGE = PARAM_PREFIX + "language";
+
+  /**
+   * @see #resources()
+   */
+  public static final String PARAM_RESOURCES = PARAM_PREFIX + "resources";
 
   public static String TITLE_FIELD_NAME = PARAM_PREFIX + "title";
   public static String SNIPPET_FIELD_NAME = PARAM_PREFIX + "snippet";
@@ -73,6 +98,11 @@ public final class EngineConfiguration implements Cloneable {
   private String resources;
 
   /**
+   * @see #PARAM_LANGUAGE
+   */
+  private String language = "English";
+
+  /**
    * Non-engine configuration parameters (algorithm parameters).
    */
   private LinkedHashMap<String, String> otherParameters = new LinkedHashMap<>();
@@ -101,6 +131,9 @@ public final class EngineConfiguration implements Cloneable {
           break;
         case PARAM_RESOURCES:
           resources = params.get(PARAM_RESOURCES);
+          break;
+        case PARAM_LANGUAGE:
+          language = params.get(PARAM_LANGUAGE);
           break;
         default:
           // Unrecognized parameter. Preserve it.
@@ -142,7 +175,8 @@ public final class EngineConfiguration implements Cloneable {
   }
 
   /**
-   * @return The name of the clustering algorithm to use (Carrot2 service extension provider name).
+   * @return Name of the clustering algorithm to use (as loaded via the service
+   *    * extension point {@link org.carrot2.clustering.ClusteringAlgorithm}).
    */
   public String algorithmName() {
     return algorithmName;
@@ -153,6 +187,15 @@ public final class EngineConfiguration implements Cloneable {
    */
   public String resources() {
     return resources;
+  }
+
+  /**
+   * @return Name of the default language to use for clustering. The corresponding
+   * {@link org.carrot2.language.LanguageComponents} must be available (loaded via
+   * service provider extension).
+   */
+  public String language() {
+    return language;
   }
 
   LinkedHashMap<String, String> otherParameters() {

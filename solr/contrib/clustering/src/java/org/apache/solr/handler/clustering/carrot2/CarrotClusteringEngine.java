@@ -41,6 +41,7 @@ import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.carrot2.clustering.Cluster;
 import org.carrot2.clustering.ClusteringAlgorithm;
+import org.carrot2.language.LanguageComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,10 +124,21 @@ public class CarrotClusteringEngine extends ClusteringEngine {
     this.engineContext = new EngineContext(defaultParams.resources(), core);
 
     // TODO: core.getResourceLoader()?
-    engineAvailable = (engineContext.getAlgorithm(defaultParams.algorithmName()) != null);
-    if (!isAvailable()) {
-      log.warn("The default clustering algorithm for engine {} is not available: {}",
-          getName(), defaultParams.algorithmName());
+    {
+      ClusteringAlgorithm defaultAlgorithm = engineContext.getAlgorithm(defaultParams.algorithmName());
+      LanguageComponents defaultLanguage = engineContext.getLanguage(defaultParams.language());
+
+      if (defaultAlgorithm == null) {
+        log.warn("The default clustering algorithm for engine {} is not available: {}",
+            getName(), defaultParams.algorithmName());
+      }
+
+      if (defaultLanguage == null) {
+        log.warn("The default language for engine {} is not available: {}",
+            getName(), defaultParams.language());
+      }
+
+      engineAvailable = (defaultAlgorithm != null && defaultLanguage != null);
     }
 
     SchemaField uniqueField = core.getLatestSchema().getUniqueKeyField();
@@ -153,6 +165,22 @@ public class CarrotClusteringEngine extends ClusteringEngine {
             getName()));
       }
 
+      LanguageComponents languageComponents = engineContext.getLanguage(requestParameters.language());
+      if (languageComponents == null) {
+        throw new RuntimeException(String.format(Locale.ROOT,
+            "Language '%s' is not supported in clustering component '%s'.",
+            requestParameters.language(),
+            getName()));
+      }
+
+      if (!algorithm.supports(languageComponents)) {
+        throw new RuntimeException(String.format(Locale.ROOT,
+            "Language '%s' is not supported by algorithm '%s' in clustering component '%s'.",
+            requestParameters.language(),
+            requestParameters.algorithmName(),
+            getName()));
+      }
+
       LinkedHashMap<String, String> attrs = requestParameters.otherParameters();
       // Set the optional query hint. We extract just the terms
       if (!attrs.containsKey("queryHint")) {
@@ -175,7 +203,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
       // Perform clustering and convert to an output structure of clusters.
       List<InputDocument> documents = getDocuments(solrDocList, docIds, query, sreq);
       List<Cluster<InputDocument>> clusters = algorithm.cluster(documents.stream(),
-          engineContext.getLanguage("English"));
+          languageComponents);
 
       return clustersToNamedList(documents, clusters, requestParameters);
     } catch (Exception e) {

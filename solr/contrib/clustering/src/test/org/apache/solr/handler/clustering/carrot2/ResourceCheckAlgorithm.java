@@ -47,13 +47,14 @@ class ResourceCheckAlgorithm extends AttrComposite implements ClusteringAlgorith
   @Override
   public <T extends Document> List<Cluster<T>> cluster(Stream<? extends T> documentStream,
                                                        LanguageComponents languageComponents) {
-    List<T> documents = documentStream.collect(Collectors.toList());
-
     ArrayList<Cluster<T>> clusters = new ArrayList<>();
 
     Cluster<T> cluster = new Cluster<>();
+    cluster.addLabel("Lang: " + languageComponents.language());
     clusters.add(cluster);
-    documents.forEach(cluster::addDocument);
+
+    cluster = new Cluster<>();
+    clusters.add(cluster);
 
     LexicalData lexicalData = languageComponents.get(LexicalData.class);
     cluster.addLabel(Arrays.stream(text.get().trim().split("[\\s]+"))
