@@ -1,0 +1,1 @@
+- was[-, -] bar[ignoredWord, ignoredLabel] baz[-, ignoredLabel] [35]

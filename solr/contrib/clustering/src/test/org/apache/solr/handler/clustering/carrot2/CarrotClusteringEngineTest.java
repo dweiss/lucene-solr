@@ -212,34 +212,14 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
         ClusteringComponent.DEFAULT_ENGINE_NAME), new MatchAllDocsQuery()));
   }
 
+  @Test
+  public void testCustomLanguageResources() throws Exception {
+    compareToExpected(clusters(
+        getClusteringEngine("testCustomLanguageResources"),
+        new MatchAllDocsQuery()));
+  }
+
 /*
-  @Test
-  public void testLexicalResourcesFromSolrConfigDefaultDir() throws Exception {
-    checkLexicalResourcesFromSolrConfig("lexical-resource-check",
-        "online,customsolrstopword,customsolrstoplabel");
-  }
-
-  @Test
-  public void testLexicalResourcesFromSolrConfigCustomDir() throws Exception {
-    checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir",
-        "online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
-  }
-
-  private void checkLexicalResourcesFromSolrConfig(String engineName, String wordsToCheck)
-      throws IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("merge-resources", false);
-    params.set(AttributeUtils.getKey(
-        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-        wordsToCheck);
-
-    // "customsolrstopword" is in stopwords.en, "customsolrstoplabel" is in
-    // stoplabels.mt, so we're expecting only one cluster with label "online".
-    final List<NamedList<Object>> clusters = checkEngine(
-        getClusteringEngine(engineName), 1, params);
-    assertEquals(getLabels(clusters.get(0)), Collections.singletonList("online"));
-  }
-
   @Test
   public void testSolrStopWordsUsedInCarrot2Clustering() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();

@@ -86,11 +86,19 @@
       <str name="engine.algorithm">EchoClusteringAlgorithm</str>
     </lst>
 
-    <!--
     <lst name="engine">
-      <str name="name">lexical-resource-check</str>
-      <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
+      <str name="name">testCustomLanguageResources</str>
+      <str name="engine.algorithm">ResourceCheckAlgorithm</str>
+      <str name="engine.resources">testCustomLanguageResources</str>
+      <bool name="engine.includeOtherTopics">false</bool>
+      <str name="text">
+        was
+        bar
+        baz
+      </str>
     </lst>
+
+    <!--
     <lst name="engine">
       <str name="name">lexical-resource-check-custom-resource-dir</str>
       <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>

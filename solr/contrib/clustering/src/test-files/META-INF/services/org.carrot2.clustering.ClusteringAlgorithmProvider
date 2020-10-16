@@ -1,2 +1,3 @@
 org.apache.solr.handler.clustering.carrot2.MockClusteringAlgorithmProvider
 org.apache.solr.handler.clustering.carrot2.EchoClusteringAlgorithmProvider
+org.apache.solr.handler.clustering.carrot2.ResourceCheckAlgorithmProvider

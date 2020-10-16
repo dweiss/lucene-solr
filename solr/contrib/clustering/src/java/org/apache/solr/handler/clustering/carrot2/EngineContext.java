@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.clustering.carrot2;
 
+import org.apache.solr.core.SolrCore;
 import org.carrot2.clustering.ClusteringAlgorithm;
 import org.carrot2.clustering.ClusteringAlgorithmProvider;
 import org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm;
@@ -32,6 +33,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -63,10 +66,17 @@ final class EngineContext {
     aliasedNames.put(BisectingKMeansClusteringAlgorithm.class.getName(), BisectingKMeansClusteringAlgorithm.NAME);
   }
 
-  EngineContext() {
+  EngineContext(String resourcesPath, SolrCore core) {
     LanguageComponentsLoader loader = LanguageComponents.loader();
 
-    List<Path> resourceLocations = Collections.emptyList();
+    List<Path> resourceLocations = new ArrayList<>();
+
+    Path configDir = Paths.get(core.getResourceLoader().getConfigDir());
+    if (resourcesPath != null && !resourcesPath.trim().isEmpty()) {
+      configDir = configDir.resolve(resourcesPath);
+      resourceLocations.add(configDir);
+    }
+
     if (!resourceLocations.isEmpty()) {
       log.info(
           "Clustering algorithm resources first looked up relative to: {}", resourceLocations);

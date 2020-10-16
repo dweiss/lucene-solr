@@ -120,7 +120,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
 
     this.defaultParams = new EngineConfiguration();
     this.defaultParams.extractFrom(initParams);
-    this.engineContext = new EngineContext();
+    this.engineContext = new EngineContext(defaultParams.resources(), core);
 
     // TODO: core.getResourceLoader()?
     engineAvailable = (engineContext.getAlgorithm(defaultParams.algorithmName()) != null);

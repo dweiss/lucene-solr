@@ -34,6 +34,8 @@ public final class EngineConfiguration implements Cloneable {
   public static final String PARAM_MAX_LABELS = PARAM_PREFIX + "maxLabels";
   public static final String PARAM_INCLUDE_SUBCLUSTERS = PARAM_PREFIX + "includeSubclusters";
   public static final String PARAM_INCLUDE_OTHER_TOPICS = PARAM_PREFIX + "includeOtherTopics";
+  public static final String PARAM_RESOURCES = PARAM_PREFIX + "resources";
+
 
   public static String TITLE_FIELD_NAME = PARAM_PREFIX + "title";
   public static String SNIPPET_FIELD_NAME = PARAM_PREFIX + "snippet";
@@ -44,11 +46,6 @@ public final class EngineConfiguration implements Cloneable {
   public static String SUMMARY_SNIPPETS = PARAM_PREFIX + "summarySnippets";
 
   public static String LANGUAGE_CODE_MAP = PARAM_PREFIX + "lcmap";
-
-  /**
-   * Points to Carrot<sup>2</sup> resources
-   */
-  public static String RESOURCES_DIR = PARAM_PREFIX + "resourcesDir";
 
   /**
    * @see #PARAM_MAX_LABELS
@@ -71,9 +68,15 @@ public final class EngineConfiguration implements Cloneable {
   private String algorithmName;
 
   /**
+   * @see #PARAM_RESOURCES
+   */
+  private String resources;
+
+  /**
    * Non-engine configuration parameters (algorithm parameters).
    */
   private LinkedHashMap<String, String> otherParameters = new LinkedHashMap<>();
+
 
   EngineConfiguration() {
   }
@@ -95,6 +98,9 @@ public final class EngineConfiguration implements Cloneable {
           break;
         case PARAM_ALGORITHM:
           algorithmName = params.get(PARAM_ALGORITHM);
+          break;
+        case PARAM_RESOURCES:
+          resources = params.get(PARAM_RESOURCES);
           break;
         default:
           // Unrecognized parameter. Preserve it.
@@ -140,6 +146,13 @@ public final class EngineConfiguration implements Cloneable {
    */
   public String algorithmName() {
     return algorithmName;
+  }
+
+  /**
+   * @return Return Solr component-configuration relative language resources path.
+   */
+  public String resources() {
+    return resources;
   }
 
   LinkedHashMap<String, String> otherParameters() {
