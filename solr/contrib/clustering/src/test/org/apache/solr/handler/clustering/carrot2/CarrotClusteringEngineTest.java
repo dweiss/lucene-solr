@@ -29,7 +29,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
 import org.apache.solr.handler.clustering.ClusteringComponent;
 import org.apache.solr.handler.clustering.ClusteringEngine;
-import org.apache.solr.handler.clustering.SearchClusteringEngine;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.carrot2.clustering.Cluster;
@@ -204,12 +203,13 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testDefaultEngineOrder() throws IOException {
     ClusteringComponent comp = (ClusteringComponent) h.getCore().getSearchComponent("testDefaultEngineOrder");
-    Map<String, SearchClusteringEngine> engines = getSearchClusteringEngines(comp);
+    Map<String, ClusteringEngine> engines = getSearchClusteringEngines(comp);
     assertEquals(
         Arrays.asList("stc", "default", "mock"),
         new ArrayList<>(engines.keySet()));
 
-    compareToExpected(clusters(engines.get(ClusteringEngine.DEFAULT_ENGINE_NAME), new MatchAllDocsQuery()));
+    compareToExpected(clusters(engines.get(
+        ClusteringComponent.DEFAULT_ENGINE_NAME), new MatchAllDocsQuery()));
   }
 
 /*
@@ -483,12 +483,12 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     return sb;
   }
 
-  private List<Cluster<SolrDocument>> clusters(SearchClusteringEngine engine, Query query) throws IOException {
+  private List<Cluster<SolrDocument>> clusters(ClusteringEngine engine, Query query) throws IOException {
     return clusters(engine, query, params -> {
     });
   }
 
-  private List<Cluster<SolrDocument>> clusters(SearchClusteringEngine engine, Query query, Consumer<ModifiableSolrParams> params)
+  private List<Cluster<SolrDocument>> clusters(ClusteringEngine engine, Query query, Consumer<ModifiableSolrParams> params)
       throws IOException {
     return h.getCore().withSearcher(searcher -> {
       DocList docList = searcher.getDocList(query, (Query) null, new Sort(), 0,

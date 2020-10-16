@@ -95,8 +95,8 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
   /**
    * Expose package-scope methods from {@link ClusteringComponent} to tests.
    */
-  protected final Map<String,SearchClusteringEngine> getSearchClusteringEngines(ClusteringComponent comp) {
-    return comp.getSearchClusteringEngines();
+  protected final Map<String, ClusteringEngine> getSearchClusteringEngines(ClusteringComponent comp) {
+    return comp.getClusteringEngines();
   }
 
   final static String[][] DOCUMENTS = new String[][]{

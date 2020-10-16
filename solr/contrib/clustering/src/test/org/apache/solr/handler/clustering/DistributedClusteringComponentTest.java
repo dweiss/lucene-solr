@@ -47,7 +47,6 @@ public class DistributedClusteringComponentTest extends
     query(                                                                                                   
         ClusteringComponent.COMPONENT_NAME, "true",
         CommonParams.Q, "*:*",
-        CommonParams.SORT, id + " desc",
-        ClusteringParams.USE_SEARCH_RESULTS, "true");
+        CommonParams.SORT, id + " desc");
   }
 }

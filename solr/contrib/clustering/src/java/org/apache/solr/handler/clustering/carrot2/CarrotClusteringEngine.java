@@ -30,7 +30,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.clustering.SearchClusteringEngine;
+import org.apache.solr.handler.clustering.ClusteringEngine;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
  * @lucene.experimental
  * @see "http://project.carrot2.org"
  */
-public class CarrotClusteringEngine extends SearchClusteringEngine {
+public class CarrotClusteringEngine extends ClusteringEngine {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -103,16 +103,19 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
    */
   private EngineConfiguration defaultParams;
 
+  public CarrotClusteringEngine(String name) {
+    super(name);
+  }
+
   @Override
   public boolean isAvailable() {
     return engineAvailable;
   }
 
   @Override
-  public String init(NamedList<?> config, final SolrCore core) {
+  public void init(NamedList<?> config, final SolrCore core) {
     this.core = core;
 
-    final String engineName = super.init(config, core);
     final SolrParams initParams = config.toSolrParams();
 
     this.defaultParams = new EngineConfiguration();
@@ -123,7 +126,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     engineAvailable = (engineContext.getAlgorithm(defaultParams.algorithmName()) != null);
     if (!isAvailable()) {
       log.warn("The default clustering algorithm for engine {} is not available: {}",
-          engineName, defaultParams.algorithmName());
+          getName(), defaultParams.algorithmName());
     }
 
     SchemaField uniqueField = core.getLatestSchema().getUniqueKeyField();
@@ -132,8 +135,6 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
           CarrotClusteringEngine.class.getSimpleName() + " requires the schema to have a uniqueKeyField");
     }
     this.idFieldName = uniqueField.getName();
-
-    return engineName;
   }
 
   @Override

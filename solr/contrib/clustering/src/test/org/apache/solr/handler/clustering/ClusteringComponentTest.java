@@ -27,7 +27,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -52,7 +51,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
   }
 
   @Test
-  public void testComponent() throws Exception {
+  public void testComponent() {
     SolrCore core = h.getCore();
 
     SearchComponent sc = core.getSearchComponent("clustering");
@@ -62,9 +61,6 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
     params.add(ClusteringComponent.COMPONENT_NAME, "true");
     params.add(CommonParams.Q, "*:*");
 
-    params.add(ClusteringParams.USE_SEARCH_RESULTS, "true");
-
-
     SolrRequestHandler handler = core.getRequestHandler("/select");
     SolrQueryResponse rsp;
     rsp = new SolrQueryResponse();
@@ -73,24 +69,6 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
     handler.handleRequest(req, rsp);
     NamedList<?> values = rsp.getValues();
     Object clusters = values.get("clusters");
-    //System.out.println("Clusters: " + clusters);
-    assertTrue("clusters is null and it shouldn't be", clusters != null);
-    req.close();
-
-    params = new ModifiableSolrParams();
-    params.add(ClusteringComponent.COMPONENT_NAME, "true");
-    params.add(ClusteringParams.ENGINE_NAME, "mock");
-    params.add(ClusteringParams.USE_COLLECTION, "true");
-    params.add(QueryComponent.COMPONENT_NAME, "false");
-
-    handler = core.getRequestHandler("docClustering");
-
-    rsp = new SolrQueryResponse();
-    rsp.addResponseHeader(new SimpleOrderedMap<>());
-    req = new LocalSolrQueryRequest(core, params);
-    handler.handleRequest(req, rsp);
-    values = rsp.getValues();
-    clusters = values.get("clusters");
     //System.out.println("Clusters: " + clusters);
     assertTrue("clusters is null and it shouldn't be", clusters != null);
     req.close();

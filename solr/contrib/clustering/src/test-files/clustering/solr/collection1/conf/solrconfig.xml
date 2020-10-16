@@ -47,16 +47,6 @@
     </arr>
   </requestHandler>
 
-  <requestHandler name="docClustering" class="solr.SearchHandler">
-    <!-- default values for query parameters -->
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-    <arr name="last-components">
-      <str>doc-clustering</str>
-    </arr>
-  </requestHandler>
-
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering">
     <lst name="engine">
       <str name="name">default</str>
@@ -140,15 +130,6 @@
       <bool name="engine.includeOtherTopics">false</bool>
       <int name="hierarchyDepth">1</int>
       <int name="maxClusters">3</int>
-    </lst>
-  </searchComponent>
-
-  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="doc-clustering">
-    <!-- Declare an engine -->
-    <lst name="engine">
-      <!-- The name, only one can be named "default" -->
-      <str name="name">mock</str>
-      <str name="classname">org.apache.solr.handler.clustering.MockDocumentClusteringEngine</str>
     </lst>
   </searchComponent>
 

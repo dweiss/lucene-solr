@@ -15,26 +15,55 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.clustering;
+
+import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * A base class for {@link SearchClusteringEngine} and {@link DocumentClusteringEngine}.
+ * Search results clustering engine API.
+ *
  * @lucene.experimental
  */
 public abstract class ClusteringEngine {
-  public static final String ENGINE_NAME = "name";
-  public static final String DEFAULT_ENGINE_NAME = "default";
+  private final String name;
 
-  private String name;
+  protected ClusteringEngine(String name) {
+    this.name = name;
+  }
 
-  public String init(NamedList<?> config, SolrCore core) {
-    name = (String) config.get(ENGINE_NAME);
+  public void init(NamedList<?> config, SolrCore core) {
+    // Do nothing.
+  }
+
+  public final String getName() {
     return name;
   }
 
-  public String getName() {
-    return name;
+  /**
+   * Do the clustering, return a clusters structure to be appended to
+   * {@link SolrQueryResponse}.
+   */
+  public abstract List<NamedList<Object>> cluster(Query query, SolrDocumentList solrDocumentList,
+                                                  Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq);
+
+  /**
+   * Returns the set of field names to load.
+   * Concrete classes can override this method if needed.
+   * Default implementation returns null, that is, all stored fields are loaded.
+   *
+   * @return The set of field names to load.
+   */
+  public Set<String> getFieldsToLoad(SolrQueryRequest sreq) {
+    return null;
   }
 
   public abstract boolean isAvailable();
