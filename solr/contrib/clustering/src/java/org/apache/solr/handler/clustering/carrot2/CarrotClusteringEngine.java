@@ -118,7 +118,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
       LanguageComponents defaultLanguage = engineContext.getLanguage(defaultParams.language());
 
       if (defaultAlgorithm == null) {
-        log.warn("The default clustering algorithm for engine {} is not available: {}",
+        log.warn("The default clustering algorithm for engine '{}' is not available: {}",
             getName(), defaultParams.algorithmName());
       }
 

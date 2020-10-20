@@ -33,7 +33,7 @@ public final class EngineConfiguration implements Cloneable {
   /**
    * Common prefix for configuration of engine settings.
    */
-  private static final String PARAM_PREFIX = "engine.";
+  private static final String PARAM_PREFIX = "clustering.";
 
   /**
    * @see #algorithmName()
