@@ -74,11 +74,6 @@ public class CarrotClusteringEngine extends ClusteringEngine {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * The subdirectory in Solr config dir to read customized Carrot2 resources from.
-   */
-  static final String CARROT_RESOURCES_PREFIX = "clustering/carrot2";
-
-  /**
    * Name of Solr document's field containing the document's identifier. To avoid
    * repeating the content of documents in clusters on output, each cluster contains
    * identifiers of documents it contains.
@@ -89,11 +84,6 @@ public class CarrotClusteringEngine extends ClusteringEngine {
    * Set to {@code true} if the default algorithm is available.
    */
   private boolean engineAvailable;
-
-  /**
-   * Solr core we're bound to.
-   */
-  private SolrCore core;
 
   /**
    * All resources required for the clustering engine.
@@ -116,8 +106,6 @@ public class CarrotClusteringEngine extends ClusteringEngine {
 
   @Override
   public void init(NamedList<?> config, final SolrCore core) {
-    this.core = core;
-
     final SolrParams initParams = config.toSolrParams();
 
     this.defaultParams = new EngineConfiguration();
@@ -155,54 +143,15 @@ public class CarrotClusteringEngine extends ClusteringEngine {
                                          Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq) {
     try {
       // Layer any parameters from the request over the defaults.
-      EngineConfiguration requestParameters = this.defaultParams.clone();
-      requestParameters.extractFrom(sreq.getParams());
+      EngineConfiguration requestParameters = requestConfiguration(sreq);
+      checkParameters(requestParameters);
 
       ClusteringAlgorithm algorithm = engineContext.getAlgorithm(requestParameters.algorithmName());
-      if (algorithm == null) {
-        throw new RuntimeException(String.format(Locale.ROOT,
-            "Algorithm '%s' not found in clustering component '%s'.",
-            requestParameters.algorithmName(),
-            getName()));
-      }
-
-      String defaultLanguage = requestParameters.language();
-      LanguageComponents languageComponents = engineContext.getLanguage(defaultLanguage);
-      if (languageComponents == null) {
-        throw new RuntimeException(String.format(Locale.ROOT,
-            "Language '%s' is not supported in clustering component '%s'.",
-            defaultLanguage,
-            getName()));
-      }
-
-      if (!algorithm.supports(languageComponents)) {
-        throw new RuntimeException(String.format(Locale.ROOT,
-            "Language '%s' is not supported by algorithm '%s' in clustering component '%s'.",
-            defaultLanguage,
-            requestParameters.algorithmName(),
-            getName()));
-      }
-
-      LinkedHashMap<String, String> attrs = requestParameters.otherParameters();
-      // Set the optional query hint. We extract just the terms
-      if (!attrs.containsKey("queryHint")) {
-        Set<String> termSet = new LinkedHashSet<>();
-        query.visit(new QueryVisitor() {
-          @Override
-          public void consumeTerms(Query query, Term... terms) {
-            for (Term t : terms) {
-              termSet.add(t.text());
-            }
-          }
-        });
-        attrs.put("queryHint", String.join(" ", termSet));
-      }
-      algorithm.accept(new AttrVisitorFromFlattenedKeys(attrs));
-
-      // Collect logical input "documents".
+      populateAlgorithmParameters(query, requestParameters, algorithm);
       List<InputDocument> documents = getDocuments(requestParameters, solrDocList, docIds, query, sreq);
 
       // Split documents into language groups.
+      String defaultLanguage = requestParameters.language();
       Map<String, List<InputDocument>> documentsByLanguage =
           documents.stream()
               .collect(
@@ -230,8 +179,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
             if (warnOnce.add(lang)) {
               log.warn(
                   "Language '{}' is not supported by algorithm '{}', documents in this "
-                      + "language will not be clustered.", lang,
-                    requestParameters.algorithmName());
+                      + "language will not be clustered.", lang, requestParameters.algorithmName());
             }
           } else {
             clustersByLanguage.put(
@@ -256,14 +204,67 @@ public class CarrotClusteringEngine extends ClusteringEngine {
 
       return clustersToNamedList(documents, clusters, requestParameters);
     } catch (Exception e) {
-      log.error("Carrot2 clustering failed", e);
+      log.error("Clustering request failed.", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Carrot2 clustering failed", e);
+    }
+  }
+
+  private void populateAlgorithmParameters(Query query, EngineConfiguration requestParameters, ClusteringAlgorithm algorithm) {
+    LinkedHashMap<String, String> attrs = requestParameters.otherParameters();
+    // Set the optional query hint. We extract just the terms
+    if (!attrs.containsKey("queryHint")) {
+      Set<String> termSet = new LinkedHashSet<>();
+      query.visit(new QueryVisitor() {
+        @Override
+        public void consumeTerms(Query query, Term... terms) {
+          for (Term t : terms) {
+            termSet.add(t.text());
+          }
+        }
+      });
+      attrs.put("queryHint", String.join(" ", termSet));
+    }
+    algorithm.accept(new AttrVisitorFromFlattenedKeys(attrs));
+  }
+
+  private void checkParameters(EngineConfiguration requestParameters) {
+    ClusteringAlgorithm algorithm = engineContext.getAlgorithm(requestParameters.algorithmName());
+    if (algorithm == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
+          "Algorithm '%s' not found in clustering component '%s'.",
+          requestParameters.algorithmName(),
+          getName()));
+    }
+
+    String defaultLanguage = requestParameters.language();
+    LanguageComponents languageComponents = engineContext.getLanguage(defaultLanguage);
+    if (languageComponents == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
+          "Language '%s' is not supported in clustering component '%s'.",
+          defaultLanguage,
+          getName()));
+    }
+
+    if (!algorithm.supports(languageComponents)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
+          "Language '%s' is not supported by algorithm '%s' in clustering component '%s'.",
+          defaultLanguage,
+          requestParameters.algorithmName(),
+          getName()));
+    }
+
+    if (requestParameters.fields().isEmpty()) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
+          "At least one field name specifying content for clustering is required in parameter '%s'.",
+          EngineConfiguration.PARAM_FIELDS));
     }
   }
 
   @Override
   public Set<String> getFieldsToLoad(SolrQueryRequest sreq) {
-    HashSet<String> fields = new HashSet<>(getFieldsForClustering(sreq));
+    EngineConfiguration requestParameters = requestConfiguration(sreq);
+
+    Set<String> fields = new LinkedHashSet<>(requestParameters.fields());
     fields.add(idFieldName);
 
     String languageField = defaultParams.languageField();
@@ -275,50 +276,35 @@ public class CarrotClusteringEngine extends ClusteringEngine {
   }
 
   /**
-   * Returns the names of fields that will be delivering the actual
-   * content for clustering. Currently, there are two such fields: document
-   * title and document content.
-   */
-  private Set<String> getFieldsForClustering(SolrQueryRequest sreq) {
-    SolrParams solrParams = sreq.getParams();
-
-    String titleFieldSpec = solrParams.get(EngineConfiguration.TITLE_FIELD_NAME, "title");
-    String snippetFieldSpec = solrParams.get(EngineConfiguration.SNIPPET_FIELD_NAME, titleFieldSpec);
-    if (StringUtils.isBlank(snippetFieldSpec)) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, EngineConfiguration.SNIPPET_FIELD_NAME
-          + " must not be blank.");
-    }
-
-    final Set<String> fields = new HashSet<>();
-    fields.addAll(Arrays.asList(titleFieldSpec.split("[, ]")));
-    fields.addAll(Arrays.asList(snippetFieldSpec.split("[, ]")));
-    return fields;
-  }
-
-  /**
    * Prepares Carrot2 documents for clustering.
    */
   private List<InputDocument> getDocuments(EngineConfiguration requestParameters,
                                            SolrDocumentList solrDocList, Map<SolrDocument, Integer> docIds,
                                            Query query, final SolrQueryRequest sreq) throws IOException {
-    SolrHighlighter highlighter = null;
     SolrParams solrParams = sreq.getParams();
     SolrCore core = sreq.getCore();
+    String[] fieldsArray = requestParameters.fields().toArray(String[]::new);
 
-    String titleFieldSpec = solrParams.get(EngineConfiguration.TITLE_FIELD_NAME, "title");
-    String snippetFieldSpec = solrParams.get(EngineConfiguration.SNIPPET_FIELD_NAME, titleFieldSpec);
+    Function<SolrDocument, String> assignLanguage;
+    String languageField = requestParameters.languageField();
+    if (languageField != null) {
+      assignLanguage = (doc) -> {
+        Object fieldValue = doc.getFieldValue(languageField);
+        return Objects.requireNonNullElse(fieldValue, requestParameters.language()).toString();
+      };
+    } else {
+      assignLanguage = (doc) -> requestParameters.language();
+    }
 
-    // Get the documents
     boolean produceSummary = solrParams.getBool(EngineConfiguration.PRODUCE_SUMMARY, false);
 
     SolrQueryRequest req = null;
-    String[] snippetFieldAry = null;
+    SolrHighlighter highlighter = null;
     if (produceSummary) {
       highlighter = ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME)).getHighlighter();
       if (highlighter != null) {
         Map<String, Object> args = new HashMap<>();
-        snippetFieldAry = snippetFieldSpec.split("[, ]");
-        args.put(HighlightParams.FIELDS, snippetFieldAry);
+        args.put(HighlightParams.FIELDS, fieldsArray);
         args.put(HighlightParams.HIGHLIGHT, "true");
         // We don't want any highlight marks.
         args.put(HighlightParams.SIMPLE_PRE, "");
@@ -340,116 +326,67 @@ public class CarrotClusteringEngine extends ClusteringEngine {
     Iterator<SolrDocument> docsIter = solrDocList.iterator();
     List<InputDocument> result = new ArrayList<>(solrDocList.size());
 
-    float[] scores = {1.0f};
-    int[] docsHolder = new int[1];
-    Query theQuery = query;
-
-    Function<SolrDocument, String> assignLanguage;
-    String languageField = requestParameters.languageField();
-    if (languageField != null) {
-      assignLanguage = (doc) -> {
-        Object fieldValue = doc.getFieldValue(languageField);
-        return Objects.requireNonNullElse(fieldValue, requestParameters.language()).toString();
-      };
-    } else {
-      assignLanguage = (doc) -> requestParameters.language();
-    }
-
     while (docsIter.hasNext()) {
       SolrDocument sdoc = docsIter.next();
-      String snippet = null;
-
-      // TODO: docIds will be null when running distributed search.
-      // See comment in ClusteringComponent#finishStage().
-      if (produceSummary && docIds != null) {
-        docsHolder[0] = docIds.get(sdoc);
-        DocList docAsList = new DocSlice(0, 1, docsHolder, scores, 1, 1.0f, TotalHits.Relation.EQUAL_TO);
-        NamedList<Object> highlights = highlighter.doHighlighting(docAsList, theQuery, req, snippetFieldAry);
-        if (highlights != null && highlights.size() == 1) {
-          // should only be one value given our setup
-          // should only be one document
-          @SuppressWarnings("unchecked")
-          NamedList<String[]> tmp = (NamedList<String[]>) highlights.getVal(0);
-
-          final StringBuilder sb = new StringBuilder();
-          for (int j = 0; j < snippetFieldAry.length; j++) {
-            // Join fragments with a period, so that Carrot2 does not create
-            // cross-fragment phrases, such phrases rarely make sense.
-            String[] highlt = tmp.get(snippetFieldAry[j]);
-            if (highlt != null && highlt.length > 0) {
-              for (int i = 0; i < highlt.length; i++) {
-                sb.append(highlt[i]);
-                sb.append(" . ");
-              }
-            }
-          }
-          snippet = sb.toString();
-        }
-      }
-
-      // If summaries not enabled or summary generation failed, use full content.
-      if (snippet == null) {
-        snippet = getConcatenated(sdoc, snippetFieldSpec);
-      }
-
 
       // Store Solr id of the document, we need it to map document instances
       // found in clusters back to identifiers.
-      InputDocument inputDocument = new InputDocument(assignLanguage.apply(sdoc), sdoc.getFieldValue(idFieldName));
-      inputDocument.addClusteredField("title", getConcatenated(sdoc, titleFieldSpec));
-      inputDocument.addClusteredField("snippet", snippet);
+      InputDocument inputDocument = new InputDocument(
+          assignLanguage.apply(sdoc),
+          sdoc.getFieldValue(idFieldName));
+      result.add(inputDocument);
 
-      // Set language
-      /*
-      if (StringUtils.isNotBlank(languageField)) {
-        Collection<Object> languages = sdoc.getFieldValues(languageField);
-        if (languages != null) {
-
-          // Use the first Carrot2-supported language
-          for (Object l : languages) {
-            String lang = Objects.toString(l, "");
-
-            if (languageCodeMap.containsKey(lang)) {
-              lang = languageCodeMap.get(lang);
+      Function<String, Collection<?>> snippetProvider = (field) -> null;
+      if (produceSummary && docIds != null) {
+        DocList docAsList = new DocSlice(0, 1,
+            new int[]{docIds.get(sdoc)}, new float[]{1.0f}, 1, 1.0f, TotalHits.Relation.EQUAL_TO);
+        NamedList<Object> highlights = highlighter.doHighlighting(docAsList, query, req, fieldsArray);
+        if (highlights != null && highlights.size() == 1) {
+          @SuppressWarnings("unchecked")
+          NamedList<String[]> tmp = (NamedList<String[]>) highlights.getVal(0);
+          snippetProvider = (field) -> {
+            String[] values = tmp.get(field);
+            if (values == null) {
+              return Collections.emptyList();
+            } else {
+              return Arrays.asList(values);
             }
-
-            // Language detection Library for Java uses dashes to separate
-            // language variants, such as 'zh-cn', but Carrot2 uses underscores.
-            if (lang.indexOf('-') > 0) {
-              lang = lang.replace('-', '_');
-            }
-
-            // If the language is supported by Carrot2, we'll get a non-null value
-            final LanguageCode carrot2Language = LanguageCode.forISOCode(lang);
-            if (carrot2Language != null) {
-              carrotDocument.setLanguage(carrot2Language);
-              break;
-            }
-          }
+          };
         }
       }
-       */
 
-      result.add(inputDocument);
+      Function<String, Collection<Object>> fullValueProvider = sdoc::getFieldValues;
+
+      StringBuilder sb = new StringBuilder();
+      for (String field : fieldsArray) {
+        Collection<?> values = snippetProvider.apply(field);
+        if (values == null || values.isEmpty()) {
+          values = fullValueProvider.apply(field);
+        }
+
+        if (values != null && !values.isEmpty()) {
+          sb.setLength(0);
+          for (Object ob : values) {
+            // Join multiple values with a period so that Carrot2 does not pick up
+            // phrases that cross multiple field value boundaries (in most cases it would
+            // create useless phrases).
+            if (sb.length() > 0) {
+              sb.append(" . ");
+            }
+            sb.append(Objects.toString(ob, ""));
+          }
+          inputDocument.addClusteredField(field, sb.toString());
+        }
+      }
     }
 
     return result;
   }
 
-  private String getConcatenated(SolrDocument sdoc, String fieldsSpec) {
-    StringBuilder result = new StringBuilder();
-    for (String field : fieldsSpec.split("[, ]")) {
-      Collection<Object> vals = sdoc.getFieldValues(field);
-      if (vals == null) continue;
-      Iterator<Object> ite = vals.iterator();
-      while (ite.hasNext()) {
-        // Join multiple values with a period so that Carrot2 does not pick up
-        // phrases that cross field value boundaries (in most cases it would
-        // create useless phrases).
-        result.append(Objects.toString(ite.next(), "")).append(" . ");
-      }
-    }
-    return result.toString().trim();
+  private EngineConfiguration requestConfiguration(SolrQueryRequest sreq) {
+    EngineConfiguration requestParameters = this.defaultParams.clone();
+    requestParameters.extractFrom(sreq.getParams());
+    return requestParameters;
   }
 
   private List<NamedList<Object>> clustersToNamedList(List<InputDocument> documents,

@@ -49,31 +49,37 @@
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="clustering">
     <lst name="engine">
       <str name="name">default</str>
+      <str name="engine.fields">title</str>
       <str name="engine.algorithm">MockClusteringAlgorithm</str>
     </lst>
 
     <lst name="engine">
       <str name="name">lingo</str>
+      <str name="engine.fields">title, snippet</str>
       <str name="engine.algorithm">Lingo</str>
     </lst>
 
     <lst name="engine">
       <str name="name">stc</str>
+      <str name="engine.fields">title, snippet</str>
       <str name="engine.algorithm">STC</str>
     </lst>
 
     <lst name="engine">
       <str name="name">kmeans</str>
+      <str name="engine.fields">title, snippet</str>
       <str name="engine.algorithm">Bisecting K-Means</str>
     </lst>
 
     <lst name="engine">
       <str name="name">mock</str>
+      <str name="engine.fields">title</str>
       <str name="engine.algorithm">MockClusteringAlgorithm</str>
     </lst>
 
     <lst name="engine">
       <str name="name">mock-solrconfig-attrs</str>
+      <str name="engine.fields">title, snippet</str>
       <str name="engine.algorithm">MockClusteringAlgorithm</str>
       <bool name="engine.includeOtherTopics">false</bool>
       <int name="maxClusters">2</int>
@@ -83,11 +89,13 @@
     <lst name="engine">
       <str name="name">echo</str>
       <str name="engine.algorithm">EchoClusteringAlgorithm</str>
+      <str name="engine.fields">title, snippet</str>
     </lst>
 
     <lst name="engine">
       <str name="name">testCustomLanguageResources</str>
       <str name="engine.algorithm">ResourceCheckAlgorithm</str>
+      <str name="engine.fields">title</str>
       <str name="engine.resources">testCustomLanguageResources</str>
       <bool name="engine.includeOtherTopics">false</bool>
       <str name="text">
@@ -99,7 +107,9 @@
 
     <lst name="engine">
       <str name="name">testParamDefaultLanguage</str>
+      <str name="engine.fields">title</str>
       <str name="engine.algorithm">ResourceCheckAlgorithm</str>
+      <str name="engine.fields">title</str>
       <bool name="engine.includeOtherTopics">false</bool>
       <str name="engine.language">German</str>
       <str name="text">
@@ -111,6 +121,7 @@
       <str name="name">testParamLanguageField</str>
       <str name="engine.algorithm">ResourceCheckAlgorithm</str>
       <bool name="engine.includeOtherTopics">false</bool>
+      <str name="engine.fields">title</str>
       <str name="engine.languageField">lang</str>
       <str name="engine.language">Italian</str>
       <str name="text">test</str>
@@ -122,12 +133,14 @@
       <str name="name">stc</str>
       <str name="engine.algorithm">MockClusteringAlgorithm</str>
       <bool name="engine.includeOtherTopics">false</bool>
+      <str name="engine.fields">title</str>
       <int name="hierarchyDepth">1</int>
       <int name="maxClusters">1</int>
     </lst>
     <lst name="engine">
       <str name="name">default</str>
       <str name="engine.algorithm">MockClusteringAlgorithm</str>
+      <str name="engine.fields">title</str>
       <bool name="engine.includeOtherTopics">false</bool>
       <int name="hierarchyDepth">1</int>
       <int name="maxClusters">2</int>
@@ -135,6 +148,7 @@
     <lst name="engine">
       <str name="name">mock</str>
       <str name="engine.algorithm">MockClusteringAlgorithm</str>
+      <str name="engine.fields">title</str>
       <bool name="engine.includeOtherTopics">false</bool>
       <int name="hierarchyDepth">1</int>
       <int name="maxClusters">3</int>

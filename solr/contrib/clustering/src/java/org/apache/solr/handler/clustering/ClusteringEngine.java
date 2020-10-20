@@ -40,10 +40,16 @@ public abstract class ClusteringEngine {
     this.name = name;
   }
 
+  /**
+   * Initialize the engine, parse default configuration.
+   */
   public void init(NamedList<?> config, SolrCore core) {
     // Do nothing.
   }
 
+  /**
+   * @return Return this engine's name.
+   */
   public final String getName() {
     return name;
   }
@@ -56,15 +62,12 @@ public abstract class ClusteringEngine {
                                                   Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq);
 
   /**
-   * Returns the set of field names to load.
-   * Concrete classes can override this method if needed.
-   * Default implementation returns null, that is, all stored fields are loaded.
-   *
-   * @return The set of field names to load.
+   * @return The set of field names to load for each document.
    */
-  public Set<String> getFieldsToLoad(SolrQueryRequest sreq) {
-    return null;
-  }
+  public abstract Set<String> getFieldsToLoad(SolrQueryRequest sreq);
 
+  /**
+   * @return Returns {@code true} if the engine is available for processing requests.
+   */
   public abstract boolean isAvailable();
 }

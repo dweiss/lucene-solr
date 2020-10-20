@@ -18,11 +18,14 @@ package org.apache.solr.handler.clustering.carrot2;
 
 import org.apache.solr.common.params.SolrParams;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
- * Clustering engine configuration parameters (and other parameters that
- * may tweak the algorithm on a per-request basis).
+ * {@link CarrotClusteringEngine} configuration parameters (and other parameters that
+ * may tweak clustering algorithms on a per-request basis).
  *
  * @lucene.experimental
  */
@@ -67,8 +70,10 @@ public final class EngineConfiguration implements Cloneable {
    */
   public static final String PARAM_LANGUAGE_FIELD = PARAM_PREFIX + "languageField";
 
-  public static String TITLE_FIELD_NAME = PARAM_PREFIX + "title";
-  public static String SNIPPET_FIELD_NAME = PARAM_PREFIX + "snippet";
+  /**
+   * @see #fields()
+   */
+  public static final String PARAM_FIELDS = PARAM_PREFIX + "fields";
 
   public static String PRODUCE_SUMMARY = PARAM_PREFIX + "produceSummary";
   public static String SUMMARY_FRAGSIZE = PARAM_PREFIX + "fragSize";
@@ -110,6 +115,11 @@ public final class EngineConfiguration implements Cloneable {
   private String languageField;
 
   /**
+   * @see #PARAM_FIELDS
+   */
+  private LinkedHashSet<String> fields = new LinkedHashSet<>();
+
+  /**
    * Non-engine configuration parameters (algorithm parameters).
    */
   private LinkedHashMap<String, String> otherParameters = new LinkedHashMap<>();
@@ -144,6 +154,9 @@ public final class EngineConfiguration implements Cloneable {
           break;
         case PARAM_LANGUAGE_FIELD:
           languageField = params.get(PARAM_LANGUAGE_FIELD);
+          break;
+        case PARAM_FIELDS:
+          fields.addAll(Arrays.asList(params.get(PARAM_FIELDS).split("[, ]")));
           break;
         default:
           // Unrecognized parameter. Preserve it.
@@ -218,6 +231,14 @@ public final class EngineConfiguration implements Cloneable {
     return languageField;
   }
 
+  /**
+   * @return Names of all fields whose textual content will be passed to the clustering engine.
+   * Comma or space separated.
+   */
+  public Set<String> fields() {
+    return fields;
+  }
+
   LinkedHashMap<String, String> otherParameters() {
     return otherParameters;
   }
@@ -227,6 +248,7 @@ public final class EngineConfiguration implements Cloneable {
     try {
       EngineConfiguration clone = (EngineConfiguration) super.clone();
       clone.otherParameters = new LinkedHashMap<>(this.otherParameters);
+      clone.fields.addAll(this.fields);
       return clone;
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);

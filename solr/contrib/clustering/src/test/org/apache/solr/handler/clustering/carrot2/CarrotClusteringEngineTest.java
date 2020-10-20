@@ -96,7 +96,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     Query query = new TermQuery(new Term("snippet", "mine"));
 
     Consumer<ModifiableSolrParams> common = params -> {
-      params.add(EngineConfiguration.SNIPPET_FIELD_NAME, "snippet");
+      params.add(EngineConfiguration.PARAM_FIELDS, "title, snippet");
       params.add(EngineConfiguration.SUMMARY_FRAGSIZE, Integer.toString(80));
       params.add(EngineConfiguration.SUMMARY_SNIPPETS, Integer.toString(1));
     };
@@ -136,7 +136,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
 
     Consumer<ModifiableSolrParams> common = params -> {
       params.add(EngineConfiguration.PRODUCE_SUMMARY, "true");
-      params.add(EngineConfiguration.SNIPPET_FIELD_NAME, "snippet");
+      params.add(EngineConfiguration.PARAM_FIELDS, "title, snippet");
       params.add(EngineConfiguration.SUMMARY_SNIPPETS, Integer.toString(1));
     };
 
