@@ -19,11 +19,9 @@ package org.apache.solr.handler.clustering;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.common.params.CommonParams;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressSSL
-@Ignore
 public class DistributedClusteringComponentTest extends
     BaseDistributedSearchTestCase {
 
@@ -33,11 +31,12 @@ public class DistributedClusteringComponentTest extends
   }
 
   @Test
+  @ShardsFixed(num = 2)
   public void test() throws Exception {
     del("*:*");
     int numberOfDocs = 0;
     for (String[] doc : AbstractClusteringTestCase.DOCUMENTS) {
-      index(id, Integer.toString(numberOfDocs++), "url", doc[0], "title", doc[1], "snippet", doc[2]);
+      index(id, Integer.toString(numberOfDocs++), "title", doc[0], "snippet", doc[1]);
     }
     commit();
     handle.clear();

@@ -36,7 +36,7 @@
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>
 
-  <requestHandler name="select" class="solr.SearchHandler">
+  <requestHandler name="/select" class="solr.SearchHandler">
     <!-- default values for query parameters -->
     <lst name="defaults">
       <str name="echoParams">explicit</str>

@@ -340,7 +340,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
   @Override
   public String getDescription() {
-    return "A Clustering component";
+    return "Search results clustering component";
   }
 
   /**
