@@ -32,6 +32,7 @@ import org.apache.solr.handler.clustering.ClusteringEngine;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.carrot2.clustering.Cluster;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -118,7 +119,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       List<String> labels2 = full.get(i).getLabels();
       assertEquals(labels1.size(), labels2.size());
       for (int j = 0; j < labels1.size(); j++) {
-        assertThat("Summary shorter than original document?",
+        MatcherAssert.assertThat("Summary shorter than original document?",
             labels1.get(j).length(),
             Matchers.lessThanOrEqualTo(labels2.get(j).length()));
       }
@@ -155,7 +156,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
       List<String> longLabels = longSummaries.get(i).getLabels();
       assertEquals(shortLabels.size(), longLabels.size());
       for (int j = 0; j < shortLabels.size(); j++) {
-        assertThat("Shorter summary is longer than longer summary?",
+        MatcherAssert.assertThat("Shorter summary is longer than longer summary?",
             shortLabels.get(j).length(),
             Matchers.lessThanOrEqualTo(longLabels.get(j).length()));
       }
@@ -194,7 +195,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     });
 
     clusters.forEach(c -> {
-      assertThat(c.getLabels(), Matchers.hasSize(3));
+      MatcherAssert.assertThat(c.getLabels(), Matchers.hasSize(3));
     });
   }
 
@@ -227,190 +228,18 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
         new MatchAllDocsQuery()));
   }
 
+  /**
+   * Verify that documents with an explicit language name
+   * field are clustered in separate batches.
+   *
+   * @see EngineConfiguration#PARAM_LANGUAGE_FIELD
+   */
   @Test
   public void testParamLanguageField() throws Exception {
     compareToExpected(clusters(
         getClusteringEngine("testParamLanguageField"),
         new MatchAllDocsQuery()));
   }
-
-/*
-  @Test
-  public void testSolrStopWordsUsedInCarrot2Clustering() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("merge-resources", false);
-    params.set(AttributeUtils.getKey(
-        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-    "online,solrownstopword");
-
-    // "solrownstopword" is in stopwords.txt, so we're expecting
-    // only one cluster with label "online".
-    final List<NamedList<Object>> clusters = checkEngine(
-        getClusteringEngine("lexical-resource-check"), 1, params);
-    assertEquals(getLabels(clusters.get(0)), Collections.singletonList("online"));
-  }
-
-  @Test
-  public void testSolrStopWordsNotDefinedOnAFieldForClustering() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    // Force string fields to be used for clustering. Does not make sense
-    // in a real word, but does the job in the test.
-    params.set(CarrotParams.TITLE_FIELD_NAME, "url");
-    params.set(CarrotParams.SNIPPET_FIELD_NAME, "url");
-    params.set("merge-resources", false);
-    params.set(AttributeUtils.getKey(
-        LexicalResourcesCheckClusteringAlgorithm.class, "wordsToCheck"),
-    "online,solrownstopword");
-
-    final List<NamedList<Object>> clusters = checkEngine(
-        getClusteringEngine("lexical-resource-check"), 2, params);
-    assertEquals(Collections.singletonList("online"), getLabels(clusters.get(0)));
-    assertEquals(Collections.singletonList("solrownstopword"), getLabels(clusters.get(1)));
-  }
-  
-  @Test
-  public void testHighlightingOfMultiValueField() throws Exception {
-    final String snippetWithoutSummary = getLabels(clusterWithHighlighting(
-        false, 30, 3, "multi", 1).get(0)).get(1);
-    assertTrue("Snippet contains first value", snippetWithoutSummary.contains("First"));
-    assertTrue("Snippet contains second value", snippetWithoutSummary.contains("Second"));
-    assertTrue("Snippet contains third value", snippetWithoutSummary.contains("Third"));
-
-    final String snippetWithSummary = getLabels(clusterWithHighlighting(
-        true, 30, 3, "multi", 1).get(0)).get(1);
-    assertTrue("Snippet with summary shorter than full snippet",
-        snippetWithoutSummary.length() > snippetWithSummary.length());
-    assertTrue("Summary covers first value", snippetWithSummary.contains("First"));
-    assertTrue("Summary covers second value", snippetWithSummary.contains("Second"));
-    assertTrue("Summary covers third value", snippetWithSummary.contains("Third"));
-  }
-  
-  @Test
-  public void testConcatenatingMultipleFields() throws Exception {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CarrotParams.TITLE_FIELD_NAME, "title,heading");
-    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet,body");
-
-    final List<String> labels = getLabels(checkEngine(
-        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("body",
-            "snippet")), params).get(0));
-    assertTrue("Snippet contains third value", labels.get(0).contains("Title field"));
-    assertTrue("Snippet contains third value", labels.get(0).contains("Heading field"));
-    assertTrue("Snippet contains third value", labels.get(1).contains("Snippet field"));
-    assertTrue("Snippet contains third value", labels.get(1).contains("Body field"));
-  }
-
-  @Test
-  public void testHighlightingMultipleFields() throws Exception {
-    final TermQuery query = new TermQuery(new Term("snippet", "content"));
-
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CarrotParams.TITLE_FIELD_NAME, "title,heading");
-    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet,body");
-    params.add(CarrotParams.PRODUCE_SUMMARY, Boolean.toString(false));
-    
-    final String snippetWithoutSummary = getLabels(checkEngine(
-        getClusteringEngine("echo"), 1, 1, query, params).get(0)).get(1);
-    assertTrue("Snippet covers snippet field", snippetWithoutSummary.contains("snippet field"));
-    assertTrue("Snippet covers body field", snippetWithoutSummary.contains("body field"));
-
-    params.set(CarrotParams.PRODUCE_SUMMARY, Boolean.toString(true));
-    params.add(CarrotParams.SUMMARY_FRAGSIZE, Integer.toString(30));
-    params.add(CarrotParams.SUMMARY_SNIPPETS, Integer.toString(2));
-    final String snippetWithSummary = getLabels(checkEngine(
-        getClusteringEngine("echo"), 1, 1, query, params).get(0)).get(1);    
-    assertTrue("Snippet with summary shorter than full snippet",
-        snippetWithoutSummary.length() > snippetWithSummary.length());
-    assertTrue("Snippet covers snippet field", snippetWithSummary.contains("snippet field"));
-    assertTrue("Snippet covers body field", snippetWithSummary.contains("body field"));
-
-  }
-
-  @Test
-  public void testOneCarrot2SupportedLanguage() throws Exception {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
-
-    final List<String> labels = getLabels(checkEngine(
-        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
-            "one_supported_language")), params).get(0));
-    assertEquals(3, labels.size());
-    assertEquals("Correct Carrot2 language", LanguageCode.CHINESE_SIMPLIFIED.name(), labels.get(2));
-  }
-  
-  @Test
-  public void testOneCarrot2SupportedLanguageOfMany() throws Exception {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
-    
-    final List<String> labels = getLabels(checkEngine(
-        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
-            "one_supported_language_of_many")), params).get(0));
-    assertEquals(3, labels.size());
-    assertEquals("Correct Carrot2 language", LanguageCode.GERMAN.name(), labels.get(2));
-  }
-  
-  @Test
-  public void testLanguageCodeMapping() throws Exception {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CarrotParams.LANGUAGE_FIELD_NAME, "lang");
-    params.add(CarrotParams.LANGUAGE_CODE_MAP, "POLISH:pl");
-    
-    final List<String> labels = getLabels(checkEngine(
-        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
-            "one_supported_language_of_many")), params).get(0));
-    assertEquals(3, labels.size());
-    assertEquals("Correct Carrot2 language", LanguageCode.POLISH.name(), labels.get(2));
-  }
-  
-  @Test
-  public void testPassingOfCustomFields() throws Exception {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CarrotParams.CUSTOM_FIELD_NAME, "intfield_i:intfield");
-    params.add(CarrotParams.CUSTOM_FIELD_NAME, "floatfield_f:floatfield");
-    params.add(CarrotParams.CUSTOM_FIELD_NAME, "heading:multi");
-    
-    // Let the echo mock clustering algorithm know which custom field to echo
-    params.add("custom-fields", "intfield,floatfield,multi");
-    
-    final List<String> labels = getLabels(checkEngine(
-        getClusteringEngine("echo"), 1, 1, new TermQuery(new Term("url",
-            "custom_fields")), params).get(0));
-    assertEquals(5, labels.size());
-    assertEquals("Integer field", "10", labels.get(2));
-    assertEquals("Float field", "10.5", labels.get(3));
-    assertEquals("List field", "[first, second]", labels.get(4));
-  }
-
-  @Test
-  public void testCustomTokenizer() throws Exception {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CarrotParams.TITLE_FIELD_NAME, "title");
-    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
-
-    final List<String> labels = getLabels(checkEngine(
-        getClusteringEngine("custom-duplicating-tokenizer"), 1, 15, new TermQuery(new Term("title",
-            "field")), params).get(0));
-    
-    // The custom test tokenizer duplicates each token's text
-    assertTrue("First token", labels.get(0).contains("TitleTitle"));
-  }
-  
-  @Test
-  public void testCustomStemmer() throws Exception {
-    final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CarrotParams.TITLE_FIELD_NAME, "title");
-    params.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
-    
-    final List<String> labels = getLabels(checkEngine(
-        getClusteringEngine("custom-duplicating-stemmer"), 1, 12, new TermQuery(new Term("title",
-            "field")), params).get(0));
-    
-    // The custom test stemmer duplicates and lowercases each token's text
-    assertTrue("First token", labels.get(0).contains("titletitle"));
-  }
-*/
-
 
   private CarrotClusteringEngine getClusteringEngine(String engineName) {
     ClusteringComponent comp = (ClusteringComponent) h.getCore()

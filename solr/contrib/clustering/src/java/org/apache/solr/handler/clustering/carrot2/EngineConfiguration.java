@@ -67,15 +67,12 @@ public final class EngineConfiguration implements Cloneable {
    */
   public static final String PARAM_LANGUAGE_FIELD = PARAM_PREFIX + "languageField";
 
-
   public static String TITLE_FIELD_NAME = PARAM_PREFIX + "title";
   public static String SNIPPET_FIELD_NAME = PARAM_PREFIX + "snippet";
 
   public static String PRODUCE_SUMMARY = PARAM_PREFIX + "produceSummary";
   public static String SUMMARY_FRAGSIZE = PARAM_PREFIX + "fragSize";
   public static String SUMMARY_SNIPPETS = PARAM_PREFIX + "summarySnippets";
-
-  public static String LANGUAGE_CODE_MAP = PARAM_PREFIX + "lcmap";
 
   /**
    * @see #PARAM_MAX_LABELS

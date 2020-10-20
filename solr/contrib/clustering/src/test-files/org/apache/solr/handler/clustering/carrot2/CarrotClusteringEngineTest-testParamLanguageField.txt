@@ -1,6 +1,9 @@
 - English
   - Lang: English
   - test[-, -]
+- Italian
+  - Lang: Italian
+  - test[-, -]
 - French
   - Lang: French
   - test[-, -]

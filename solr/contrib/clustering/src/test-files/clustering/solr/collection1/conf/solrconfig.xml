@@ -33,7 +33,6 @@
     <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
   </indexConfig>
 
-  <!-- the default high-performance update handler -->
   <updateHandler class="solr.DirectUpdateHandler2">
   </updateHandler>
 
@@ -113,27 +112,9 @@
       <str name="engine.algorithm">ResourceCheckAlgorithm</str>
       <bool name="engine.includeOtherTopics">false</bool>
       <str name="engine.languageField">lang</str>
+      <str name="engine.language">Italian</str>
       <str name="text">test</str>
     </lst>
-
-
-    <!--
-    <lst name="engine">
-      <str name="name">lexical-resource-check-custom-resource-dir</str>
-      <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.LexicalResourcesCheckClusteringAlgorithm</str>
-      <str name="engine.resourcesDir">clustering/custom</str>
-    </lst>
-    <lst name="engine">
-      <str name="name">custom-duplicating-tokenizer</str>
-      <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.EchoTokensClusteringAlgorithm</str>
-      <str name="PreprocessingPipeline.tokenizerFactory">org.apache.solr.handler.clustering.carrot2.DuplicatingTokenizerFactory</str>
-    </lst>
-    <lst name="engine">
-      <str name="name">custom-duplicating-stemmer</str>
-      <str name="engine.algorithm">org.apache.solr.handler.clustering.carrot2.EchoStemsClusteringAlgorithm</str>
-      <str name="PreprocessingPipeline.stemmerFactory">org.apache.solr.handler.clustering.carrot2.DuplicatingStemmerFactory</str>
-    </lst>
-    -->
   </searchComponent>
 
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="testDefaultEngineOrder">

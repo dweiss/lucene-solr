@@ -41,7 +41,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
   }
 
   @Test
-  public void testComponent() {
+  public void testComponentExists() {
     SolrCore core = h.getCore();
 
     SearchComponent sc = core.getSearchComponent("clustering");
@@ -59,7 +59,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
       handler.handleRequest(req, rsp);
       NamedList<?> values = rsp.getValues();
       Object clusters = values.get("clusters");
-      assertTrue("clusters is null and it shouldn't be", clusters != null);
+      assertTrue("The returned clusters must not be null.", clusters != null);
     }
   }
 }
