@@ -17,15 +17,12 @@
 package org.apache.solr.handler.clustering;
 
 import org.apache.lucene.search.Query;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Search results clustering engine API.
@@ -48,7 +45,7 @@ public abstract class ClusteringEngine {
   /**
    * Initialize the engine, parse default configuration.
    */
-  public void init(NamedList<?> config, SolrCore core) {
+  public void init(SolrCore core) {
     // Do nothing.
   }
 
@@ -63,8 +60,10 @@ public abstract class ClusteringEngine {
    * Do the clustering, return a clusters structure to be appended to
    * {@link SolrQueryResponse}.
    */
-  public abstract List<NamedList<Object>> cluster(Query query, SolrDocumentList solrDocumentList,
-                                                  Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq);
+  public abstract List<NamedList<Object>> cluster(EngineConfiguration requestConfig,
+                                                  Query query,
+                                                  List<InputDocument> documents,
+                                                  SolrQueryRequest sreq);
 
   /**
    * @return Returns {@code true} if the engine is available for processing requests.
