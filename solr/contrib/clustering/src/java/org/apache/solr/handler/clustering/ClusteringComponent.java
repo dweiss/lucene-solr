@@ -161,9 +161,6 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   @Override
   public void inform(SolrCore core) {
     if (initParams != null) {
-      log.info("Initializing Clustering Engines");
-
-      // Our target list of engines, split into search-results and document clustering.
       SolrResourceLoader loader = core.getResourceLoader();
 
       for (Map.Entry<String, Object> entry : initParams) {
@@ -210,8 +207,6 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       }
 
       setupDefaultEngine(clusteringEngines);
-
-      log.info("Finished Initializing Clustering Engines");
     }
   }
 
