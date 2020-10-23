@@ -26,7 +26,6 @@ import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Search results clustering engine API.
@@ -36,8 +35,14 @@ import java.util.Set;
 public abstract class ClusteringEngine {
   private final String name;
 
-  protected ClusteringEngine(String name) {
+  /**
+   * Default configuration parameters.
+   */
+  private EngineConfiguration defaultConfiguration;
+
+  protected ClusteringEngine(String name, EngineConfiguration defaultConfiguration) {
     this.name = name;
+    this.defaultConfiguration = defaultConfiguration;
   }
 
   /**
@@ -62,12 +67,11 @@ public abstract class ClusteringEngine {
                                                   Map<SolrDocument, Integer> docIds, SolrQueryRequest sreq);
 
   /**
-   * @return The set of field names to load for each document.
-   */
-  public abstract Set<String> getFieldsToLoad(SolrQueryRequest sreq);
-
-  /**
    * @return Returns {@code true} if the engine is available for processing requests.
    */
   public abstract boolean isAvailable();
+
+  public final EngineConfiguration defaultConfiguration() {
+    return defaultConfiguration;
+  }
 }

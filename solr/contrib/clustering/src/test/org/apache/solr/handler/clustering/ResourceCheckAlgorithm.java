@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.clustering.carrot2;
+package org.apache.solr.handler.clustering;
 
 import org.carrot2.attrs.AttrComposite;
 import org.carrot2.attrs.AttrString;

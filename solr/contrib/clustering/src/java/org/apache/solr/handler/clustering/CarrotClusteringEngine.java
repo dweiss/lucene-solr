@@ -14,9 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.clustering.carrot2;
+package org.apache.solr.handler.clustering;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -30,12 +29,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.clustering.ClusteringEngine;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -74,13 +71,6 @@ public class CarrotClusteringEngine extends ClusteringEngine {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Name of Solr document's field containing the document's identifier. To avoid
-   * repeating the content of documents in clusters on output, each cluster contains
-   * identifiers of documents it contains.
-   */
-  private String idFieldName;
-
-  /**
    * Set to {@code true} if the default algorithm is available.
    */
   private boolean engineAvailable;
@@ -90,13 +80,8 @@ public class CarrotClusteringEngine extends ClusteringEngine {
    */
   private EngineContext engineContext;
 
-  /**
-   * Default configuration parameters.
-   */
-  private EngineConfiguration defaultParams;
-
-  public CarrotClusteringEngine(String name) {
-    super(name);
+  public CarrotClusteringEngine(String name, EngineConfiguration defaultParams) {
+    super(name, defaultParams);
   }
 
   @Override
@@ -106,10 +91,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
 
   @Override
   public void init(NamedList<?> config, final SolrCore core) {
-    final SolrParams initParams = config.toSolrParams();
-
-    this.defaultParams = new EngineConfiguration();
-    this.defaultParams.extractFrom(initParams);
+    EngineConfiguration defaultParams = defaultConfiguration();
     this.engineContext = new EngineContext(defaultParams.resources(), core);
 
     // TODO: core.getResourceLoader()?
@@ -129,13 +111,6 @@ public class CarrotClusteringEngine extends ClusteringEngine {
 
       engineAvailable = (defaultAlgorithm != null && defaultLanguage != null);
     }
-
-    SchemaField uniqueField = core.getLatestSchema().getUniqueKeyField();
-    if (uniqueField == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          CarrotClusteringEngine.class.getSimpleName() + " requires the schema to have a uniqueKeyField");
-    }
-    this.idFieldName = uniqueField.getName();
   }
 
   @Override
@@ -260,21 +235,6 @@ public class CarrotClusteringEngine extends ClusteringEngine {
     }
   }
 
-  @Override
-  public Set<String> getFieldsToLoad(SolrQueryRequest sreq) {
-    EngineConfiguration requestParameters = requestConfiguration(sreq);
-
-    Set<String> fields = new LinkedHashSet<>(requestParameters.fields());
-    fields.add(idFieldName);
-
-    String languageField = defaultParams.languageField();
-    if (StringUtils.isNotBlank(languageField)) {
-      fields.add(languageField);
-    }
-
-    return fields;
-  }
-
   /**
    * Prepares Carrot2 documents for clustering.
    */
@@ -333,7 +293,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
       // found in clusters back to identifiers.
       InputDocument inputDocument = new InputDocument(
           assignLanguage.apply(sdoc),
-          sdoc.getFieldValue(idFieldName));
+          sdoc.getFieldValue(requestParameters.docIdField()));
       result.add(inputDocument);
 
       Function<String, Collection<?>> snippetProvider = (field) -> null;
@@ -384,7 +344,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
   }
 
   private EngineConfiguration requestConfiguration(SolrQueryRequest sreq) {
-    EngineConfiguration requestParameters = this.defaultParams.clone();
+    EngineConfiguration requestParameters = super.defaultConfiguration().clone();
     requestParameters.extractFrom(sreq.getParams());
     return requestParameters;
   }

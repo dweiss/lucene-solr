@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.clustering.carrot2;
+package org.apache.solr.handler.clustering;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import org.apache.solr.common.SolrDocument;
@@ -24,8 +24,10 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
+import org.apache.solr.handler.clustering.CarrotClusteringEngine;
 import org.apache.solr.handler.clustering.ClusteringComponent;
 import org.apache.solr.handler.clustering.ClusteringEngine;
+import org.apache.solr.handler.clustering.EngineConfiguration;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;

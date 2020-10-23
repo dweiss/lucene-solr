@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -37,7 +38,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.handler.clustering.carrot2.CarrotClusteringEngine;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
@@ -52,8 +52,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A plugin for clustering search results. The default implementation
- * includes clustering algorithms from the
+ * A plugin for dynamic, unsupervised grouping of search results based on
+ * the content of their text fields.
+ *
+ * The default implementation is based on clustering algorithms from the
  * <a href="https://project.carrot2.org">Carrot<sup>2</sup> project</a>.
  *
  * @lucene.experimental
@@ -62,8 +64,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Base name for all component parameters. This name is also used to
-   * register this component with SearchHandler.
+   * Component registration name for {@link org.apache.solr.handler.component.SearchHandler}.
    */
   public static final String COMPONENT_NAME = "clustering";
 
@@ -160,6 +161,13 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   @SuppressWarnings("unchecked")
   @Override
   public void inform(SolrCore core) {
+    SchemaField uniqueField = core.getLatestSchema().getUniqueKeyField();
+    if (uniqueField == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          ClusteringComponent.class.getSimpleName() + " requires the declaration of uniqueKeyField in the schema.");
+    }
+    String docIdField = uniqueField.getName();
+
     if (initParams != null) {
       SolrResourceLoader loader = core.getResourceLoader();
 
@@ -173,18 +181,16 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
               (String) engineInitParams.get("classname"),
               CarrotClusteringEngine.class.getName());
 
+          EngineConfiguration defaultParams = new EngineConfiguration();
+          defaultParams.setDocIdField(docIdField);
+          defaultParams.extractFrom(engineInitParams.toSolrParams());
+
           // Set up engine name.
           final String engineName = StringUtils.defaultIfBlank(
               (String) engineInitParams.get(CONF_PARAM_ENGINE_NAME), "");
 
-          // Instantiate the clustering engine and split to appropriate map. 
-          final ClusteringEngine engine = loader.newInstance(
-              engineClassName,
-              ClusteringEngine.class,
-              new String[0],
-              new Class<?>[]{String.class},
-              new Object[]{engineName});
-
+          // Instantiate the clustering engine and split to appropriate map.
+          ClusteringEngine engine = new CarrotClusteringEngine(engineName, defaultParams);
           engine.init(engineInitParams, core);
 
           if (!engine.isAvailable()) {
@@ -210,6 +216,17 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
+  private Set<String> getFieldsToLoad(EngineConfiguration configuration) {
+    Set<String> fields = new LinkedHashSet<>(configuration.fields());
+    fields.add(configuration.docIdField());
+
+    String languageField = configuration.languageField();
+    if (StringUtils.isNotBlank(languageField)) {
+      fields.add(languageField);
+    }
+    return fields;
+  }
+
   @Override
   public void prepare(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
@@ -228,10 +245,12 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     final String name = getClusteringEngineName(rb);
     ClusteringEngine engine = clusteringEngines.get(name);
     if (engine != null) {
+      EngineConfiguration requestConfiguration = engine.defaultConfiguration().clone().extractFrom(rb.req.getParams());
+
       checkAvailable(name, engine);
       DocListAndSet results = rb.getResults();
       Map<SolrDocument, Integer> docIds = new HashMap<>(results.docList.size());
-      Set<String> fieldsToLoad = engine.getFieldsToLoad(rb.req);
+      Set<String> fieldsToLoad = getFieldsToLoad(requestConfiguration);
       SolrDocumentList solrDocList = docListToSolrDocumentList(
           results.docList, rb.req.getSearcher(), fieldsToLoad, docIds);
       Object clusters = engine.cluster(rb.getQuery(), solrDocList, docIds, rb.req);
@@ -271,7 +290,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       ClusteringEngine engine = clusteringEngines.get(name);
       if (engine != null) {
         checkAvailable(name, engine);
-        Set<String> fields = engine.getFieldsToLoad(rb.req);
+
+        EngineConfiguration requestConfiguration = engine.defaultConfiguration().clone().extractFrom(rb.req.getParams());
+        Set<String> fields = getFieldsToLoad(requestConfiguration);
         if (fields == null || fields.size() == 0) {
           return;
         }

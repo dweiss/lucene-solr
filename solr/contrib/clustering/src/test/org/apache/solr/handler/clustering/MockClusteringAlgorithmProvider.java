@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.clustering.carrot2;
+package org.apache.solr.handler.clustering;
 
 import org.carrot2.clustering.ClusteringAlgorithmProvider;
 
-public class ResourceCheckAlgorithmProvider implements ClusteringAlgorithmProvider {
+public class MockClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
   @Override
   public String name() {
-    return ResourceCheckAlgorithm.class.getSimpleName();
+    return MockClusteringAlgorithm.class.getSimpleName();
   }
 
   @Override
-  public ResourceCheckAlgorithm get() {
-    return new ResourceCheckAlgorithm();
+  public MockClusteringAlgorithm get() {
+    return new MockClusteringAlgorithm();
   }
 }

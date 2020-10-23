@@ -14,18 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.clustering.carrot2;
+package org.apache.solr.handler.clustering;
 
 import org.carrot2.clustering.ClusteringAlgorithmProvider;
 
-public class MockClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
+/**
+ * SPI provider of {@link EchoClusteringAlgorithm}.
+ */
+public class EchoClusteringAlgorithmProvider implements ClusteringAlgorithmProvider {
   @Override
   public String name() {
-    return MockClusteringAlgorithm.class.getSimpleName();
+    return EchoClusteringAlgorithm.class.getSimpleName();
   }
 
   @Override
-  public MockClusteringAlgorithm get() {
-    return new MockClusteringAlgorithm();
+  public EchoClusteringAlgorithm get() {
+    return new EchoClusteringAlgorithm();
   }
 }

@@ -14,13 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.clustering;
 
-/**
- * {@link org.apache.solr.handler.clustering.carrot2.CarrotClusteringEngine}
- * and related classes for use in the {@link org.apache.solr.handler.clustering.ClusteringComponent}.
- */
-package org.apache.solr.handler.clustering.carrot2;
+import org.carrot2.clustering.ClusteringAlgorithmProvider;
 
+public class ResourceCheckAlgorithmProvider implements ClusteringAlgorithmProvider {
+  @Override
+  public String name() {
+    return ResourceCheckAlgorithm.class.getSimpleName();
+  }
 
-
-
+  @Override
+  public ResourceCheckAlgorithm get() {
+    return new ResourceCheckAlgorithm();
+  }
+}

@@ -14,13 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.clustering.carrot2;
+package org.apache.solr.handler.clustering;
 
 import org.apache.solr.common.params.SolrParams;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -125,13 +126,20 @@ public final class EngineConfiguration implements Cloneable {
   private LinkedHashMap<String, String> otherParameters = new LinkedHashMap<>();
 
 
-  EngineConfiguration() {
+  /**
+   * Unique-value (identifier) field. This is required for clustering since clusters only reference
+   * documents by their ID field's value.
+   */
+  private String docIdField;
+
+
+  public EngineConfiguration() {
   }
 
   /**
    * Extract parameter values from the given {@link SolrParams}.
    */
-  void extractFrom(SolrParams params) {
+  public EngineConfiguration extractFrom(SolrParams params) {
     params.stream().forEachOrdered(e -> {
       switch (e.getKey()) {
         case PARAM_MAX_LABELS:
@@ -171,6 +179,7 @@ public final class EngineConfiguration implements Cloneable {
           break;
       }
     });
+    return this;
   }
 
   /**
@@ -253,5 +262,13 @@ public final class EngineConfiguration implements Cloneable {
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public String docIdField() {
+    return Objects.requireNonNull(docIdField);
+  }
+
+  public void setDocIdField(String docIdField) {
+    this.docIdField = Objects.requireNonNull(docIdField);
   }
 }
