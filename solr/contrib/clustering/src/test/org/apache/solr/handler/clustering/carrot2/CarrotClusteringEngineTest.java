@@ -17,20 +17,20 @@
 package org.apache.solr.handler.clustering.carrot2;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
 import org.apache.solr.handler.clustering.ClusteringComponent;
 import org.apache.solr.handler.clustering.ClusteringEngine;
+import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.search.DocList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.ResultContext;
+import org.apache.solr.response.SolrQueryResponse;
 import org.carrot2.clustering.Cluster;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -43,10 +43,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -57,32 +58,32 @@ import java.util.stream.Collectors;
 public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testLingoAlgorithm() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("lingo"), new MatchAllDocsQuery()));
+    compareToExpected(clusters(getClusteringEngine("lingo"), "*:*"));
   }
 
   @Test
   public void testStcAlgorithm() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("stc"), new MatchAllDocsQuery()));
+    compareToExpected(clusters(getClusteringEngine("stc"), "*:*"));
   }
 
   @Test
   public void testKMeansAlgorithm() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("kmeans"), new MatchAllDocsQuery()));
+    compareToExpected(clusters(getClusteringEngine("kmeans"), "*:*"));
   }
 
   @Test
   public void testParamSubClusters() throws Exception {
-    compareToExpected("off", clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
+    compareToExpected("off", clusters(getClusteringEngine("mock"), "*:*", params -> {
       params.set(EngineConfiguration.PARAM_INCLUDE_SUBCLUSTERS, false);
     }));
-    compareToExpected("on", clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
+    compareToExpected("on", clusters(getClusteringEngine("mock"), "*:*", params -> {
       params.set(EngineConfiguration.PARAM_INCLUDE_SUBCLUSTERS, true);
     }));
   }
 
   @Test
   public void testParamOtherTopics() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
+    compareToExpected(clusters(getClusteringEngine("mock"), "*:*", params -> {
       params.set(EngineConfiguration.PARAM_INCLUDE_OTHER_TOPICS, false);
     }));
   }
@@ -93,7 +94,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testClusteringOnHighlights() throws Exception {
-    Query query = new TermQuery(new Term("snippet", "mine"));
+    String query = "snippet:mine";
 
     Consumer<ModifiableSolrParams> common = params -> {
       params.add(EngineConfiguration.PARAM_FIELDS, "title, snippet");
@@ -132,7 +133,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testSummaryFragSize() throws Exception {
-    Query query = new TermQuery(new Term("snippet", "mine"));
+    String query = "snippet:mine";
 
     Consumer<ModifiableSolrParams> common = params -> {
       params.add(EngineConfiguration.PRODUCE_SUMMARY, "true");
@@ -168,7 +169,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testPassingAttributes() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
+    compareToExpected(clusters(getClusteringEngine("mock"), "*:*", params -> {
       params.set("maxClusters", 2);
       params.set("hierarchyDepth", 1);
       params.add(EngineConfiguration.PARAM_INCLUDE_OTHER_TOPICS, "false");
@@ -180,7 +181,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testPassingAttributesViaSolrConfig() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("mock-solrconfig-attrs"), new MatchAllDocsQuery()));
+    compareToExpected(clusters(getClusteringEngine("mock-solrconfig-attrs"), "*:*"));
   }
 
   /**
@@ -188,7 +189,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testParamMaxLabels() throws Exception {
-    List<Cluster<SolrDocument>> clusters = clusters(getClusteringEngine("mock"), new MatchAllDocsQuery(), params -> {
+    List<Cluster<SolrDocument>> clusters = clusters(getClusteringEngine("mock"), "*:*", params -> {
       params.set("labelsPerCluster", "5");
       params.set(EngineConfiguration.PARAM_INCLUDE_OTHER_TOPICS, "false");
       params.set(EngineConfiguration.PARAM_MAX_LABELS, "3");
@@ -210,22 +211,24 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
         Arrays.asList("stc", "default", "mock"),
         new ArrayList<>(engines.keySet()));
 
-    compareToExpected(clusters(engines.get(
-        ClusteringComponent.DEFAULT_ENGINE_NAME), new MatchAllDocsQuery()));
+    compareToExpected(
+        clusters("/testDefaultEngineOrder", ClusteringComponent.DEFAULT_ENGINE_NAME, "*:*",
+            (params) -> {
+            }));
   }
 
   @Test
   public void testCustomLanguageResources() throws Exception {
     compareToExpected(clusters(
         getClusteringEngine("testCustomLanguageResources"),
-        new MatchAllDocsQuery()));
+        "*:*"));
   }
 
   @Test
   public void testParamDefaultLanguage() throws Exception {
     compareToExpected(clusters(
         getClusteringEngine("testParamDefaultLanguage"),
-        new MatchAllDocsQuery()));
+        "*:*"));
   }
 
   /**
@@ -238,18 +241,11 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   public void testParamLanguageField() throws Exception {
     compareToExpected(clusters(
         getClusteringEngine("testParamLanguageField"),
-        new MatchAllDocsQuery()));
+        "*:*"));
   }
 
-  private CarrotClusteringEngine getClusteringEngine(String engineName) {
-    ClusteringComponent comp = (ClusteringComponent) h.getCore()
-        .getSearchComponent("clustering");
-    assertNotNull("Clustering component should not be null", comp);
-    CarrotClusteringEngine engine =
-        (CarrotClusteringEngine) getSearchClusteringEngines(comp).get(engineName);
-    assertNotNull("Clustering engine for name: " + engineName
-        + " should not be null", engine);
-    return engine;
+  private String getClusteringEngine(String engineName) {
+    return engineName;
   }
 
   private void compareToExpected(List<Cluster<SolrDocument>> clusters) throws IOException {
@@ -307,34 +303,50 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
     return sb;
   }
 
-  private List<Cluster<SolrDocument>> clusters(ClusteringEngine engine, Query query) throws IOException {
-    return clusters(engine, query, params -> {
+  private List<Cluster<SolrDocument>> clusters(String engineName, String query, Consumer<ModifiableSolrParams> paramsConsumer) {
+    return clusters("/select", engineName, query, paramsConsumer);
+  }
+
+  private List<Cluster<SolrDocument>> clusters(String engineName, String query) {
+    return clusters("/select", engineName, query, params -> {
     });
   }
 
-  private List<Cluster<SolrDocument>> clusters(ClusteringEngine engine, Query query, Consumer<ModifiableSolrParams> params)
-      throws IOException {
-    return h.getCore().withSearcher(searcher -> {
-      DocList docList = searcher.getDocList(query, (Query) null, new Sort(), 0,
-          numberOfTestDocs);
+  private List<Cluster<SolrDocument>> clusters(String handlerName, String engineName, String query,
+                                               Consumer<ModifiableSolrParams> paramsConsumer) {
+    SolrCore core = h.getCore();
 
-      ModifiableSolrParams solrParams = new ModifiableSolrParams();
-      params.accept(solrParams);
+    ModifiableSolrParams reqParams = new ModifiableSolrParams();
+    reqParams.add(ClusteringComponent.COMPONENT_NAME, "true");
+    reqParams.add(ClusteringComponent.REQ_PARAM_ENGINE, engineName);
+    reqParams.add(CommonParams.Q, query.toString());
+    reqParams.add(CommonParams.ROWS, Integer.toString(numberOfTestDocs));
+    paramsConsumer.accept(reqParams);
 
-      try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams)) {
-        Map<SolrDocument, Integer> docToId = new HashMap<>();
-        Set<String> fieldsToLoad = engine.getFieldsToLoad(req);
-        SolrDocumentList solrDocList =
-            ClusteringComponent.docListToSolrDocumentList(docList, searcher, fieldsToLoad, docToId);
+    SearchHandler handler = (SearchHandler) core.getRequestHandler(handlerName);
+    assertTrue("Clustering engine named '" + engineName + "' exists.", handler.getComponents().stream()
+        .filter(c -> c instanceof ClusteringComponent)
+        .flatMap(c -> ((ClusteringComponent) c).getClusteringEngines().keySet().stream())
+        .anyMatch(localName -> Objects.equals(localName, engineName)));
 
-        List<NamedList<Object>> results = engine.cluster(query, solrDocList, docToId, req);
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.addResponseHeader(new SimpleOrderedMap<>());
+    try (SolrQueryRequest req = new LocalSolrQueryRequest(core, reqParams)) {
+      handler.handleRequest(req, rsp);
+      NamedList<?> values = rsp.getValues();
+      @SuppressWarnings("unchecked")
+      List<NamedList<Object>> clusters = (List<NamedList<Object>>) values.get("clusters");
 
-        Map<String, SolrDocument> idToDoc = new HashMap<>();
-        docToId.forEach((doc, id) -> idToDoc.put(id.toString(), doc));
-
-        return results.stream().map(c -> toCluster(c, idToDoc)).collect(Collectors.toList());
+      String idField = core.getLatestSchema().getUniqueKeyField().getName();
+      Map<String, SolrDocument> idToDoc = new HashMap<>();
+      ResultContext resultContext = (ResultContext) rsp.getResponse();
+      for (Iterator<SolrDocument> it = resultContext.getProcessedDocuments(); it.hasNext(); ) {
+        SolrDocument doc = it.next();
+        idToDoc.put(doc.getFirstValue(idField).toString(), doc);
       }
-    });
+
+      return clusters.stream().map(c -> toCluster(c, idToDoc)).collect(Collectors.toList());
+    }
   }
 
   @SuppressWarnings("unchecked")

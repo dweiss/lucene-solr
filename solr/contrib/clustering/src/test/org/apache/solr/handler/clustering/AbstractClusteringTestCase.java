@@ -33,6 +33,10 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    File testHome = createTempDir().toFile();
+    FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
+    initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
+
     String [] languages = {
         "English",
         "French",
@@ -40,9 +44,6 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
         "Unknown",
     };
 
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
-    initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
     int docCount = 0;
     for (String[] doc : DOCUMENTS) {
       assertNull(h.validateUpdate(adoc(

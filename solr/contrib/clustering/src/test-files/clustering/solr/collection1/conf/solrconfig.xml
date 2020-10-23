@@ -127,6 +127,12 @@
     </lst>
   </searchComponent>
 
+  <requestHandler name="/testDefaultEngineOrder" class="solr.SearchHandler">
+    <arr name="last-components">
+      <str>testDefaultEngineOrder</str>
+    </arr>
+  </requestHandler>
+
   <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="testDefaultEngineOrder">
     <lst name="engine">
       <str name="name">stc</str>
@@ -154,12 +160,4 @@
     </lst>
   </searchComponent>
 
-  <searchComponent class="solr.HighlightComponent" name="highlight">
-    <highlighting>
-      <!--
-      No special configuration needed since clustering configures
-      highlighter parameters internally.
-      -->
-    </highlighting>
-  </searchComponent>
 </config>
