@@ -152,7 +152,7 @@ final class EngineContext {
     }
   }
 
-  public ClusteringAlgorithm getAlgorithm(String algorithmName) {
+  ClusteringAlgorithm getAlgorithm(String algorithmName) {
     if (!algorithmProviders.containsKey(algorithmName)
         && aliasedNames.containsKey(algorithmName)) {
       algorithmName = aliasedNames.get(algorithmName);
@@ -162,11 +162,11 @@ final class EngineContext {
     return provider == null ? null : provider.get();
   }
 
-  public LanguageComponents getLanguage(String language) {
+  LanguageComponents getLanguage(String language) {
     return languages.get(language);
   }
 
-  public boolean isLanguageSupported(String language) {
+  boolean isLanguageSupported(String language) {
     return languages.containsKey(language);
   }
 

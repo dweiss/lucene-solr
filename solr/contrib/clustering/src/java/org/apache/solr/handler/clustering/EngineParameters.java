@@ -26,12 +26,12 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * {@link ClusteringEngineImpl} configuration parameters (and other parameters that
+ * {@link Engine} configuration parameters (and other parameters that
  * may tweak clustering algorithms on a per-request basis).
  *
  * @lucene.experimental
  */
-public final class EngineConfiguration implements Cloneable {
+public final class EngineParameters implements Cloneable {
   /**
    * Common prefix for configuration of engine settings.
    */
@@ -134,13 +134,14 @@ public final class EngineConfiguration implements Cloneable {
   private String docIdField;
 
 
-  public EngineConfiguration() {
+  EngineParameters(SolrParams params) {
+    extractFrom(params);
   }
 
   /**
    * Extract parameter values from the given {@link SolrParams}.
    */
-  public EngineConfiguration extractFrom(SolrParams params) {
+  private EngineParameters extractFrom(SolrParams params) {
     params.stream().forEachOrdered(e -> {
       switch (e.getKey()) {
         case PARAM_MAX_LABELS:
@@ -187,7 +188,7 @@ public final class EngineConfiguration implements Cloneable {
    * @return Maximum number of returned cluster labels (even if the algorithm
    * returns more).
    */
-  public int maxLabels() {
+  int maxLabels() {
     return maxLabels;
   }
 
@@ -195,7 +196,7 @@ public final class EngineConfiguration implements Cloneable {
    * @return If {@code true}, include subclusters in response (if the algorithm
    * produces hierarchical clustering).
    */
-  public boolean includeSubclusters() {
+  boolean includeSubclusters() {
     return includeSubclusters;
   }
 
@@ -203,7 +204,7 @@ public final class EngineConfiguration implements Cloneable {
    * @return If {@code true}, include a synthetic cluster called "Other Topics" that
    * consists of all documents not assigned to any other cluster.
    */
-  public boolean includeOtherTopics() {
+  boolean includeOtherTopics() {
     return includeOtherTopics;
   }
 
@@ -211,14 +212,14 @@ public final class EngineConfiguration implements Cloneable {
    * @return Name of the clustering algorithm to use (as loaded via the service
    *    * extension point {@link org.carrot2.clustering.ClusteringAlgorithm}).
    */
-  public String algorithmName() {
+  String algorithmName() {
     return algorithmName;
   }
 
   /**
    * @return Return Solr component-configuration relative language resources path.
    */
-  public String resources() {
+  String resources() {
     return resources;
   }
 
@@ -227,7 +228,7 @@ public final class EngineConfiguration implements Cloneable {
    * {@link org.carrot2.language.LanguageComponents} must be available (loaded via
    * service provider extension).
    */
-  public String language() {
+  String language() {
     return language;
   }
 
@@ -237,7 +238,7 @@ public final class EngineConfiguration implements Cloneable {
    * If not {@code null} and the document's field has a missing value, it will be clustered
    * using the default {@link #language()} as well.
    */
-  public String languageField() {
+  String languageField() {
     return languageField;
   }
 
@@ -245,7 +246,7 @@ public final class EngineConfiguration implements Cloneable {
    * @return Names of all fields whose textual content will be passed to the clustering engine.
    * Comma or space separated.
    */
-  public Set<String> fields() {
+  Set<String> fields() {
     return fields;
   }
 
@@ -254,9 +255,9 @@ public final class EngineConfiguration implements Cloneable {
   }
 
   @Override
-  public EngineConfiguration clone() {
+  protected EngineParameters clone() {
     try {
-      EngineConfiguration clone = (EngineConfiguration) super.clone();
+      EngineParameters clone = (EngineParameters) super.clone();
       clone.otherParameters = new LinkedHashMap<>(this.otherParameters);
       clone.fields.addAll(this.fields);
       return clone;
@@ -265,11 +266,17 @@ public final class EngineConfiguration implements Cloneable {
     }
   }
 
-  public String docIdField() {
+  EngineParameters derivedFrom(SolrParams params) {
+    EngineParameters cloned = this.clone();
+    cloned.extractFrom(params);
+    return cloned;
+  }
+
+  String docIdField() {
     return Objects.requireNonNull(docIdField);
   }
 
-  public void setDocIdField(String docIdField) {
+  void setDocIdField(String docIdField) {
     this.docIdField = Objects.requireNonNull(docIdField);
   }
 

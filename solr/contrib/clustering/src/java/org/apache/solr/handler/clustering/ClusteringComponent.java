@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.clustering;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
@@ -28,7 +27,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -38,7 +36,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
@@ -59,129 +56,123 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * A plugin for dynamic, unsupervised grouping of search results based on
- * the content of their text fields.
+ * A {@link SearchComponent} for dynamic, unsupervised grouping of
+ * search results based on the content of their text fields or contextual
+ * snippets around query-matching regions.
+ *
  * <p>
- * The default implementation is based on clustering algorithms from the
+ * The default implementation uses clustering algorithms from the
  * <a href="https://project.carrot2.org">Carrot<sup>2</sup> project</a>.
  *
  * @lucene.experimental
  */
 public class ClusteringComponent extends SearchComponent implements SolrCoreAware {
+  /**
+   * Default log sink.
+   */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Component registration name for {@link org.apache.solr.handler.component.SearchHandler}.
+   * Default component name and parameter prefix.
    */
   public static final String COMPONENT_NAME = "clustering";
 
   /**
-   * Request parameter selecting a named {@link ClusteringEngine} to use for performing
-   * clustering.
+   * Request parameter that selects one of the {@link Engine} configurations
+   * out of many possibly defined in the component's initialization parameters.
    */
-  public static final String REQ_PARAM_ENGINE = COMPONENT_NAME + ".engine";
+  public static final String REQUEST_PARAM_ENGINE = COMPONENT_NAME + ".engine";
 
   /**
-   * Internal parameter for shard requests when we only collect clustering documents.
+   * An internal request parameter for shard requests used for collecting
+   * input documents for clustering.
    */
-  private static final String REQ_PARAM_COLLECT_INPUTS = COMPONENT_NAME + ".collectInputs";
+  private static final String REQUEST_PARAM_COLLECT_INPUTS = COMPONENT_NAME + ".collect-inputs";
 
   /**
-   * Engine name in component configuration parameters.
+   * Engine configuration initialization block name.
    */
-  public static final String CONF_PARAM_ENGINE_NAME = "name";
+  public static final String INIT_SECTION_ENGINE = "engine";
 
   /**
-   * Default engine name.
+   * Response section name containing output clusters.
    */
-  public static final String DEFAULT_ENGINE_NAME = "default";
-
-  private static final String RESPONSE_SECTION_INPUT_DOCUMENTS = "clustering-inputs";
   public static final String RESPONSE_SECTION_CLUSTERS = "clusters";
 
   /**
-   * Declaration-order list of search clustering engines.
+   * Shard request response section name containing partial document inputs.
    */
-  private final LinkedHashMap<String, ClusteringEngine> clusteringEngines = new LinkedHashMap<>();
+  private static final String RESPONSE_SECTION_INPUT_DOCUMENTS = "clustering-inputs";
 
   /**
-   * Initialization parameters temporarily saved here, the component
-   * is initialized in {@link #inform(SolrCore)} because we need to know
-   * the core's {@link SolrResourceLoader}.
-   *
-   * @see #init(NamedList)
+   * All engines declared in this component's initialization block.
    */
-  private NamedList<Object> initParams;
+  private final List<EngineEntry> declaredEngines = new ArrayList<>();
+
+  /**
+   * Declaration-order list of available search clustering engines.
+   */
+  private final LinkedHashMap<String, EngineEntry> engines = new LinkedHashMap<>();
 
   @Override
   @SuppressWarnings({"rawtypes", "unchecked"})
   public void init(NamedList args) {
     super.init(args);
-    this.initParams = args;
+
+    if (args != null) {
+      @SuppressWarnings("unchecked")
+      NamedList<Object> initParams = (NamedList<Object>) args;
+      for (Map.Entry<String, Object> entry : initParams) {
+        if (!INIT_SECTION_ENGINE.equals(entry.getKey())) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "Unrecognized configuration entry: " + entry.getKey());
+        }
+
+        declaredEngines.add(new EngineEntry(((NamedList<Object>) entry.getValue()).toSolrParams()));
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public void inform(SolrCore core) {
-    SchemaField uniqueField = core.getLatestSchema().getUniqueKeyField();
-    if (uniqueField == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          ClusteringComponent.class.getSimpleName() + " requires the declaration of uniqueKeyField in the schema.");
-    }
-    String docIdField = uniqueField.getName();
-
-    if (initParams != null) {
-      for (Map.Entry<String, Object> entry : initParams) {
-        if ("engine".equals(entry.getKey())) {
-          NamedList<Object> engineInitParams = (NamedList<Object>) entry.getValue();
-          Boolean optional = engineInitParams.getBooleanArg("optional");
-          optional = (optional == null ? Boolean.FALSE : optional);
-
-          EngineConfiguration defaultParams = new EngineConfiguration();
-          defaultParams.setDocIdField(docIdField);
-          defaultParams.extractFrom(engineInitParams.toSolrParams());
-
-          // Set up engine name.
-          final String engineName = StringUtils.defaultIfBlank(
-              (String) engineInitParams.get(CONF_PARAM_ENGINE_NAME), "");
-
-          // Instantiate the clustering engine and split to appropriate map.
-          ClusteringEngine engine = new ClusteringEngineImpl(engineName, defaultParams);
-          engine.init(core);
-
-          if (!engine.isAvailable()) {
-            if (optional) {
-              if (log.isInfoEnabled()) {
-                log.info("Optional clustering engine reports it is not available: {}", engine.getName());
-              }
-            } else {
-              throw new SolrException(ErrorCode.SERVER_ERROR,
-                  "A required clustering engine failed to initialize, check the logs: " + engine.getName());
-            }
+    declaredEngines.forEach(engineEntry -> {
+      if (!engineEntry.initialize(core)) {
+        if (engineEntry.optional) {
+          if (log.isInfoEnabled()) {
+            log.info("Optional clustering engine is not available: {}", engineEntry.engineName);
           }
-
-          if (clusteringEngines.put(engine.getName(), engine) != null) {
-            throw new SolrException(ErrorCode.SERVER_ERROR,
-                String.format(Locale.ROOT,
-                    "Duplicate clustering engine named '%s'.", engine.getName()));
-          }
+        } else {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "A required clustering engine failed to initialize, check the logs: " + engineEntry.engineName);
+        }
+      } else {
+        if (engines.put(engineEntry.engineName, engineEntry) != null) {
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              String.format(Locale.ROOT,
+                  "Duplicate clustering engine named '%s'.", engineEntry.engineName));
         }
       }
+    });
 
-      setupDefaultEngine(clusteringEngines);
+    if (engines.size() > 0) {
+      if (log.isInfoEnabled()) {
+        log.info("The following clustering engines are available: {}",
+            String.join(", ", engines.keySet()));
+      }
+    } else {
+      log.warn("No clustering engines are available.");
     }
   }
 
   @Override
   public void prepare(ResponseBuilder rb) {
     // Do nothing.
-  }
-
-  private void logEntry(String msg, Object... args) {
   }
 
   /**
@@ -192,70 +183,42 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
    */
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    boolean enabled = rb.req.getParams().getBool(COMPONENT_NAME, false);
-    logEntry("process(enabled={}, isShard={})", enabled, rb.req.getParams().getBool(ShardParams.IS_SHARD));
-    if (!enabled) {
+    if (!isComponentEnabled(rb)) {
       return;
     }
 
-    String name = getClusteringEngineName(rb);
-    ClusteringEngine engine = getEngine(name);
-    EngineConfiguration requestConfiguration = engine.defaultConfiguration().clone().extractFrom(rb.req.getParams());
+    EngineEntry engine = getEngine(rb);
+    EngineParameters parameters = engine.defaults.derivedFrom(rb.req.getParams());
 
-    List<InputDocument> inputs = getDocuments(rb, requestConfiguration);
+    List<InputDocument> inputs = getDocuments(rb, parameters);
 
     if (rb.req.getParams().getBool(ShardParams.IS_SHARD, false) &&
-        rb.req.getParams().getBool(REQ_PARAM_COLLECT_INPUTS, false)) {
+        rb.req.getParams().getBool(REQUEST_PARAM_COLLECT_INPUTS, false)) {
       rb.rsp.add(RESPONSE_SECTION_INPUT_DOCUMENTS, documentsToNamedList(inputs));
     } else {
-      doCluster(rb, inputs, engine, requestConfiguration);
+      doCluster(rb, engine, inputs, parameters);
     }
-  }
-
-  private void doCluster(ResponseBuilder rb, List<InputDocument> inputs, ClusteringEngine engine, EngineConfiguration requestConfiguration) {
-    List<Cluster<InputDocument>> clusters = engine.cluster(requestConfiguration, rb.getQuery(), inputs);
-    rb.rsp.add(RESPONSE_SECTION_CLUSTERS, clustersToNamedList(inputs, clusters, requestConfiguration));
-  }
-
-  @Override
-  public int distributedProcess(ResponseBuilder rb) throws IOException {
-    logEntry("distributedProcess()");
-    return super.distributedProcess(rb);
-  }
-
-  @Override
-  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    boolean enabled = rb.req.getParams().getBool(COMPONENT_NAME, false);
-    logEntry("handleResponses(purpose={})", sreq.purpose);
-    if (!enabled) {
-      return;
-    }
-
-    super.handleResponses(rb, sreq);
   }
 
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
-    boolean enabled = rb.req.getParams().getBool(COMPONENT_NAME, false);
-    logEntry("modifyRequest(enabled={}, purpose={})", enabled, sreq.purpose);
-    if (!enabled) {
+    if (!isComponentEnabled(rb)) {
       return;
     }
 
+    // Make sure the component is enabled for shard request.
     assert sreq.params.getBool(COMPONENT_NAME, false) :
         "Shard request should propagate clustering component enabled state?";
 
     // Piggyback collecting inputs for clustering on top of get fields request.
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
-      sreq.params.set(REQ_PARAM_COLLECT_INPUTS, true);
+      sreq.params.set(REQUEST_PARAM_COLLECT_INPUTS, true);
     }
   }
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    boolean enabled = rb.req.getParams().getBool(COMPONENT_NAME, false);
-    logEntry("finishStage(enabled={}, stage={})", enabled, rb.stage);
-    if (!enabled) {
+    if (!isComponentEnabled(rb)) {
       return;
     }
 
@@ -265,8 +228,8 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
           .filter(shardRequest -> (shardRequest.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0)
           .flatMap(shardRequest -> shardRequest.responses.stream())
           .filter(rsp -> rsp.getException() == null)
-          .forEach(rsp -> {
-            NamedList<Object> response = rsp.getSolrResponse().getResponse();
+          .map(rsp -> rsp.getSolrResponse().getResponse())
+          .forEach(response -> {
             @SuppressWarnings("unchecked")
             List<NamedList<Object>> partialInputs = (List<NamedList<Object>>) response.get(RESPONSE_SECTION_INPUT_DOCUMENTS);
             if (partialInputs != null) {
@@ -274,19 +237,29 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
             }
           });
 
-      String name = getClusteringEngineName(rb);
-      ClusteringEngine engine = getEngine(name);
-      EngineConfiguration requestConfiguration = engine.defaultConfiguration().clone().extractFrom(rb.req.getParams());
-
-      doCluster(rb, inputs, engine, requestConfiguration);
+      EngineEntry engine = getEngine(rb);
+      EngineParameters parameters = engine.defaults.derivedFrom(rb.req.getParams());
+      doCluster(rb, engine, inputs, parameters);
     }
+  }
+
+  private static boolean isComponentEnabled(ResponseBuilder rb) {
+    return rb.req.getParams().getBool(COMPONENT_NAME, false);
+  }
+
+  /**
+   * Run clustering of input documents and append the result to the response.
+   */
+  private void doCluster(ResponseBuilder rb, EngineEntry engine, List<InputDocument> inputs, EngineParameters parameters) {
+    List<Cluster<InputDocument>> clusters = engine.get().cluster(parameters, rb.getQuery(), inputs);
+    rb.rsp.add(RESPONSE_SECTION_CLUSTERS, clustersToNamedList(inputs, clusters, parameters));
   }
 
   /**
    * Prepares input documents for clustering.
    */
   private List<InputDocument> getDocuments(ResponseBuilder responseBuilder,
-                                           EngineConfiguration requestParameters) throws IOException {
+                                           EngineParameters requestParameters) throws IOException {
     SolrQueryRequest solrRequest = responseBuilder.req;
     DocList solrDocList = responseBuilder.getResults().docList;
     Query query = responseBuilder.getQuery();
@@ -303,7 +276,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       assignLanguage = (doc) -> requestParameters.language();
     }
 
-    boolean produceSummary = solrParams.getBool(EngineConfiguration.PRODUCE_SUMMARY, false);
+    boolean produceSummary = solrParams.getBool(EngineParameters.PRODUCE_SUMMARY, false);
 
     SolrQueryRequest req = null;
     SolrHighlighter highlighter = null;
@@ -316,8 +289,8 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         // We don't want any highlight marks.
         args.put(HighlightParams.SIMPLE_PRE, "");
         args.put(HighlightParams.SIMPLE_POST, "");
-        args.put(HighlightParams.FRAGSIZE, solrParams.getInt(EngineConfiguration.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
-        args.put(HighlightParams.SNIPPETS, solrParams.getInt(EngineConfiguration.SUMMARY_SNIPPETS, solrParams.getInt(HighlightParams.SNIPPETS, 1)));
+        args.put(HighlightParams.FRAGSIZE, solrParams.getInt(EngineParameters.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
+        args.put(HighlightParams.SNIPPETS, solrParams.getInt(EngineParameters.SUMMARY_SNIPPETS, solrParams.getInt(HighlightParams.SNIPPETS, 1)));
         req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
           @Override
           public SolrIndexSearcher getSearcher() {
@@ -403,64 +376,36 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     return result;
   }
 
-  private ClusteringEngine getEngine(String name) {
-    ClusteringEngine engine = clusteringEngines.get(name);
-    if (engine == null) {
+  private EngineEntry getEngine(ResponseBuilder rb) {
+    if (engines.isEmpty()) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Clustering engine not known: " + name);
+          "No clustering engines are defined or loaded.");
     }
-    if (!engine.isAvailable()) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Clustering engine is not available: " + name);
+
+    EngineEntry engine;
+    String name = rb.req.getParams().get(REQUEST_PARAM_ENGINE, null);
+    if (name != null) {
+      engine = engines.get(name);
+      if (engine == null) {
+        throw new SolrException(ErrorCode.SERVER_ERROR,
+            "Clustering engine unknown or not loaded: " + name);
+      }
+    } else {
+      engine = engines.values().iterator().next();
     }
     return engine;
   }
 
-  private String getClusteringEngineName(ResponseBuilder rb) {
-    return rb.req.getParams().get(REQ_PARAM_ENGINE, DEFAULT_ENGINE_NAME);
-  }
-
   /**
-   * @return A map of initialized clustering engines.
+   * @return A map of initialized clustering engines, exposed for tests only.
    */
-  public Map<String, ClusteringEngine> getClusteringEngines() {
-    return clusteringEngines;
+  Set<String> getEngineNames() {
+    return engines.keySet();
   }
 
   @Override
   public String getDescription() {
     return "Search results clustering component";
-  }
-
-  /**
-   * Setup the default clustering engine.
-   */
-  private static <T extends ClusteringEngine> void setupDefaultEngine(LinkedHashMap<String, T> map) {
-    // If there's already a default algorithm, leave it as is.
-    String engineName = DEFAULT_ENGINE_NAME;
-    T defaultEngine = map.get(engineName);
-
-    if (defaultEngine == null ||
-        !defaultEngine.isAvailable()) {
-      // If there's no default algorithm, and there are any algorithms available, 
-      // the first definition becomes the default algorithm.
-      for (Map.Entry<String, T> e : map.entrySet()) {
-        if (e.getValue().isAvailable()) {
-          engineName = e.getKey();
-          defaultEngine = e.getValue();
-          map.put(DEFAULT_ENGINE_NAME, defaultEngine);
-          break;
-        }
-      }
-    }
-
-    if (defaultEngine != null) {
-      if (log.isInfoEnabled()) {
-        log.info("Default clustering engine: {} [{}]", engineName, defaultEngine.getClass().getSimpleName());
-      }
-    } else {
-      log.warn("No default clustering engine.");
-    }
   }
 
   private static List<InputDocument> documentsFromNamedList(List<NamedList<Object>> docList) {
@@ -493,7 +438,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
   private static List<NamedList<Object>> clustersToNamedList(List<InputDocument> documents,
                                                              List<Cluster<InputDocument>> clusters,
-                                                             EngineConfiguration params) {
+                                                             EngineParameters params) {
     List<NamedList<Object>> result = new ArrayList<>();
     clustersToNamedListRecursive(clusters, result, params);
 
@@ -520,7 +465,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
   private static void clustersToNamedListRecursive(
       List<Cluster<InputDocument>> outputClusters,
-      List<NamedList<Object>> parent, EngineConfiguration params) {
+      List<NamedList<Object>> parent, EngineParameters params) {
     for (Cluster<InputDocument> cluster : outputClusters) {
       NamedList<Object> converted = new SimpleOrderedMap<>();
       parent.add(converted);

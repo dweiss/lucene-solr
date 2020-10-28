@@ -22,7 +22,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
 import java.io.File;
-import java.util.Map;
 
 
 /**
@@ -37,7 +36,7 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
     initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
 
-    String [] languages = {
+    String[] languages = {
         "English",
         "French",
         "German",
@@ -98,13 +97,6 @@ public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(commit()));
 
     numberOfTestDocs = docCount;
-  }
-
-  /**
-   * Expose package-scope methods from {@link ClusteringComponent} to tests.
-   */
-  protected final Map<String, ClusteringEngine> getSearchClusteringEngines(ClusteringComponent comp) {
-    return comp.getClusteringEngines();
   }
 
   final static String[][] DOCUMENTS = new String[][]{

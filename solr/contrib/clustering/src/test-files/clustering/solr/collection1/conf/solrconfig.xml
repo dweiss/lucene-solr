@@ -126,38 +126,4 @@
       <str name="text">test</str>
     </lst>
   </searchComponent>
-
-  <requestHandler name="/testDefaultEngineOrder" class="solr.SearchHandler">
-    <arr name="last-components">
-      <str>testDefaultEngineOrder</str>
-    </arr>
-  </requestHandler>
-
-  <searchComponent class="org.apache.solr.handler.clustering.ClusteringComponent" name="testDefaultEngineOrder">
-    <lst name="engine">
-      <str name="name">stc</str>
-      <str name="clustering.algorithm">MockClusteringAlgorithm</str>
-      <bool name="clustering.includeOtherTopics">false</bool>
-      <str name="clustering.fields">title</str>
-      <int name="hierarchyDepth">1</int>
-      <int name="maxClusters">1</int>
-    </lst>
-    <lst name="engine">
-      <str name="name">default</str>
-      <str name="clustering.algorithm">MockClusteringAlgorithm</str>
-      <str name="clustering.fields">title</str>
-      <bool name="clustering.includeOtherTopics">false</bool>
-      <int name="hierarchyDepth">1</int>
-      <int name="maxClusters">2</int>
-    </lst>
-    <lst name="engine">
-      <str name="name">mock</str>
-      <str name="clustering.algorithm">MockClusteringAlgorithm</str>
-      <str name="clustering.fields">title</str>
-      <bool name="clustering.includeOtherTopics">false</bool>
-      <int name="hierarchyDepth">1</int>
-      <int name="maxClusters">3</int>
-    </lst>
-  </searchComponent>
-
 </config>

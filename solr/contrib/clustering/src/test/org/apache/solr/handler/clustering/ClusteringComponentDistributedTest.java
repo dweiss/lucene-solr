@@ -24,9 +24,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 @SuppressSSL
-public class DistributedClusteringComponentTest extends
-    BaseDistributedSearchTestCase {
-
+public class ClusteringComponentDistributedTest extends BaseDistributedSearchTestCase {
   @Override
   public String getSolrHome() {
     return getFile("clustering/solr/collection1").getParent();
@@ -48,7 +46,7 @@ public class DistributedClusteringComponentTest extends
 
     QueryResponse response = query(
         ClusteringComponent.COMPONENT_NAME, "true",
-        ClusteringComponent.REQ_PARAM_ENGINE, "lingo",
+        ClusteringComponent.REQUEST_PARAM_ENGINE, "lingo",
         CommonParams.Q, "*:*",
         CommonParams.SORT, id + " desc");
 

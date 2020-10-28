@@ -41,11 +41,11 @@ final class InputDocument implements Document {
     clusteredFields.forEach(fieldConsumer);
   }
 
-  public Object getId() {
+  Object getId() {
     return id;
   }
 
-  public String language() {
+  String language() {
     return language;
   }
 
