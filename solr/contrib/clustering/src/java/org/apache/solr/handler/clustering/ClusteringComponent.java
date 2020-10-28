@@ -19,6 +19,7 @@ package org.apache.solr.handler.clustering;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
+import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.HighlightParams;
@@ -452,10 +453,10 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       if (!unclustered.isEmpty()) {
         NamedList<Object> cluster = new SimpleOrderedMap<>();
         result.add(cluster);
-        cluster.add("other-topics", true);
-        cluster.add("labels", Collections.singletonList("Other topics"));
-        cluster.add("score", 0);
-        cluster.add("docs", unclustered.stream().map(InputDocument::getId)
+        cluster.add(ClusteringResponse.IS_OTHER_TOPICS, true);
+        cluster.add(ClusteringResponse.LABELS_NODE, Collections.singletonList("Other topics"));
+        cluster.add(ClusteringResponse.SCORE_NODE, 0d);
+        cluster.add(ClusteringResponse.DOCS_NODE, unclustered.stream().map(InputDocument::getId)
             .collect(Collectors.toList()));
       }
     }
@@ -475,12 +476,12 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       if (labels.size() > params.maxLabels()) {
         labels = labels.subList(0, params.maxLabels());
       }
-      converted.add("labels", labels);
+      converted.add(ClusteringResponse.LABELS_NODE, labels);
 
       // Add cluster score
       final Double score = cluster.getScore();
       if (score != null) {
-        converted.add("score", score);
+        converted.add(ClusteringResponse.SCORE_NODE, score);
       }
 
       List<InputDocument> docs;
@@ -490,12 +491,12 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         docs = new ArrayList<>(collectUniqueDocuments(cluster, new LinkedHashSet<>()));
       }
 
-      converted.add("docs", docs.stream().map(InputDocument::getId)
+      converted.add(ClusteringResponse.DOCS_NODE, docs.stream().map(InputDocument::getId)
           .collect(Collectors.toList()));
 
       if (params.includeSubclusters() && !cluster.getClusters().isEmpty()) {
         List<NamedList<Object>> subclusters = new ArrayList<>();
-        converted.add("clusters", subclusters);
+        converted.add(ClusteringResponse.CLUSTERS_NODE, subclusters);
         clustersToNamedListRecursive(cluster.getClusters(), subclusters, params);
       }
     }

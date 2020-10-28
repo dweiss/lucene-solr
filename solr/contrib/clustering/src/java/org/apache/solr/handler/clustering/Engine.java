@@ -56,7 +56,6 @@ final class Engine {
   boolean init(String engineName, SolrCore core, EngineParameters defaultParams) {
     this.engineContext = new EngineContext(defaultParams.resources(), core);
 
-    // TODO: core.getResourceLoader()?
     {
       ClusteringAlgorithm defaultAlgorithm = engineContext.getAlgorithm(defaultParams.algorithmName());
       LanguageComponents defaultLanguage = engineContext.getLanguage(defaultParams.language());

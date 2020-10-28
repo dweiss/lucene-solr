@@ -17,6 +17,7 @@
 package org.apache.solr.handler.clustering;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
+import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -332,21 +333,21 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
     Cluster<SolrDocument> c = new Cluster<>();
     v.forEach((key, value) -> {
       switch (key) {
-        case "docs":
+        case ClusteringResponse.DOCS_NODE:
           ((List<String>) value).forEach(docId -> c.addDocument(idToDoc.get(docId)));
           break;
-        case "labels":
+        case ClusteringResponse.LABELS_NODE:
           ((List<String>) value).forEach(c::addLabel);
           break;
-        case "score":
+        case ClusteringResponse.SCORE_NODE:
           c.setScore(((Number) value).doubleValue());
           break;
-        case "clusters":
+        case ClusteringResponse.CLUSTERS_NODE:
           ((List<NamedList<Object>>) value).forEach(sub -> {
             c.addCluster(toCluster(sub, idToDoc));
           });
           break;
-        case "other-topics":
+        case ClusteringResponse.IS_OTHER_TOPICS:
           // Just ignore the attribute.
           break;
         default:
