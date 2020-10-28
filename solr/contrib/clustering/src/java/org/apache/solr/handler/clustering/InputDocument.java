@@ -27,12 +27,12 @@ import java.util.function.BiConsumer;
  * Representation of a single logical "document" for clustering.
  */
 final class InputDocument implements Document {
-  private final Object solrDocumentId;
+  private final Object id;
   private final Map<String, String> clusteredFields = new LinkedHashMap<>();
   private final String language;
 
-  InputDocument(String language, Object solrDocumentId) {
-    this.solrDocumentId = Objects.requireNonNull(solrDocumentId);
+  InputDocument(Object docId, String language) {
+    this.id = Objects.requireNonNull(docId);
     this.language = language;
   }
 
@@ -41,16 +41,16 @@ final class InputDocument implements Document {
     clusteredFields.forEach(fieldConsumer);
   }
 
-  public Object getSolrDocumentId() {
-    return solrDocumentId;
-  }
-
-  public void addClusteredField(String fieldName, String fieldValue) {
-    assert !clusteredFields.containsKey(fieldName);
-    clusteredFields.put(fieldName, fieldValue);
+  public Object getId() {
+    return id;
   }
 
   public String language() {
     return language;
+  }
+
+  void addClusteredField(String fieldName, String fieldValue) {
+    assert !clusteredFields.containsKey(fieldName);
+    clusteredFields.put(fieldName, fieldValue);
   }
 }

@@ -18,7 +18,9 @@ package org.apache.solr.handler.clustering;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
+import org.junit.Assert;
 import org.junit.Test;
 
 @SuppressSSL
@@ -32,20 +34,26 @@ public class DistributedClusteringComponentTest extends
 
   @Test
   @ShardsFixed(num = 2)
-  public void test() throws Exception {
+  public void testDistributedRequest() throws Exception {
     del("*:*");
     int numberOfDocs = 0;
     for (String[] doc : AbstractClusteringTestCase.DOCUMENTS) {
       index(id, Integer.toString(numberOfDocs++), "title", doc[0], "snippet", doc[1]);
     }
     commit();
+
     handle.clear();
-    // Only really care about the clusters for this test case, so drop the header and response
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
-    query(                                                                                                   
+
+    QueryResponse response = query(
         ClusteringComponent.COMPONENT_NAME, "true",
+        ClusteringComponent.REQ_PARAM_ENGINE, "lingo",
         CommonParams.Q, "*:*",
         CommonParams.SORT, id + " desc");
+
+    Object clusters = response.getResponse().get(ClusteringComponent.RESPONSE_SECTION_CLUSTERS);
+    Assert.assertNotNull(clusters);
+    Assert.assertTrue(response.getClusteringResponse().getClusters().size() > 0);
   }
 }

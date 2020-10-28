@@ -17,10 +17,8 @@
 package org.apache.solr.handler.clustering;
 
 import org.apache.lucene.search.Query;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.carrot2.clustering.Cluster;
 
 import java.util.List;
 
@@ -57,20 +55,18 @@ public abstract class ClusteringEngine {
   }
 
   /**
-   * Do the clustering, return a clusters structure to be appended to
-   * {@link SolrQueryResponse}.
+   * Do the clustering, return clusters structure.
    */
-  public abstract List<NamedList<Object>> cluster(EngineConfiguration requestConfig,
-                                                  Query query,
-                                                  List<InputDocument> documents,
-                                                  SolrQueryRequest sreq);
+  public abstract List<Cluster<InputDocument>> cluster(EngineConfiguration requestConfig,
+                                                       Query query,
+                                                       List<InputDocument> documents);
 
   /**
    * @return Returns {@code true} if the engine is available for processing requests.
    */
   public abstract boolean isAvailable();
 
-  public final EngineConfiguration defaultConfiguration() {
+  final EngineConfiguration defaultConfiguration() {
     return defaultConfiguration;
   }
 }

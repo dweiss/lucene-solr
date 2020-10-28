@@ -39,10 +39,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Attribute visitor that reacts to "flattened" paths and values, updating
- * corresponding Carrot2 attributes with values contained in a map.
+ * {@link AttrVisitor} that responds to "flattened" key paths and values, updating
+ * corresponding algorithm parameters with values contained in the map.
  */
-class AttrVisitorFromFlattenedKeys implements AttrVisitor {
+class FlatKeysAttrVisitor implements AttrVisitor {
   final Function<String, Object> classToInstance = AliasMapper.SPI_DEFAULTS::fromName;
   final ArrayDeque<String> keyPath = new ArrayDeque<>();
 
@@ -53,7 +53,7 @@ class AttrVisitorFromFlattenedKeys implements AttrVisitor {
    *              this is required for complex sub-types so that instantiation of
    *              a value precedes setting its attributes.
    */
-  AttrVisitorFromFlattenedKeys(LinkedHashMap<String, String> attrs) {
+  FlatKeysAttrVisitor(LinkedHashMap<String, String> attrs) {
     this.attrs = attrs;
   }
 

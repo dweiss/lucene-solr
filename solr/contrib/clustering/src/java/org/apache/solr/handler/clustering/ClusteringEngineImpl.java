@@ -21,10 +21,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
 import org.carrot2.clustering.Cluster;
 import org.carrot2.clustering.ClusteringAlgorithm;
 import org.carrot2.language.LanguageComponents;
@@ -32,8 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -49,7 +45,7 @@ import java.util.stream.Collectors;
  * @lucene.experimental
  * @see "https://project.carrot2.org"
  */
-public class CarrotClusteringEngine extends ClusteringEngine {
+public class ClusteringEngineImpl extends ClusteringEngine {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
@@ -62,7 +58,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
    */
   private EngineContext engineContext;
 
-  public CarrotClusteringEngine(String name, EngineConfiguration defaultParams) {
+  public ClusteringEngineImpl(String name, EngineConfiguration defaultParams) {
     super(name, defaultParams);
   }
 
@@ -96,16 +92,15 @@ public class CarrotClusteringEngine extends ClusteringEngine {
   }
 
   @Override
-  public List<NamedList<Object>> cluster(EngineConfiguration requestParameters,
-                                         Query query,
-                                         List<InputDocument> documents,
-                                         SolrQueryRequest sreq) {
+  public List<Cluster<InputDocument>> cluster(EngineConfiguration requestParameters, Query query, List<InputDocument> documents) {
     try {
       checkParameters(requestParameters);
 
       ClusteringAlgorithm algorithm = engineContext.getAlgorithm(requestParameters.algorithmName());
       populateAlgorithmParameters(query, requestParameters, algorithm);
 
+      // Sort documents by ID so that results are not order-sensitive.
+      documents.sort(Comparator.comparing(a -> a.getId().toString()));
 
       // Split documents into language groups.
       String defaultLanguage = requestParameters.language();
@@ -159,7 +154,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
             .collect(Collectors.toList());
       }
 
-      return clustersToNamedList(documents, clusters, requestParameters);
+      return clusters;
     } catch (Exception e) {
       log.error("Clustering request failed.", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Carrot2 clustering failed", e);
@@ -181,7 +176,7 @@ public class CarrotClusteringEngine extends ClusteringEngine {
       });
       attrs.put("queryHint", String.join(" ", termSet));
     }
-    algorithm.accept(new AttrVisitorFromFlattenedKeys(attrs));
+    algorithm.accept(new FlatKeysAttrVisitor(attrs));
   }
 
   private void checkParameters(EngineConfiguration requestParameters) {
@@ -215,78 +210,5 @@ public class CarrotClusteringEngine extends ClusteringEngine {
           "At least one field name specifying content for clustering is required in parameter '%s'.",
           EngineConfiguration.PARAM_FIELDS));
     }
-  }
-
-  private List<NamedList<Object>> clustersToNamedList(List<InputDocument> documents,
-                                                      List<Cluster<InputDocument>> clusters,
-                                                      EngineConfiguration params) {
-    List<NamedList<Object>> result = new ArrayList<>();
-    clustersToNamedListRecursive(clusters, result, params);
-
-    if (params.includeOtherTopics()) {
-      LinkedHashSet<InputDocument> clustered = new LinkedHashSet<>();
-      clusters.forEach(cluster -> collectUniqueDocuments(cluster, clustered));
-      List<InputDocument> unclustered = documents.stream()
-          .filter(doc -> !clustered.contains(doc))
-          .collect(Collectors.toList());
-
-      if (!unclustered.isEmpty()) {
-        NamedList<Object> cluster = new SimpleOrderedMap<>();
-        result.add(cluster);
-        cluster.add("other-topics", true);
-        cluster.add("labels", Collections.singletonList("Other topics"));
-        cluster.add("score", 0);
-        cluster.add("docs", unclustered.stream().map(InputDocument::getSolrDocumentId)
-            .collect(Collectors.toList()));
-      }
-    }
-
-    return result;
-  }
-
-  private void clustersToNamedListRecursive(
-      List<Cluster<InputDocument>> outputClusters,
-      List<NamedList<Object>> parent, EngineConfiguration params) {
-    for (Cluster<InputDocument> cluster : outputClusters) {
-      NamedList<Object> converted = new SimpleOrderedMap<>();
-      parent.add(converted);
-
-      // Add labels
-      List<String> labels = cluster.getLabels();
-      if (labels.size() > params.maxLabels()) {
-        labels = labels.subList(0, params.maxLabels());
-      }
-      converted.add("labels", labels);
-
-      // Add cluster score
-      final Double score = cluster.getScore();
-      if (score != null) {
-        converted.add("score", score);
-      }
-
-      List<InputDocument> docs;
-      if (params.includeSubclusters()) {
-        docs = cluster.getDocuments();
-      } else {
-        docs = new ArrayList<>(collectUniqueDocuments(cluster, new LinkedHashSet<>()));
-      }
-
-      converted.add("docs", docs.stream().map(InputDocument::getSolrDocumentId)
-          .collect(Collectors.toList()));
-
-      if (params.includeSubclusters() && !cluster.getClusters().isEmpty()) {
-        List<NamedList<Object>> subclusters = new ArrayList<>();
-        converted.add("clusters", subclusters);
-        clustersToNamedListRecursive(cluster.getClusters(), subclusters, params);
-      }
-    }
-  }
-
-  private LinkedHashSet<InputDocument> collectUniqueDocuments(Cluster<InputDocument> cluster, LinkedHashSet<InputDocument> unique) {
-    unique.addAll(cluster.getDocuments());
-    for (Cluster<InputDocument> sub : cluster.getClusters()) {
-      collectUniqueDocuments(sub, unique);
-    }
-    return unique;
   }
 }

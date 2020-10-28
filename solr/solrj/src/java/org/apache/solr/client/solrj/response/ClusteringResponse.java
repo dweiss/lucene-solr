@@ -53,7 +53,7 @@ public class ClusteringResponse {
             break;
             
           case SCORE_NODE:
-            score = (Double) e.getValue();
+            score = ((Number) e.getValue()).doubleValue();
             break;
 
           case CLUSTERS_NODE:

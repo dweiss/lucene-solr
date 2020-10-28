@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.clustering;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.common.params.SolrParams;
 
 import java.util.Arrays;
@@ -25,7 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * {@link CarrotClusteringEngine} configuration parameters (and other parameters that
+ * {@link ClusteringEngineImpl} configuration parameters (and other parameters that
  * may tweak clustering algorithms on a per-request basis).
  *
  * @lucene.experimental
@@ -164,7 +165,7 @@ public final class EngineConfiguration implements Cloneable {
           languageField = params.get(PARAM_LANGUAGE_FIELD);
           break;
         case PARAM_FIELDS:
-          fields.addAll(Arrays.asList(params.get(PARAM_FIELDS).split("[, ]")));
+          fields.addAll(Arrays.asList(params.get(PARAM_FIELDS).split("[,]\\s*")));
           break;
         default:
           // Unrecognized parameter. Preserve it.
@@ -270,5 +271,15 @@ public final class EngineConfiguration implements Cloneable {
 
   public void setDocIdField(String docIdField) {
     this.docIdField = Objects.requireNonNull(docIdField);
+  }
+
+  Set<String> getFieldsToLoad() {
+    Set<String> fields = new LinkedHashSet<>(fields());
+    fields.add(docIdField());
+    String languageField = languageField();
+    if (StringUtils.isNotBlank(languageField)) {
+      fields.add(languageField);
+    }
+    return fields;
   }
 }

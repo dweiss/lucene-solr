@@ -23,11 +23,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
-import org.apache.solr.handler.clustering.CarrotClusteringEngine;
-import org.apache.solr.handler.clustering.ClusteringComponent;
-import org.apache.solr.handler.clustering.ClusteringEngine;
-import org.apache.solr.handler.clustering.EngineConfiguration;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -55,9 +50,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Tests {@link CarrotClusteringEngine}.
+ * Tests {@link ClusteringEngineImpl}.
  */
-public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
+public class ClusteringEngineImplTest extends AbstractClusteringTestCase {
   @Test
   public void testLingoAlgorithm() throws Exception {
     compareToExpected(clusters(getClusteringEngine("lingo"), "*:*"));
