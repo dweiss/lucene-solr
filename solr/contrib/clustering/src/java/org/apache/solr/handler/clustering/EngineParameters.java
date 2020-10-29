@@ -63,14 +63,14 @@ public final class EngineParameters implements Cloneable {
   public static final String PARAM_LANGUAGE = PARAM_PREFIX + "language";
 
   /**
-   * @see #resources()
-   */
-  public static final String PARAM_RESOURCES = PARAM_PREFIX + "resources";
-
-  /**
    * @see #languageField()
    */
   public static final String PARAM_LANGUAGE_FIELD = PARAM_PREFIX + "languageField";
+
+  /**
+   * @see #resources()
+   */
+  public static final String PARAM_RESOURCES = PARAM_PREFIX + "resources";
 
   /**
    * @see #fields()

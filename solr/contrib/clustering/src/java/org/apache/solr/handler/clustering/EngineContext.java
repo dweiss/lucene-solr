@@ -143,13 +143,6 @@ final class EngineContext {
               name,
               supportedLanguages);
         });
-
-    if (log.isInfoEnabled()) {
-      log.info("Available clustering algorithms: {}",
-          algorithmProviders.keySet().stream().collect(Collectors.joining(", ")));
-      log.info("Available languages: {}",
-          languages.keySet().stream().collect(Collectors.joining(", ")));
-    }
   }
 
   ClusteringAlgorithm getAlgorithm(String algorithmName) {

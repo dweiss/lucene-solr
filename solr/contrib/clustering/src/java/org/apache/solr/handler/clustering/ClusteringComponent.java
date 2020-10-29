@@ -358,6 +358,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
    */
   private List<InputDocument> getDocuments(ResponseBuilder responseBuilder,
                                            EngineParameters requestParameters) throws IOException {
+
     SolrQueryRequest solrRequest = responseBuilder.req;
     DocList solrDocList = responseBuilder.getResults().docList;
     Query query = responseBuilder.getQuery();
@@ -365,6 +366,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     SolrParams solrParams = solrRequest.getParams();
     SolrCore core = solrRequest.getCore();
     String[] fieldsToCluster = requestParameters.fields().toArray(String[]::new);
+    IndexSchema schema = indexSearcher.getSchema();
 
     Function<Map<String, String>, String> assignLanguage;
     String languageField = requestParameters.languageField();
@@ -401,7 +403,6 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       }
     }
 
-    IndexSchema schema = indexSearcher.getSchema();
     Map<String, Function<IndexableField, String>> fieldsToLoad = new LinkedHashMap<>();
     for (String fld : requestParameters.getFieldsToLoad()) {
       FieldType type = schema.getField(fld).getType();

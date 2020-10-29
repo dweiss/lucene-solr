@@ -54,6 +54,8 @@ final class Engine {
   private EngineContext engineContext;
 
   boolean init(String engineName, SolrCore core, EngineParameters defaultParams) {
+    log.info("Initializing clustering engine: {}", engineName);
+
     this.engineContext = new EngineContext(defaultParams.resources(), core);
 
     {

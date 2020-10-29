@@ -136,7 +136,10 @@ class FlatKeysAttrVisitor implements AttrVisitor {
 
   @Override
   public <T extends AcceptingVisitor> void visit(String key, AttrObjectArray<T> attr) {
-    throw new RuntimeException("Setting arrays of objects not implemented.");
+    ifKeyExists(key, (path, value) -> {
+      throw new RuntimeException("Setting arrays of objects not implemented for attribute: "
+          + key + " (" + attr.getDescription() + ")");
+    });
   }
 
   private <T> T safeCast(Object value, String key, Class<T> clazz) {
