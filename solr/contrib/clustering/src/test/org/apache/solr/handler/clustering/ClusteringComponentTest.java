@@ -63,12 +63,12 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
   }
 
   @Test
-  public void testKMeansAlgorithm() throws Exception {
+  public void testKmeansAlgorithm() throws Exception {
     compareToExpected(clusters(getClusteringEngine("kmeans"), "*:*"));
   }
 
   @Test
-  public void testParamSubClusters() throws Exception {
+  public void testParamSubclusters() throws Exception {
     compareToExpected("off", clusters(getClusteringEngine("mock"), "*:*", params -> {
       params.set(EngineParameters.PARAM_INCLUDE_SUBCLUSTERS, false);
     }));
