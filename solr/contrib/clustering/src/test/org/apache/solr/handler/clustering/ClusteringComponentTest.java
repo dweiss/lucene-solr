@@ -127,18 +127,18 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
 
     Consumer<ModifiableSolrParams> common = params -> {
       params.add(EngineParameters.PARAM_FIELDS, "title, snippet");
-      params.add(EngineParameters.SUMMARY_FRAGSIZE, Integer.toString(80));
-      params.add(EngineParameters.SUMMARY_SNIPPETS, Integer.toString(1));
+      params.add(EngineParameters.PARAM_CONTEXT_SIZE, Integer.toString(80));
+      params.add(EngineParameters.PARAM_CONTEXT_COUNT, Integer.toString(1));
     };
 
     List<Cluster<SolrDocument>> highlighted = clusters("echo", query,
         common.andThen(params -> {
-          params.add(EngineParameters.PRODUCE_SUMMARY, "true");
+          params.add(EngineParameters.PARAM_PREFER_QUERY_CONTEXT, "true");
         }));
 
     List<Cluster<SolrDocument>> full = clusters("echo", query,
         common.andThen(params -> {
-          params.add(EngineParameters.PRODUCE_SUMMARY, "false");
+          params.add(EngineParameters.PARAM_PREFER_QUERY_CONTEXT, "false");
         }));
 
     // Echo clustering algorithm just returns document fields as cluster labels
@@ -165,19 +165,19 @@ public class ClusteringComponentTest extends SolrTestCaseJ4 {
     String query = "+snippet:mine +" + QUERY_TESTSET_SAMPLE_DOCUMENTS;
 
     Consumer<ModifiableSolrParams> common = params -> {
-      params.add(EngineParameters.PRODUCE_SUMMARY, "true");
+      params.add(EngineParameters.PARAM_PREFER_QUERY_CONTEXT, "true");
       params.add(EngineParameters.PARAM_FIELDS, "title, snippet");
-      params.add(EngineParameters.SUMMARY_SNIPPETS, Integer.toString(1));
+      params.add(EngineParameters.PARAM_CONTEXT_COUNT, Integer.toString(1));
     };
 
     List<Cluster<SolrDocument>> shortSummaries = clusters("echo", query,
         common.andThen(params -> {
-          params.add(EngineParameters.SUMMARY_FRAGSIZE, Integer.toString(30));
+          params.add(EngineParameters.PARAM_CONTEXT_SIZE, Integer.toString(30));
         }));
 
     List<Cluster<SolrDocument>> longSummaries = clusters("echo", query,
         common.andThen(params -> {
-          params.add(EngineParameters.SUMMARY_FRAGSIZE, Integer.toString(80));
+          params.add(EngineParameters.PARAM_CONTEXT_COUNT, Integer.toString(80));
         }));
 
     Assert.assertEquals(shortSummaries.size(), longSummaries.size());

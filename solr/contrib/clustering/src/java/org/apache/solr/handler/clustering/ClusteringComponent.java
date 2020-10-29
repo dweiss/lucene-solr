@@ -77,28 +77,34 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
    * Default component name and parameter prefix.
    */
   public static final String COMPONENT_NAME = "clustering";
+
   /**
    * Request parameter that selects one of the {@link Engine} configurations
    * out of many possibly defined in the component's initialization parameters.
    */
   public static final String REQUEST_PARAM_ENGINE = COMPONENT_NAME + ".engine";
+
   /**
    * Engine configuration initialization block name.
    */
   public static final String INIT_SECTION_ENGINE = "engine";
+
   /**
    * Response section name containing output clusters.
    */
   public static final String RESPONSE_SECTION_CLUSTERS = "clusters";
+
   /**
    * Default log sink.
    */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /**
    * An internal request parameter for shard requests used for collecting
    * input documents for clustering.
    */
   private static final String REQUEST_PARAM_COLLECT_INPUTS = COMPONENT_NAME + ".collect-inputs";
+
   /**
    * Shard request response section name containing partial document inputs.
    */
@@ -376,11 +382,10 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       assignLanguage = (doc) -> requestParameters.language();
     }
 
-    boolean produceSummary = solrParams.getBool(EngineParameters.PRODUCE_SUMMARY, false);
-
+    boolean preferQueryContext = requestParameters.preferQueryContext();
     SolrQueryRequest req = null;
     SolrHighlighter highlighter = null;
-    if (produceSummary) {
+    if (preferQueryContext) {
       highlighter = ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME)).getHighlighter();
       if (highlighter != null) {
         Map<String, Object> args = new HashMap<>();
@@ -389,8 +394,8 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         // We don't want any highlight marks.
         args.put(HighlightParams.SIMPLE_PRE, "");
         args.put(HighlightParams.SIMPLE_POST, "");
-        args.put(HighlightParams.FRAGSIZE, solrParams.getInt(EngineParameters.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
-        args.put(HighlightParams.SNIPPETS, solrParams.getInt(EngineParameters.SUMMARY_SNIPPETS, solrParams.getInt(HighlightParams.SNIPPETS, 1)));
+        args.put(HighlightParams.FRAGSIZE, requestParameters.contextSize());
+        args.put(HighlightParams.SNIPPETS, requestParameters.contextCount());
         req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
           @Override
           public SolrIndexSearcher getSearcher() {
@@ -399,7 +404,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
         };
       } else {
         log.warn("No highlighter configured, cannot produce summary");
-        produceSummary = false;
+        preferQueryContext = false;
       }
     }
 
@@ -436,7 +441,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       result.add(inputDocument);
 
       Function<String, String> snippetProvider = (field) -> null;
-      if (produceSummary) {
+      if (preferQueryContext) {
         DocList docAsList = new DocSlice(0, 1,
             new int[]{internalId},
             new float[]{1.0f},

@@ -77,9 +77,20 @@ public final class EngineParameters implements Cloneable {
    */
   public static final String PARAM_FIELDS = PARAM_PREFIX + "fields";
 
-  public static String PRODUCE_SUMMARY = PARAM_PREFIX + "produceSummary";
-  public static String SUMMARY_FRAGSIZE = PARAM_PREFIX + "fragSize";
-  public static String SUMMARY_SNIPPETS = PARAM_PREFIX + "summarySnippets";
+  /**
+   * @see #preferQueryContext()
+   */
+  public static final String PARAM_PREFER_QUERY_CONTEXT = PARAM_PREFIX + "preferQueryContext";
+
+  /**
+   * @see #contextSize()
+   */
+  public static final String PARAM_CONTEXT_SIZE = PARAM_PREFIX + "contextSize";
+
+  /**
+   * @see #contextCount()
+   */
+  public static final String PARAM_CONTEXT_COUNT = PARAM_PREFIX + "contextCount";
 
   /**
    * @see #PARAM_MAX_LABELS
@@ -117,6 +128,21 @@ public final class EngineParameters implements Cloneable {
   private String languageField;
 
   /**
+   * @see #PARAM_PREFER_QUERY_CONTEXT
+   */
+  private boolean preferQueryContext;
+
+  /**
+   * @see #PARAM_CONTEXT_SIZE
+   */
+  private int contextSize = 80 * 4;
+
+  /**
+   * @see #PARAM_CONTEXT_COUNT
+   */
+  private int contextCount = 3;
+
+  /**
    * @see #PARAM_FIELDS
    */
   private LinkedHashSet<String> fields = new LinkedHashSet<>();
@@ -125,7 +151,6 @@ public final class EngineParameters implements Cloneable {
    * Non-engine configuration parameters (algorithm parameters).
    */
   private LinkedHashMap<String, String> otherParameters = new LinkedHashMap<>();
-
 
   /**
    * Unique-value document identifier field. This is required for clustering since clusters
@@ -163,6 +188,15 @@ public final class EngineParameters implements Cloneable {
           break;
         case PARAM_LANGUAGE_FIELD:
           languageField = params.get(PARAM_LANGUAGE_FIELD);
+          break;
+        case PARAM_PREFER_QUERY_CONTEXT:
+          preferQueryContext = params.getBool(PARAM_PREFER_QUERY_CONTEXT);
+          break;
+        case PARAM_CONTEXT_COUNT:
+          contextCount = params.getPrimitiveInt(PARAM_CONTEXT_COUNT);
+          break;
+        case PARAM_CONTEXT_SIZE:
+          contextSize = params.getPrimitiveInt(PARAM_CONTEXT_SIZE);
           break;
         case PARAM_FIELDS:
           fields.addAll(Arrays.asList(params.get(PARAM_FIELDS).split("[,]\\s*")));
@@ -247,6 +281,30 @@ public final class EngineParameters implements Cloneable {
    */
   Set<String> fields() {
     return fields;
+  }
+
+  /**
+   * @return Returns {@code true} if clustering should try to extract context fragments
+   * around the matching query regions rather than use full field content. Such context snippets
+   * typically cluster well because they carry a more compact and query-related information.
+   */
+  boolean preferQueryContext() {
+    return preferQueryContext;
+  }
+
+  /**
+   * @return Returns the maximum query context window to use if {@link #preferQueryContext()} is {@code true}.
+   */
+  int contextSize() {
+    return contextSize;
+  }
+
+  /**
+   * @return Returns the maximum number of different, non-contiguous query context snippets from a single document
+   * if {@link #preferQueryContext()} is {@code true}.
+   */
+  int contextCount() {
+    return contextCount;
   }
 
   LinkedHashMap<String, String> otherParameters() {
