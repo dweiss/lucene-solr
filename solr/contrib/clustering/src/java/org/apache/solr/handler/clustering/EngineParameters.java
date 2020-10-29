@@ -128,11 +128,10 @@ public final class EngineParameters implements Cloneable {
 
 
   /**
-   * Unique-value (identifier) field. This is required for clustering since clusters only reference
-   * documents by their ID field's value.
+   * Unique-value document identifier field. This is required for clustering since clusters
+   * only reference documents by their ID field's value.
    */
   private String docIdField;
-
 
   EngineParameters(SolrParams params) {
     extractFrom(params);
@@ -266,6 +265,10 @@ public final class EngineParameters implements Cloneable {
     }
   }
 
+  /**
+   * @return Return a copy of the argument with any parameters present in
+   * {@code params} overriding this object defaults.
+   */
   EngineParameters derivedFrom(SolrParams params) {
     EngineParameters cloned = this.clone();
     cloned.extractFrom(params);

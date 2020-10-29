@@ -17,6 +17,8 @@
 package org.apache.solr.handler.clustering;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -33,8 +35,10 @@ import org.carrot2.clustering.Cluster;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -51,35 +55,64 @@ import java.util.stream.Collectors;
 /**
  * Tests {@link Engine}.
  */
-public class ClusteringComponentTest extends AbstractClusteringTestCase {
+public class ClusteringComponentTest extends SolrTestCaseJ4 {
+  private final static String QUERY_TESTSET_SAMPLE_DOCUMENTS = "testSet:sampleDocs";
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    File testHome = createTempDir().toFile();
+    FileUtils.copyDirectory(getFile("clustering/solr"), testHome);
+    initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath());
+
+    String[] languages = {
+        "English",
+        "French",
+        "German",
+        "Unknown",
+    };
+
+    int docId = 0;
+    for (String[] doc : SampleData.SAMPLE_DOCUMENTS) {
+      assertNull(h.validateUpdate(adoc(
+          "id", Integer.toString(docId),
+          "title", doc[0],
+          "snippet", doc[1],
+          "testSet", "sampleDocs",
+          "lang", languages[docId % languages.length])));
+      docId++;
+    }
+
+    assertNull(h.validateUpdate(commit()));
+  }
+
   @Test
   public void testLingoAlgorithm() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("lingo"), "*:*"));
+    compareToExpected(clusters("lingo", QUERY_TESTSET_SAMPLE_DOCUMENTS));
   }
 
   @Test
   public void testStcAlgorithm() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("stc"), "*:*"));
+    compareToExpected(clusters("stc", QUERY_TESTSET_SAMPLE_DOCUMENTS));
   }
 
   @Test
   public void testKmeansAlgorithm() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("kmeans"), "*:*"));
+    compareToExpected(clusters("kmeans", QUERY_TESTSET_SAMPLE_DOCUMENTS));
   }
 
   @Test
   public void testParamSubclusters() throws Exception {
-    compareToExpected("off", clusters(getClusteringEngine("mock"), "*:*", params -> {
+    compareToExpected("off", clusters("mock", QUERY_TESTSET_SAMPLE_DOCUMENTS, params -> {
       params.set(EngineParameters.PARAM_INCLUDE_SUBCLUSTERS, false);
     }));
-    compareToExpected("on", clusters(getClusteringEngine("mock"), "*:*", params -> {
+    compareToExpected("on", clusters("mock", QUERY_TESTSET_SAMPLE_DOCUMENTS, params -> {
       params.set(EngineParameters.PARAM_INCLUDE_SUBCLUSTERS, true);
     }));
   }
 
   @Test
   public void testParamOtherTopics() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("mock"), "*:*", params -> {
+    compareToExpected(clusters("mock", QUERY_TESTSET_SAMPLE_DOCUMENTS, params -> {
       params.set(EngineParameters.PARAM_INCLUDE_OTHER_TOPICS, false);
     }));
   }
@@ -90,7 +123,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testClusteringOnHighlights() throws Exception {
-    String query = "snippet:mine";
+    String query = "+snippet:mine +" + QUERY_TESTSET_SAMPLE_DOCUMENTS;
 
     Consumer<ModifiableSolrParams> common = params -> {
       params.add(EngineParameters.PARAM_FIELDS, "title, snippet");
@@ -98,12 +131,12 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
       params.add(EngineParameters.SUMMARY_SNIPPETS, Integer.toString(1));
     };
 
-    List<Cluster<SolrDocument>> highlighted = clusters(getClusteringEngine("echo"), query,
+    List<Cluster<SolrDocument>> highlighted = clusters("echo", query,
         common.andThen(params -> {
           params.add(EngineParameters.PRODUCE_SUMMARY, "true");
         }));
 
-    List<Cluster<SolrDocument>> full = clusters(getClusteringEngine("echo"), query,
+    List<Cluster<SolrDocument>> full = clusters("echo", query,
         common.andThen(params -> {
           params.add(EngineParameters.PRODUCE_SUMMARY, "false");
         }));
@@ -129,7 +162,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testSummaryFragSize() throws Exception {
-    String query = "snippet:mine";
+    String query = "+snippet:mine +" + QUERY_TESTSET_SAMPLE_DOCUMENTS;
 
     Consumer<ModifiableSolrParams> common = params -> {
       params.add(EngineParameters.PRODUCE_SUMMARY, "true");
@@ -137,12 +170,12 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
       params.add(EngineParameters.SUMMARY_SNIPPETS, Integer.toString(1));
     };
 
-    List<Cluster<SolrDocument>> shortSummaries = clusters(getClusteringEngine("echo"), query,
+    List<Cluster<SolrDocument>> shortSummaries = clusters("echo", query,
         common.andThen(params -> {
           params.add(EngineParameters.SUMMARY_FRAGSIZE, Integer.toString(30));
         }));
 
-    List<Cluster<SolrDocument>> longSummaries = clusters(getClusteringEngine("echo"), query,
+    List<Cluster<SolrDocument>> longSummaries = clusters("echo", query,
         common.andThen(params -> {
           params.add(EngineParameters.SUMMARY_FRAGSIZE, Integer.toString(80));
         }));
@@ -165,7 +198,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testPassingAttributes() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("mock"), "*:*", params -> {
+    compareToExpected(clusters("mock", QUERY_TESTSET_SAMPLE_DOCUMENTS, params -> {
       params.set("maxClusters", 2);
       params.set("hierarchyDepth", 1);
       params.add(EngineParameters.PARAM_INCLUDE_OTHER_TOPICS, "false");
@@ -177,7 +210,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testPassingAttributesViaSolrConfig() throws Exception {
-    compareToExpected(clusters(getClusteringEngine("mock-solrconfig-attrs"), "*:*"));
+    compareToExpected(clusters("mock-solrconfig-attrs", QUERY_TESTSET_SAMPLE_DOCUMENTS));
   }
 
   /**
@@ -185,7 +218,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
    */
   @Test
   public void testParamMaxLabels() throws Exception {
-    List<Cluster<SolrDocument>> clusters = clusters(getClusteringEngine("mock"), "*:*", params -> {
+    List<Cluster<SolrDocument>> clusters = clusters("mock", QUERY_TESTSET_SAMPLE_DOCUMENTS, params -> {
       params.set("labelsPerCluster", "5");
       params.set(EngineParameters.PARAM_INCLUDE_OTHER_TOPICS, "false");
       params.set(EngineParameters.PARAM_MAX_LABELS, "3");
@@ -199,15 +232,15 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
   @Test
   public void testCustomLanguageResources() throws Exception {
     compareToExpected(clusters(
-        getClusteringEngine("testCustomLanguageResources"),
-        "*:*"));
+        "testCustomLanguageResources",
+        QUERY_TESTSET_SAMPLE_DOCUMENTS));
   }
 
   @Test
   public void testParamDefaultLanguage() throws Exception {
     compareToExpected(clusters(
-        getClusteringEngine("testParamDefaultLanguage"),
-        "*:*"));
+        "testParamDefaultLanguage",
+        QUERY_TESTSET_SAMPLE_DOCUMENTS));
   }
 
   /**
@@ -219,20 +252,33 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
   @Test
   public void testParamLanguageField() throws Exception {
     compareToExpected(clusters(
-        getClusteringEngine("testParamLanguageField"),
-        "*:*"));
-  }
-
-  private String getClusteringEngine(String engineName) {
-    return engineName;
+        "testParamLanguageField",
+        QUERY_TESTSET_SAMPLE_DOCUMENTS));
   }
 
   private void compareToExpected(List<Cluster<SolrDocument>> clusters) throws IOException {
     compareToExpected("", clusters);
   }
 
-  private void compareToExpected(String expectedResourceSuffix,
+  private void compareToExpected(String resourceSuffix,
                                  List<Cluster<SolrDocument>> clusters) throws IOException {
+    String actual = toString(clusters);
+    String expected = getTestResource(getClass(), resourceSuffix);
+    compareWhitespaceNormalized(actual, expected);
+  }
+
+  static void compareWhitespaceNormalized(String actual, String expected) {
+    Function<String, String> normalize = v -> v.replaceAll("\r", "").replaceAll("[ \t]+", " ").trim();
+
+    if (!normalize.apply(expected).equals(normalize.apply(actual))) {
+      throw new AssertionError(String.format(Locale.ROOT,
+          "The actual clusters structure differs from the expected one. Expected:\n%s\n\nActual:\n%s",
+          expected,
+          actual));
+    }
+  }
+
+  static String getTestResource(Class<?> clazz, String expectedResourceSuffix) throws IOException {
     RandomizedContext ctx = RandomizedContext.current();
     String resourceName = String.format(Locale.ROOT,
         "%s-%s%s.txt",
@@ -240,26 +286,16 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
         ctx.getTargetMethod().getName(),
         expectedResourceSuffix.isEmpty() ? "" : "-" + expectedResourceSuffix);
 
-    try (InputStream is = getClass().getResourceAsStream(resourceName)) {
+    String expected;
+    try (InputStream is = clazz.getResourceAsStream(resourceName)) {
       if (is == null) {
         throw new AssertionError("Test resource not found: " + resourceName + " (class-relative to " +
-            getClass().getName() + ")");
+            clazz.getName() + ")");
       }
 
-      String expected = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-      String actual = toString(clusters);
-
-      Function<String, String> normalize = v -> {
-        return v.replaceAll("\r", "").replaceAll("[ \t]+", " ").trim();
-      };
-
-      if (!normalize.apply(expected).equals(normalize.apply(actual))) {
-        throw new AssertionError(String.format(Locale.ROOT,
-            "The actual clusters structure differs from the expected one. Expected:\n%s\n\nActual:\n%s",
-            expected,
-            actual));
-      }
+      expected = new String(is.readAllBytes(), StandardCharsets.UTF_8);
     }
+    return expected;
   }
 
   private String toString(List<Cluster<SolrDocument>> clusters) {
@@ -299,7 +335,7 @@ public class ClusteringComponentTest extends AbstractClusteringTestCase {
     reqParams.add(ClusteringComponent.COMPONENT_NAME, "true");
     reqParams.add(ClusteringComponent.REQUEST_PARAM_ENGINE, engineName);
     reqParams.add(CommonParams.Q, query);
-    reqParams.add(CommonParams.ROWS, Integer.toString(numberOfTestDocs));
+    reqParams.add(CommonParams.ROWS, "1000");
     paramsConsumer.accept(reqParams);
 
     SearchHandler handler = (SearchHandler) core.getRequestHandler(handlerName);

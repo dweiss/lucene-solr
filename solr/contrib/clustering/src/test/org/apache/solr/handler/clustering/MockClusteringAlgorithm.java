@@ -32,6 +32,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Creates a stable set of synthetic clusters based on the provided parameters.
+ */
 public class MockClusteringAlgorithm extends AttrComposite implements ClusteringAlgorithm {
   public AttrInteger docsInCluster =
       attributes.register(

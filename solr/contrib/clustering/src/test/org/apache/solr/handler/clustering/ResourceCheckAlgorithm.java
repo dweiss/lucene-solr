@@ -32,6 +32,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Creates synthetic clusters with diagnostics of
+ * {@link LanguageComponents} passed to the clustering method.
+ */
 class ResourceCheckAlgorithm extends AttrComposite implements ClusteringAlgorithm {
   public AttrString text =
       attributes.register(

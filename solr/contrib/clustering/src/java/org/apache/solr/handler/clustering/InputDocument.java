@@ -19,9 +19,11 @@ package org.apache.solr.handler.clustering;
 import org.carrot2.clustering.Document;
 
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  * Representation of a single logical "document" for clustering.
@@ -52,5 +54,14 @@ final class InputDocument implements Document {
   void addClusteredField(String fieldName, String fieldValue) {
     assert !clusteredFields.containsKey(fieldName);
     clusteredFields.put(fieldName, fieldValue);
+  }
+
+  @Override
+  public String toString() {
+    return String.format(Locale.ROOT,
+        "doc[%s, lang=%s, fields=%s]",
+        getId(),
+        language,
+        clusteredFields.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining(", ")));
   }
 }

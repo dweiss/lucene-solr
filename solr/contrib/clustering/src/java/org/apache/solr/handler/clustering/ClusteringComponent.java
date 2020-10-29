@@ -74,37 +74,31 @@ import java.util.stream.Collectors;
  */
 public class ClusteringComponent extends SearchComponent implements SolrCoreAware {
   /**
-   * Default log sink.
-   */
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /**
    * Default component name and parameter prefix.
    */
   public static final String COMPONENT_NAME = "clustering";
-
   /**
    * Request parameter that selects one of the {@link Engine} configurations
    * out of many possibly defined in the component's initialization parameters.
    */
   public static final String REQUEST_PARAM_ENGINE = COMPONENT_NAME + ".engine";
-
+  /**
+   * Engine configuration initialization block name.
+   */
+  public static final String INIT_SECTION_ENGINE = "engine";
+  /**
+   * Response section name containing output clusters.
+   */
+  public static final String RESPONSE_SECTION_CLUSTERS = "clusters";
+  /**
+   * Default log sink.
+   */
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   /**
    * An internal request parameter for shard requests used for collecting
    * input documents for clustering.
    */
   private static final String REQUEST_PARAM_COLLECT_INPUTS = COMPONENT_NAME + ".collect-inputs";
-
-  /**
-   * Engine configuration initialization block name.
-   */
-  public static final String INIT_SECTION_ENGINE = "engine";
-
-  /**
-   * Response section name containing output clusters.
-   */
-  public static final String RESPONSE_SECTION_CLUSTERS = "clusters";
-
   /**
    * Shard request response section name containing partial document inputs.
    */
@@ -119,6 +113,111 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
    * Declaration-order list of available search clustering engines.
    */
   private final LinkedHashMap<String, EngineEntry> engines = new LinkedHashMap<>();
+
+  private static boolean isComponentEnabled(ResponseBuilder rb) {
+    return rb.req.getParams().getBool(COMPONENT_NAME, false);
+  }
+
+  private static List<InputDocument> documentsFromNamedList(List<NamedList<Object>> docList) {
+    return docList.stream()
+        .map(docProps -> {
+          InputDocument doc = new InputDocument(
+              docProps.get("id"),
+              (String) docProps.get("language"));
+
+          docProps.forEach((fieldName, value) -> {
+            doc.addClusteredField(fieldName, (String) value);
+          });
+          doc.visitFields(docProps::add);
+          return doc;
+        })
+        .collect(Collectors.toList());
+  }
+
+  private static List<NamedList<Object>> documentsToNamedList(List<InputDocument> documents) {
+    return documents.stream()
+        .map(doc -> {
+          NamedList<Object> docProps = new SimpleOrderedMap<>();
+          docProps.add("id", doc.getId());
+          docProps.add("language", doc.language());
+          doc.visitFields(docProps::add);
+          return docProps;
+        })
+        .collect(Collectors.toList());
+  }
+
+  private static List<NamedList<Object>> clustersToNamedList(List<InputDocument> documents,
+                                                             List<Cluster<InputDocument>> clusters,
+                                                             EngineParameters params) {
+    List<NamedList<Object>> result = new ArrayList<>();
+    clustersToNamedListRecursive(clusters, result, params);
+
+    if (params.includeOtherTopics()) {
+      LinkedHashSet<InputDocument> clustered = new LinkedHashSet<>();
+      clusters.forEach(cluster -> collectUniqueDocuments(cluster, clustered));
+      List<InputDocument> unclustered = documents.stream()
+          .filter(doc -> !clustered.contains(doc))
+          .collect(Collectors.toList());
+
+      if (!unclustered.isEmpty()) {
+        NamedList<Object> cluster = new SimpleOrderedMap<>();
+        result.add(cluster);
+        cluster.add(ClusteringResponse.IS_OTHER_TOPICS, true);
+        cluster.add(ClusteringResponse.LABELS_NODE, Collections.singletonList("Other topics"));
+        cluster.add(ClusteringResponse.SCORE_NODE, 0d);
+        cluster.add(ClusteringResponse.DOCS_NODE, unclustered.stream().map(InputDocument::getId)
+            .collect(Collectors.toList()));
+      }
+    }
+
+    return result;
+  }
+
+  private static void clustersToNamedListRecursive(
+      List<Cluster<InputDocument>> outputClusters,
+      List<NamedList<Object>> parent, EngineParameters params) {
+    for (Cluster<InputDocument> cluster : outputClusters) {
+      NamedList<Object> converted = new SimpleOrderedMap<>();
+      parent.add(converted);
+
+      // Add labels
+      List<String> labels = cluster.getLabels();
+      if (labels.size() > params.maxLabels()) {
+        labels = labels.subList(0, params.maxLabels());
+      }
+      converted.add(ClusteringResponse.LABELS_NODE, labels);
+
+      // Add cluster score
+      final Double score = cluster.getScore();
+      if (score != null) {
+        converted.add(ClusteringResponse.SCORE_NODE, score);
+      }
+
+      List<InputDocument> docs;
+      if (params.includeSubclusters()) {
+        docs = cluster.getDocuments();
+      } else {
+        docs = new ArrayList<>(collectUniqueDocuments(cluster, new LinkedHashSet<>()));
+      }
+
+      converted.add(ClusteringResponse.DOCS_NODE, docs.stream().map(InputDocument::getId)
+          .collect(Collectors.toList()));
+
+      if (params.includeSubclusters() && !cluster.getClusters().isEmpty()) {
+        List<NamedList<Object>> subclusters = new ArrayList<>();
+        converted.add(ClusteringResponse.CLUSTERS_NODE, subclusters);
+        clustersToNamedListRecursive(cluster.getClusters(), subclusters, params);
+      }
+    }
+  }
+
+  private static LinkedHashSet<InputDocument> collectUniqueDocuments(Cluster<InputDocument> cluster, LinkedHashSet<InputDocument> unique) {
+    unique.addAll(cluster.getDocuments());
+    for (Cluster<InputDocument> sub : cluster.getClusters()) {
+      collectUniqueDocuments(sub, unique);
+    }
+    return unique;
+  }
 
   @Override
   @SuppressWarnings({"rawtypes", "unchecked"})
@@ -244,14 +343,12 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  private static boolean isComponentEnabled(ResponseBuilder rb) {
-    return rb.req.getParams().getBool(COMPONENT_NAME, false);
-  }
-
   /**
    * Run clustering of input documents and append the result to the response.
    */
   private void doCluster(ResponseBuilder rb, EngineEntry engine, List<InputDocument> inputs, EngineParameters parameters) {
+    // log.warn("# CLUSTERING: " + inputs.size() + " document(s), contents:\n - "
+    //   + inputs.stream().map(Object::toString).collect(Collectors.joining("\n - ")));
     List<Cluster<InputDocument>> clusters = engine.get().cluster(parameters, rb.getQuery(), inputs);
     rb.rsp.add(RESPONSE_SECTION_CLUSTERS, clustersToNamedList(inputs, clusters, parameters));
   }
@@ -407,106 +504,5 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
   @Override
   public String getDescription() {
     return "Search results clustering component";
-  }
-
-  private static List<InputDocument> documentsFromNamedList(List<NamedList<Object>> docList) {
-    return docList.stream()
-        .map(docProps -> {
-          InputDocument doc = new InputDocument(
-              docProps.get("id"),
-              (String) docProps.get("language"));
-
-          docProps.forEach((fieldName, value) -> {
-            doc.addClusteredField(fieldName, (String) value);
-          });
-          doc.visitFields(docProps::add);
-          return doc;
-        })
-        .collect(Collectors.toList());
-  }
-
-  private static List<NamedList<Object>> documentsToNamedList(List<InputDocument> documents) {
-    return documents.stream()
-        .map(doc -> {
-          NamedList<Object> docProps = new SimpleOrderedMap<>();
-          docProps.add("id", doc.getId());
-          docProps.add("language", doc.language());
-          doc.visitFields(docProps::add);
-          return docProps;
-        })
-        .collect(Collectors.toList());
-  }
-
-  private static List<NamedList<Object>> clustersToNamedList(List<InputDocument> documents,
-                                                             List<Cluster<InputDocument>> clusters,
-                                                             EngineParameters params) {
-    List<NamedList<Object>> result = new ArrayList<>();
-    clustersToNamedListRecursive(clusters, result, params);
-
-    if (params.includeOtherTopics()) {
-      LinkedHashSet<InputDocument> clustered = new LinkedHashSet<>();
-      clusters.forEach(cluster -> collectUniqueDocuments(cluster, clustered));
-      List<InputDocument> unclustered = documents.stream()
-          .filter(doc -> !clustered.contains(doc))
-          .collect(Collectors.toList());
-
-      if (!unclustered.isEmpty()) {
-        NamedList<Object> cluster = new SimpleOrderedMap<>();
-        result.add(cluster);
-        cluster.add(ClusteringResponse.IS_OTHER_TOPICS, true);
-        cluster.add(ClusteringResponse.LABELS_NODE, Collections.singletonList("Other topics"));
-        cluster.add(ClusteringResponse.SCORE_NODE, 0d);
-        cluster.add(ClusteringResponse.DOCS_NODE, unclustered.stream().map(InputDocument::getId)
-            .collect(Collectors.toList()));
-      }
-    }
-
-    return result;
-  }
-
-  private static void clustersToNamedListRecursive(
-      List<Cluster<InputDocument>> outputClusters,
-      List<NamedList<Object>> parent, EngineParameters params) {
-    for (Cluster<InputDocument> cluster : outputClusters) {
-      NamedList<Object> converted = new SimpleOrderedMap<>();
-      parent.add(converted);
-
-      // Add labels
-      List<String> labels = cluster.getLabels();
-      if (labels.size() > params.maxLabels()) {
-        labels = labels.subList(0, params.maxLabels());
-      }
-      converted.add(ClusteringResponse.LABELS_NODE, labels);
-
-      // Add cluster score
-      final Double score = cluster.getScore();
-      if (score != null) {
-        converted.add(ClusteringResponse.SCORE_NODE, score);
-      }
-
-      List<InputDocument> docs;
-      if (params.includeSubclusters()) {
-        docs = cluster.getDocuments();
-      } else {
-        docs = new ArrayList<>(collectUniqueDocuments(cluster, new LinkedHashSet<>()));
-      }
-
-      converted.add(ClusteringResponse.DOCS_NODE, docs.stream().map(InputDocument::getId)
-          .collect(Collectors.toList()));
-
-      if (params.includeSubclusters() && !cluster.getClusters().isEmpty()) {
-        List<NamedList<Object>> subclusters = new ArrayList<>();
-        converted.add(ClusteringResponse.CLUSTERS_NODE, subclusters);
-        clustersToNamedListRecursive(cluster.getClusters(), subclusters, params);
-      }
-    }
-  }
-
-  private static LinkedHashSet<InputDocument> collectUniqueDocuments(Cluster<InputDocument> cluster, LinkedHashSet<InputDocument> unique) {
-    unique.addAll(cluster.getDocuments());
-    for (Cluster<InputDocument> sub : cluster.getClusters()) {
-      collectUniqueDocuments(sub, unique);
-    }
-    return unique;
   }
 }
