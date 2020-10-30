@@ -272,26 +272,29 @@ as shown below:
 </requestHandler>
 ----
 
-Engines can be configured using a number of parameters described below.
+=== Clustering Engine Configuration Parameters
 
-`clustering.algorithm`::
-The clustering algorithm is the actual logic (implementation) that discovers relationships among the documents and forms human-readable cluster labels. This parameter sets the name of the clustering algorithm this engine is going to use. Algorithms are supplied to Solr via Carrot^2^-defined service extension. By default, the following open-source algorithms should be available: `Lingo`, `STC`, `Bisecting K-Means`. A commercial clustering algorithm `Lingo3G` plugs into the same extension point and can be used, if it is available on classpath.
-[NOTE]
-====
-The clustering component lists all available algorithms, languages and algorithm-language compatibility at startup. You can peek at startup logs to see what's available
-in your Solr installation.
-====
+Each declared engine can be configured using a number of parameters described below.
 
-`clustering.fields`::
+`clustering.fields` (_required_)::
 A comma (or space) separated list of text fields which should contain the text
 content for clustering. At least one field must be provided. The fields are separate from search handler's `fl` parameter so that clustered fields don't have to be included in the response.
 
-`clustering.language`::
-Name of the default language to use for clustering. The default value of this field is `English`. The provided language must be available and the clustering algorithm must support it.
+`clustering.algorithm` (_required_)::
+The clustering algorithm is the actual logic (implementation) that discovers relationships among the documents and forms human-readable cluster labels. This parameter sets the name of the clustering algorithm this engine is going to use. Algorithms are supplied to Solr via Carrot^2^-defined service extension. By default, the following open-source algorithms should be available: `Lingo`, `STC`, `Bisecting K-Means`. A commercial clustering algorithm `Lingo3G` plugs into the same extension point and can be used, if it is available on classpath.
 
-`clustering.languageField`::
-Name of the document field that stores the document's language. If the field does not exist
-for a document or the value is blank, the default language is used.
+.How to choose the Clustering Algorithm?
+****
+The question of which algorithm to choose depends on the amount of traffic, the expected result, and the input data (each algorithm will cluster the input slightly differently). There is no one answer which algorithm is "the best": Lingo3G provides hierarchical clusters, Lingo and STC provide flat clusters. STC is faster than Lingo, but arguably produces less intuitive clusters, Lingo3G is the fastest algorithm but is not free or open source... Experiment and pick one that suits your needs.
+
+For a comparison of characteristics of these algorithms see the following links:
+
+* https://carrot2.github.io/release/4.0.4/doc/algorithms/
+* https://carrotsearch.com/lingo3g-comparison.html
+
+The clustering component lists all available algorithms, languages and algorithm-language compatibility at startup. You can peek at startup logs to see what's available
+in your Solr installation.
+****
 
 `clustering.maxLabels`::
 Maximum number of returned cluster labels (if the algorithm returns more labels, the list will
@@ -306,106 +309,168 @@ If `true`, a synthetic cluster called _Other Topics_, consisting of all document
   there is no need for this synthetic cluster, it can be set to `false`.
 
 `clustering.resources`::
-Location of algorithm-specific resources and configuration files (stop words, other lexical resources, default settings). By default this property is `null` and all resources are read
-from their respective algorithm default resource pool (JARs). If this property is not null,
-it resolves relative to Solr core's configuration directory.
+Location of algorithm-specific resources and configuration files (stop words, other lexical resources, default settings). This property is `null` by default and all resources are read
+from their respective algorithm default resource pool (JARs). If this property is not empty,
+it resolves relative to Solr core's configuration directory. This parameter can be applied during Solr startup _only_, it can't be overriden per-request.
 
-=== A Note on Choosing the Clustering Algorithm
+[.text-center]
+🙪
 
-The question of which algorithm to choose depends on the amount of traffic, the expected result, and the input data (each algorithm will cluster the input slightly differently). There is no one answer which algorithm is "the best": Lingo3G provides hierarchical clusters, Lingo and STC provide flat clusters. STC is faster than Lingo, but arguably produces less intuitive clusters, Lingo3G is the fastest algorithm but is not free or open source... Experiment and pick one that suits your needs.
-
-For a comparison of characteristics of these algorithms see the following links:
-
-* https://carrot2.github.io/release/4.0.4/doc/algorithms/
-* https://carrotsearch.com/lingo3g-comparison.html
-
-// TODO: continue from here.
+There are more properties applying to engine configuration. We describe these in functional sections that follow.
 
 === Full Field and Query-Context (Snippet) Clustering
 
-The clustering engine can apply clustering to the full content of (stored) fields or it can run an internal highlighter pass to extract context-snippets before clustering. Highlighting is recommended when the logical snippet field contains a lot of content (this would affect clustering performance). Highlighting can also increase the quality of clustering because the content passed to the algorithm will be more focused around the query (it will be query-specific context). The following parameters control the internal highlighter.
+The clustering algorithm can consume full content of fields or just the left and right context around query-matching regions (so-called _snippets_). Contrary to the intuition, using query contexts can increase the quality of clustering even if it feeds less data to the algorithm. This is typically caused by the fact that snippets are more focused around the phrases and terms surrounding the query and the algorithm has a better signal-to-noise ratio of data to work with.
 
-`carrot.produceSummary`::
-When `true` the clustering component will run a highlighter pass on the content of logical fields pointed to by `carrot.title` and `carrot.snippet`. Otherwise full content of those fields will be clustered.
+We recommend using query contexts when fields contain a lot of content (this would affect clustering performance).
 
-`carrot.fragSize`::
-The size, in characters, of the snippets (aka fragments) created by the highlighter. If not specified, the default highlighting fragsize (`hl.fragsize`) will be used.
+The following three properties control whether the context or full content are processed and how snippets are formed for clustering.
 
-`carrot.summarySnippets`:: The number of summary snippets to generate for clustering. If not specified, the default highlighting snippet count (`hl.snippets`) will be used.
+`clustering.preferQueryContext`::
+If `true`, the engine will try to extract context around the query matching regions and use these contexts as input for the clustering algorithm.
 
-=== Clustering Multilingual Content
+`clustering.contextSize`::
+The maximum size, in characters, of each snippet created by the context retrieval algorithm (internal highlighter).
 
-The field mapping specification can include a `carrot.lang` parameter, which defines the field that stores http://www.loc.gov/standards/iso639-2/php/code_list.php[ISO 639-1] code of the language in which the title and content of the document are written. This information can be stored in the index based on apriori knowledge of the documents' source or a language detection filter applied at indexing time. All algorithms inside the Carrot2 framework will accept ISO codes of languages defined in https://github.com/carrot2/carrot2/blob/master/core/carrot2-core/src/org/carrot2/core/LanguageCode.java[LanguageCode enum].
+`clustering.contextCount`::
+The maximum number of different, non-contiguous snippets from a single field.
 
-The language hint makes it easier for clustering algorithms to separate documents from different languages on input and to pick the right language resources for clustering. If you do have multi-lingual query results (or query results in a language different than English), it is strongly advised to map the language field appropriately.
+=== Default Clustering Language
 
-`carrot.lang`::
-The field that stores ISO 639-1 code of the language of the document's text fields.
+The default implementations of clustering algorithms in Carrot^2^ (shipped with Solr)
+have built-in support (stemming, stop words) for preprocessing a number of languages. It is important to provide the clustering algorithm with a hint of what language should be used for clustering. This can be done in two ways -- by passing the name of the default language or by providing the language as a field with each document. The following two engine configuration parameters control this:
 
-`carrot.lcmap`::
-A mapping of arbitrary strings into ISO 639 two-letter codes used by `carrot.lang`. The syntax of this parameter is the same as `langid.map.lcmap`, for example: `langid.map.lcmap=japanese:ja polish:pl english:en`
+`clustering.language`::
+Name of the default language to use for clustering. The default value of this field is `English`. The provided language must be available and the clustering algorithm must support it.
 
-The default language can also be set using Carrot2-specific algorithm attributes (in this case the http://doc.carrot2.org/#section.attribute.lingo.MultilingualClustering.defaultLanguage[MultilingualClustering.defaultLanguage] attribute).
+`clustering.languageField`::
+Name of the document field that stores the document's language. If the field does not exist
+for a document or the value is blank, the default language is used.
+
+The list of supported languages can change dynamically (languages are loaded via external service provider extension) and may depend on the selected algorithm (algorithms can support a subset of languages for which resources are available). The clustering component will log all supported algorithm-language pairs at Solr startup, so you can inspect what's supported on your particular Solr instance. For example:
+
+[source,text]
+----
+2020-10-29 [...] Clustering algorithm Lingo3G loaded with support for the following languages: Dutch, English
+2020-10-29 [...] Clustering algorithm Lingo loaded with support for the following languages: Danish, Dutch, English, Finnish, French, German, Hungarian, Italian, Norwegian, Portuguese, Romanian, Russian, Spanish, Swedish, Turkish
+2020-10-29 [...] Clustering algorithm Bisecting K-Means loaded with support for the following languages: Danish, Dutch, English, Finnish, French, German, Hungarian, Italian, Norwegian, Portuguese, Romanian, Russian, Spanish, Swedish, Turkish
+----
+
+=== Handling Multilingual Content
+
+It is often the case that the index (and query result) contains documents in _multiple_ languages. Clustering such search results is problematic. Ideally, the engine should translate (or understand) the content of documents and then group relevant information together, regardless of the language it is written in.
+
+In reality, clustering algorithms are typically much simpler -- they infer similarity between documents from statistical properties of terms and phrases that occur in those documents. So texts written in different languages will not cluster too well.
+
+To deal witht his situation the default clustering component implementation in Solr will try to first group all documents by their language and then apply clustering to each sub-group in that language. It is recommended to store the language of each document as its separate field and point at it using the `clustering.languageField` configuration property described above.
 
 == Tweaking Algorithm Settings
 
-The algorithms that come with Solr are using their default settings which may be inadequate for all data sets. All algorithms have lexical resources and resources (stop words, stemmers, parameters) that may require tweaking to get better clusters (and cluster labels). For Carrot2-based algorithms it is probably best to refer to a dedicated tuning application called Carrot2 Workbench (screenshot below). From this application one can export a set of algorithm attributes as an XML file, which can be then placed under the location pointed to by `carrot.resourcesDir`.
+The clustering algorithms that come with Solr use their default parameter values and language resources. We highly recommend tuning both for production uses. Improving the default language resources to include words and phrases common to a particular document domain will improve clustering quality significantly.
 
-image::images/result-clustering/carrot2-workbench.png[image,scaledwidth=75.0%]
+Carrot^2^ algorithms have an extensive set of parameters and language resource tuning options. Please refer to https://carrot2.github.io/release/latest/[up-to-date project documentation]. In particular, the language resources section and each algorithm's attributes section.
 
-=== Providing Defaults for Clustering
 
-The default attributes for all engines (algorithms) declared in the clustering component are placed under `carrot.resourcesDir` and with an expected file name of `engineName-attributes.xml`. So for an engine named `lingo` and the default value of `carrot.resourcesDir`, the attributes would be read from a file in `conf/clustering/carrot2/lingo-attributes.xml`.
+=== Changing Clustering Algorithm Parameters
 
-An example XML file changing the default language of documents to Polish is shown below.
+Clustering algorithm settings can be changed via Solr parameters either
+permanently (in the Engine's declaration) or per-request (via Solr URL parameters).
+
+For example, let's assume the following engine configuration:
 
 [source,xml]
 ----
-<attribute-sets default="attributes">
-  <attribute-set id="attributes">
-    <value-set>
-      <label>attributes</label>
-      <attribute key="MultilingualClustering.defaultLanguage">
-        <value type="org.carrot2.core.LanguageCode" value="POLISH"/>
-      </attribute>
-    </value-set>
-  </attribute-set>
-</attribute-sets>
+<lst name="engine">
+  <str name="name">lingo</str>
+  <str name="clustering.algorithm">Lingo</str>
+  <str name="clustering.fields">name, features</str>
+  <str name="clustering.language">English</str>
+</lst>
 ----
 
-=== Tweaking Algorithms at Query-Time
+First, locate the configuration parameters for the Lingo algorithm
+at https://carrot2.github.io/release/latest/[Carrot^2^ documentation site]:
 
-The clustering component and Carrot2 clustering algorithms can accept query-time attribute overrides. Note that certain things (for example lexical resources) can only be initialized once (at startup, via the XML configuration files).
+image::images/result-clustering/carrot2-docs-attrs1.png[image,scaledwidth=75%]
 
-An example query that changes the `LingoClusteringAlgorithm.desiredClusterCountBase` parameter for the Lingo algorithm:
+Then locate the particular setting you'd like to change and note the
+REST API path to that setting (in this case the parameter is
+`minClusterSize` and its path is `preprocessing.documentAssigner.minClusterSize`):
+
+image::images/result-clustering/carrot2-docs-attrs2.png[image,scaledwidth=75%]
+
+Now add the full path-value pair to the engine's configuration:
+
+[source,xml]
+----
+<lst name="engine">
+  <str name="name">lingo</str>
+  <str name="clustering.algorithm">Lingo</str>
+  <str name="clustering.fields">name, features</str>
+  <str name="clustering.language">English</str>
+
+  <int name="preprocessing.documentAssigner.minClusterSize">3</int>
+</lst>
+----
+
+The following rules apply.
+
+* The type of the parameter must be consistent with the type listed in Carrot^2^ specification.
+
+* If the parameter is added to the engine's configuration in `solrconfig.xml`, the core must be reloaded for the changes to be picked up. Alternatively, pass the parameter via the request URL to change things dynamically on a per-request basis. For example, if you have the `techproducts` example running, this will cut the clusters to only those containing at least three documents:
+ `http://localhost:8983/solr/techproducts/clustering?q=\*:*&rows=100&wt=json&preprocessing.documentAssigner.minClusterSize=3`
+
+* For complex types, the parameter key with the name of the instantiated type must precede any of its own parameters.
+
+=== Custom Language Resources
+
+Clustering algorithms rely on language and domain-specific language resources to
+improve the quality of clusters (by discarding domain-specific noise and boilerplate language).
+
+By default, language resources are read from the engine-declared algorithm default JAR. You can pass a custom location for these resources by specifying the `clustering.resources` parameter. The value of this parameter resolves to a location relative to Solr core's configuration directory. For example, the following definition:
+
+[source,xml]
+----
+<lst name="engine">
+  <str name="name">lingo</str>
+  <str name="clustering.algorithm">Lingo</str>
+  <str name="clustering.fields">name, features</str>
+  <str name="clustering.language">English</str>
+
+  <str name="clustering.resources">lingo-resources</str>
+</lst>
+----
+
+would result in the following log entry and expected resource location:
 
 [source,text]
-http://localhost:8983/solr/techproducts/clustering?q=*:*&rows=100&LingoClusteringAlgorithm.desiredClusterCountBase=20
+----
+Clustering algorithm resources first looked up relative to: [.../example/techproducts/solr/techproducts/conf/lingo-resources]
+----
 
-The clustering engine (the algorithm declared in `solrconfig.xml`) can also be changed at runtime by passing `clustering.engine=name` request attribute:
+The best way to start tuning algorithm resources is to copy all the defaults from its
+corresponding Carrot^2^ JAR file (or Carrot^2^ distribution).
 
-[source,text]
-http://localhost:8983/solr/techproducts/clustering?q=*:*&rows=100&clustering.engine=kmeans
+== Performance Considerations
 
-== Performance Considerations with Dynamic Clustering
+Clustering of search results comes with some performance considerations:
 
-Dynamic clustering of search results comes with two major performance penalties:
-
-* Increased cost of fetching a larger-than-usual number of search results (50, 100 or more documents),
+* The cost of fetching a larger-than-usual number of search results (50, 100 or more documents),
 * Additional computational cost of the clustering itself.
+* In distributed mode the content of document fields for clustering is collected from shards and adds some additional network overhead.
 
-For simple queries, the clustering time will usually dominate the fetch time. If the document content is very long the retrieval of stored content can become a bottleneck. The performance impact of clustering can be lowered in several ways:
+For simple queries, the clustering time will usually dominate everything else. If document fields are very long, the retrieval of stored content can become a bottleneck.
 
-* feed less content to the clustering algorithm by enabling `carrot.produceSummary` attribute,
-* perform clustering on selected fields (titles only) to make the input smaller,
-* use a faster algorithm (STC instead of Lingo, Lingo3G instead of STC),
-* tune the performance attributes related directly to a specific algorithm.
+The performance impact of clustering can be lowered in several ways.
 
-Some of these techniques are described in _Apache SOLR and Carrot2 integration strategies_ document, available at http://carrot2.github.io/solr-integration-strategies. The topic of improving performance is also included in the Carrot2 manual at http://doc.carrot2.org/#section.advanced-topics.fine-tuning.performance.
+* Cluster less data: use query context (snippets) instead of full field content (`clustering.preferQueryContext=true`).
+* Perform clustering on just a subset of document fields or curate fields for clustering (add abstracts at indexing-time) to make the input smaller.
+* Tune the performance attributes related directly to a specific algorithm.
+* Try a different, faster algorithm (STC instead of Lingo, Lingo3G instead of STC).
+
 
 == Additional Resources
 
 The following resources provide additional information about the clustering component in Solr and its potential applications.
 
-* Apache Solr and Carrot2 integration strategies: http://carrot2.github.io/solr-integration-strategies
-* Clustering and Visualization of Solr search results (Berlin BuzzWords conference, 2011): http://2011.berlinbuzzwords.de/sites/2011.berlinbuzzwords.de/files/solr-clustering-visualization.pdf
+* Clustering and Visualization of Solr search results (Berlin BuzzWords conference, *2011*): http://2011.berlinbuzzwords.de/sites/2011.berlinbuzzwords.de/files/solr-clustering-visualization.pdf

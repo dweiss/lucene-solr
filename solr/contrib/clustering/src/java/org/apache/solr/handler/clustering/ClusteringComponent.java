@@ -24,7 +24,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -366,21 +365,11 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
                                            EngineParameters requestParameters) throws IOException {
 
     SolrQueryRequest solrRequest = responseBuilder.req;
-    DocList solrDocList = responseBuilder.getResults().docList;
     Query query = responseBuilder.getQuery();
     SolrIndexSearcher indexSearcher = responseBuilder.req.getSearcher();
-    SolrParams solrParams = solrRequest.getParams();
     SolrCore core = solrRequest.getCore();
     String[] fieldsToCluster = requestParameters.fields().toArray(String[]::new);
     IndexSchema schema = indexSearcher.getSchema();
-
-    Function<Map<String, String>, String> assignLanguage;
-    String languageField = requestParameters.languageField();
-    if (languageField != null) {
-      assignLanguage = (doc) -> doc.getOrDefault(languageField, requestParameters.language());
-    } else {
-      assignLanguage = (doc) -> requestParameters.language();
-    }
 
     boolean preferQueryContext = requestParameters.preferQueryContext();
     SolrQueryRequest req = null;
@@ -414,13 +403,21 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       fieldsToLoad.put(fld, (fieldValue) -> type.toObject(fieldValue).toString());
     }
 
-    List<InputDocument> result = new ArrayList<>(solrDocList.size());
-    DocIterator dit = solrDocList.iterator();
-    while (dit.hasNext()) {
-      int internalId = dit.nextDoc();
+    Function<Map<String, String>, String> docLanguage;
+    String languageField = requestParameters.languageField();
+    if (languageField != null) {
+      docLanguage = (doc) -> doc.getOrDefault(languageField, requestParameters.language());
+    } else {
+      docLanguage = (doc) -> requestParameters.language();
+    }
+
+    List<InputDocument> result = new ArrayList<>();
+    DocIterator it = responseBuilder.getResults().docList.iterator();
+    while (it.hasNext()) {
+      int docId = it.nextDoc();
 
       Map<String, String> docFieldValues = new LinkedHashMap<>();
-      for (IndexableField indexableField : indexSearcher.doc(internalId, fieldsToLoad.keySet())) {
+      for (IndexableField indexableField : indexSearcher.doc(docId, fieldsToLoad.keySet())) {
         String fieldName = indexableField.name();
         Function<IndexableField, String> toString = fieldsToLoad.get(fieldName);
         if (toString != null) {
@@ -437,13 +434,13 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
       InputDocument inputDocument = new InputDocument(
           docFieldValues.get(requestParameters.docIdField()),
-          assignLanguage.apply(docFieldValues));
+          docLanguage.apply(docFieldValues));
       result.add(inputDocument);
 
       Function<String, String> snippetProvider = (field) -> null;
       if (preferQueryContext) {
         DocList docAsList = new DocSlice(0, 1,
-            new int[]{internalId},
+            new int[]{docId},
             new float[]{1.0f},
             1,
             1.0f,

@@ -300,7 +300,7 @@ public final class EngineParameters implements Cloneable {
   }
 
   /**
-   * @return Returns the maximum number of different, non-contiguous query context snippets from a single document
+   * @return Returns the maximum number of different, non-contiguous query context snippets from a single field
    * if {@link #preferQueryContext()} is {@code true}.
    */
   int contextCount() {
