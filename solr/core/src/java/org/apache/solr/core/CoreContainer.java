@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -68,6 +69,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.Credential
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
@@ -245,6 +247,11 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
+  private final ClusterSingletons clusterSingletons = new ClusterSingletons(
+      () -> getZkController() != null &&
+          getZkController().getOverseer() != null &&
+          !getZkController().getOverseer().isClosed(),
+      (r) -> this.runAsync(r));
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 
@@ -663,6 +670,8 @@ public class CoreContainer {
       loader.reloadLuceneSPI();
     }
 
+    customContainerPlugins.registerListener(clusterSingletons.getPluginRegistryListener());
+
     packageStoreAPI = new PackageStoreAPI(this);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.readAPI);
     containerHandlers.getApiBag().registerObject(packageStoreAPI.writeAPI);
@@ -876,7 +885,21 @@ public class CoreContainer {
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
+
+      // init ClusterSingleton-s
+
+      // register the handlers that are also ClusterSingleton
+      containerHandlers.keySet().forEach(handlerName -> {
+        SolrRequestHandler handler = containerHandlers.get(handlerName);
+        if (handler instanceof ClusterSingleton) {
+          ClusterSingleton singleton = (ClusterSingleton) handler;
+          clusterSingletons.getSingletons().put(singleton.getName(), singleton);
+        }
+      });
+
+      clusterSingletons.setReady();
       zkSys.getZkController().checkOverseerDesignate();
+
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
@@ -995,6 +1018,27 @@ public class CoreContainer {
       if (isZooKeeperAware()) {
         cancelCoreRecoveries();
         zkSys.zkController.preClose();
+        /*
+         * Pause updates for all cores on this node and wait for all in-flight update requests to finish.
+         * Here, we (slightly) delay leader election so that in-flight update requests succeed and we can preserve consistency.
+         *
+         * Jetty already allows a grace period for in-flight requests to complete and our solr cores, searchers etc
+         * are reference counted to allow for graceful shutdown. So we don't worry about any other kind of requests.
+         *
+         * We do not need to unpause ever because the node is being shut down.
+         */
+        getCores().parallelStream().forEach(solrCore -> {
+          SolrCoreState solrCoreState = solrCore.getSolrCoreState();
+          try {
+            solrCoreState.pauseUpdatesAndAwaitInflightRequests();
+          } catch (TimeoutException e) {
+            log.warn("Timed out waiting for in-flight update requests to complete for core: {}", solrCore.getName());
+          } catch (InterruptedException e) {
+            log.warn("Interrupted while waiting for in-flight update requests to complete for core: {}", solrCore.getName());
+            Thread.currentThread().interrupt();
+          }
+        });
+        zkSys.zkController.tryCancelAllElections();
       }
 
       ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
@@ -2076,6 +2120,10 @@ public class CoreContainer {
 
   public CustomContainerPlugins getCustomContainerPlugins(){
     return customContainerPlugins;
+  }
+
+  public ClusterSingletons getClusterSingletons() {
+    return clusterSingletons;
   }
 
   static {
