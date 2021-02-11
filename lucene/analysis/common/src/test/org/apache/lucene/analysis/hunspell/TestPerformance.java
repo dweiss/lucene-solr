@@ -26,9 +26,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
+
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assume;
 import org.junit.AssumptionViolatedException;
@@ -75,20 +80,48 @@ public class TestPerformance extends LuceneTestCase {
 
     List<String> words = loadWords(code, wordCount, dictionary);
 
-    Stemmer stemmer = new Stemmer(dictionary);
-    SpellChecker speller = new SpellChecker(dictionary);
+    int cacheSize = 2500;
+
+    Function<String, List<CharsRef>> stemmer = new Function<>() {
+      private final Stemmer delegate  = new Stemmer(dictionary);
+      private final HashMap<String, List<CharsRef>> cache = new HashMap<>();
+
+      @Override
+      public List<CharsRef> apply(String s) {
+        if (cache.size() > cacheSize) {
+          cache.clear(); // no eviction policy. discard on excess size.
+        }
+        return cache.computeIfAbsent(s, (k) -> {
+          // TODO: make sure these returned charsref are immutable?
+          return delegate.stem(k);
+        });
+      }
+    };
+    Predicate<String> speller = new Predicate<>() {
+      private final SpellChecker delegate = new SpellChecker(dictionary);
+      private final HashMap<String, Boolean> cache = new HashMap<>();
+
+      @Override
+      public boolean test(String s) {
+        if (cache.size() > cacheSize) {
+          cache.clear(); // no eviction policy. discard on excess size.
+        }
+        return cache.computeIfAbsent(s, delegate::spell);
+      }
+    };
+
     measure(
         "Stemming " + code,
         blackHole -> {
           for (String word : words) {
-            blackHole.accept(stemmer.stem(word));
+            blackHole.accept(stemmer.apply(word));
           }
         });
     measure(
         "Spellchecking " + code,
         blackHole -> {
           for (String word : words) {
-            blackHole.accept(speller.spell(word));
+            blackHole.accept(speller.test(word));
           }
         });
     System.out.println();
