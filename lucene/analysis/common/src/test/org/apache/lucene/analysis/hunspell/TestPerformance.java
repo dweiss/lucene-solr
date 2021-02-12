@@ -108,7 +108,7 @@ public class TestPerformance extends LuceneTestCase {
       private final int maxSize;
 
       private final LinkedHashMap<T, V> cache =
-          new LinkedHashMap<>() {
+          new LinkedHashMap<>(0, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<T, V> eldest) {
               return size() > maxSize;
@@ -124,11 +124,36 @@ public class TestPerformance extends LuceneTestCase {
       public V apply(T t) {
         return cache.computeIfAbsent(t, (k) -> delegate.apply(t));
       }
+
+      @Override
+      public String toString() {
+        return "Cached entries: " + cache.size();
+      }
+    }
+
+    class CacheAll<T, V> implements Function<T, V> {
+      private final Function<T, V> delegate;
+
+      private final HashMap<T, V> cache = new HashMap<>();
+
+      CacheAll(int maxSize, Function<T, V> delegate) {
+        this.delegate = delegate;
+      }
+
+      @Override
+      public V apply(T t) {
+        return cache.computeIfAbsent(t, (k) -> delegate.apply(t));
+      }
+
+      @Override
+      public String toString() {
+        return "Cached entries: " + cache.size();
+      }
     }
 
     Consumer<Consumer<Integer>> repeats =
         (block) -> {
-          for (int cacheSize : Arrays.asList(0, 1000, 2000, 4000, 8000)) {
+          for (int cacheSize : Arrays.asList(1000, 2000, 4000, 8000, 30000, 50000, 53_000, 55_000)) {
             System.out.println("Cache size: " + cacheSize);
             block.accept(cacheSize);
           }
@@ -145,6 +170,7 @@ public class TestPerformance extends LuceneTestCase {
                 for (String word : words) {
                   blackHole.accept(stemmer.apply(word));
                 }
+                System.out.println(stemmer);
               });
         });
 
