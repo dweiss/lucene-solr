@@ -17,6 +17,13 @@
 package org.apache.lucene.analysis.hunspell;
 
 import com.carrotsearch.randomizedtesting.annotations.TestCaseOrdering;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Assume;
+import org.junit.AssumptionViolatedException;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,19 +33,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Assume;
-import org.junit.AssumptionViolatedException;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * A test that runs various Hunspell APIs on real dictionaries and relatively large corpora for
@@ -72,7 +75,7 @@ public class TestPerformance extends LuceneTestCase {
     checkPerformance("fr", 40_000);
   }
 
-  private void checkPerformance(String code, int wordCount) throws Exception {
+  private <V, T> void checkPerformance(String code, int wordCount) throws Exception {
     Path aff = findAffFile(code);
 
     Dictionary dictionary = TestAllDictionaries.loadDictionary(aff);
@@ -80,50 +83,85 @@ public class TestPerformance extends LuceneTestCase {
 
     List<String> words = loadWords(code, wordCount, dictionary);
 
-    int cacheSize = 2500;
+    class CacheDumb<T, V> implements Function<T, V> {
+      private final Function<T, V> delegate;
+      private final int maxSize;
 
-    Function<String, List<CharsRef>> stemmer = new Function<>() {
-      private final Stemmer delegate  = new Stemmer(dictionary);
-      private final HashMap<String, List<CharsRef>> cache = new HashMap<>();
+      private final HashMap<T, V> cache = new HashMap<>();
+
+      CacheDumb(int maxSize, Function<T, V> delegate) {
+        this.delegate = delegate;
+        this.maxSize = maxSize;
+      }
 
       @Override
-      public List<CharsRef> apply(String s) {
-        if (cache.size() > cacheSize) {
+      public V apply(T t) {
+        if (cache.size() > maxSize) {
           cache.clear(); // no eviction policy. discard on excess size.
         }
-        return cache.computeIfAbsent(s, (k) -> {
-          // TODO: make sure these returned charsref are immutable?
-          return delegate.stem(k);
-        });
+        return cache.computeIfAbsent(t, (k) -> delegate.apply(t));
       }
-    };
-    Predicate<String> speller = new Predicate<>() {
-      private final SpellChecker delegate = new SpellChecker(dictionary);
-      private final HashMap<String, Boolean> cache = new HashMap<>();
+    }
+
+    class CacheLRU<T, V> implements Function<T, V> {
+      private final Function<T, V> delegate;
+      private final int maxSize;
+
+      private final LinkedHashMap<T, V> cache =
+          new LinkedHashMap<>() {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<T, V> eldest) {
+              return size() > maxSize;
+            }
+          };
+
+      CacheLRU(int maxSize, Function<T, V> delegate) {
+        this.delegate = delegate;
+        this.maxSize = maxSize;
+      }
 
       @Override
-      public boolean test(String s) {
-        if (cache.size() > cacheSize) {
-          cache.clear(); // no eviction policy. discard on excess size.
-        }
-        return cache.computeIfAbsent(s, delegate::spell);
+      public V apply(T t) {
+        return cache.computeIfAbsent(t, (k) -> delegate.apply(t));
       }
-    };
+    }
 
-    measure(
-        "Stemming " + code,
-        blackHole -> {
-          for (String word : words) {
-            blackHole.accept(stemmer.apply(word));
+    Consumer<Consumer<Integer>> repeats =
+        (block) -> {
+          for (int cacheSize : Arrays.asList(0, 1000, 2000, 4000, 8000)) {
+            System.out.println("Cache size: " + cacheSize);
+            block.accept(cacheSize);
           }
+        };
+
+    repeats.accept(
+        (cacheSize) -> {
+          Function<String, List<CharsRef>> stemmer =
+              new CacheLRU<>(cacheSize, new Stemmer(dictionary)::stem);
+
+          measure(
+              "Stemming " + code,
+              blackHole -> {
+                for (String word : words) {
+                  blackHole.accept(stemmer.apply(word));
+                }
+              });
         });
-    measure(
-        "Spellchecking " + code,
-        blackHole -> {
-          for (String word : words) {
-            blackHole.accept(speller.test(word));
-          }
+
+    repeats.accept(
+        (cacheSize) -> {
+          Predicate<String> speller =
+              (new CacheLRU<>(cacheSize, new SpellChecker(dictionary)::spell))::apply;
+
+          measure(
+              "Spellchecking " + code,
+              blackHole -> {
+                for (String word : words) {
+                  blackHole.accept(speller.test(word));
+                }
+              });
         });
+
     System.out.println();
   }
 
